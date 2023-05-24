@@ -1,6 +1,6 @@
 # PPOM Validator
 
-This module has code to integrate blockaid PPOM with Metamask.
+This module has code to integrate Blockaid PPOM with MetaMask.
 
 ## Installation
 
