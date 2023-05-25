@@ -1,0 +1,169 @@
+import { StorageBackend, PPOMStorage, StorageKey } from './ppom-storage';
+
+Object.defineProperty(globalThis, 'crypto', {
+  value: {
+    subtle: {
+      digest: () => new ArrayBuffer(12),
+    },
+  },
+});
+
+class MockStorageBackend implements StorageBackend {
+  data: undefined;
+
+  constructor(data?: any) {
+    this.data = data;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async read(key: StorageKey): Promise<any> {
+    return new Promise((resolve) => {
+      resolve(this.data);
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async write(key: StorageKey, data: any): Promise<void> {
+    return new Promise((resolve) => {
+      resolve();
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async delete(key: StorageKey): Promise<void> {
+    return new Promise((resolve) => {
+      resolve();
+    });
+  }
+
+  async dir(): Promise<StorageKey[]> {
+    return new Promise((resolve) => {
+      resolve([]);
+    });
+  }
+}
+
+describe('PPOMStorage', () => {
+  it('should get initialised', () => {
+    const ppomStorage = new PPOMStorage({
+      storageBackend: new MockStorageBackend(),
+      readMetadata: () => [],
+      writeMetadata: () => undefined,
+    });
+    expect(ppomStorage).toBeDefined();
+  });
+
+  describe('PPOMStorage:readFile', () => {
+    it('should return data if it matches checksum', async () => {
+      const fileData = {
+        chainId: '1',
+        name: 'dummy',
+        checksum: '000000000000000000000000',
+        version: '0',
+      };
+      const ppomStorage = new PPOMStorage({
+        storageBackend: new MockStorageBackend(fileData),
+        readMetadata: () => [fileData],
+        writeMetadata: () => undefined,
+      });
+      const data = await ppomStorage.readFile('dummy', '1');
+      expect(data).toStrictEqual(fileData);
+    });
+
+    it('should throw error if checksum does not matches', async () => {
+      const fileData = {
+        chainId: '1',
+        name: 'dummy',
+        checksum: '12',
+        version: '0',
+      };
+      const ppomStorage = new PPOMStorage({
+        storageBackend: new MockStorageBackend(fileData),
+        readMetadata: () => [fileData],
+        writeMetadata: () => undefined,
+      });
+      await expect(async () => {
+        await ppomStorage.readFile('dummy', '1');
+      }).rejects.toThrow('Checksum mismatch');
+    });
+
+    it('should throw error if filemetadata if not found', async () => {
+      const fileData = {
+        chainId: '1',
+        name: 'dummy',
+        checksum: '12',
+        version: '0',
+      };
+      const ppomStorage = new PPOMStorage({
+        storageBackend: new MockStorageBackend(fileData),
+        readMetadata: () => [],
+        writeMetadata: () => undefined,
+      });
+      await expect(async () => {
+        await ppomStorage.readFile('dummy', '1');
+      }).rejects.toThrow(
+        'File metadata not found for File (dummy, 1) not found',
+      );
+    });
+
+    it('should throw error if file is not found in storage', async () => {
+      const fileData = {
+        chainId: '1',
+        name: 'dummy',
+        checksum: '12',
+        version: '0',
+      };
+      const ppomStorage = new PPOMStorage({
+        storageBackend: new MockStorageBackend(),
+        readMetadata: () => [fileData],
+        writeMetadata: () => undefined,
+      });
+      await expect(async () => {
+        await ppomStorage.readFile('dummy', '1');
+      }).rejects.toThrow('Storage File (dummy, 1) not found');
+    });
+  });
+
+  describe('PPOMStorage:writeFile', () => {
+    it('should throw error if checksum does not match', async () => {
+      const ppomStorage = new PPOMStorage({
+        storageBackend: new MockStorageBackend(),
+        readMetadata: () => [],
+        writeMetadata: () => undefined,
+      });
+      await expect(async () => {
+        await ppomStorage.writeFile({
+          data: new ArrayBuffer(1),
+          name: 'dummy',
+          chainId: '1',
+          version: '0',
+          checksum: '12',
+        });
+      }).rejects.toThrow('Checksum mismatch');
+    });
+
+    it('should invoke writeMetadata if checksum matches', async () => {
+      const mockWriteMetadata = jest.fn();
+      const ppomStorage = new PPOMStorage({
+        storageBackend: new MockStorageBackend(),
+        readMetadata: () => [],
+        writeMetadata: mockWriteMetadata,
+      });
+      await ppomStorage.writeFile({
+        data: new ArrayBuffer(1),
+        name: 'dummy',
+        chainId: '1',
+        version: '0',
+        checksum: '000000000000000000000000',
+      });
+      expect(mockWriteMetadata).toHaveBeenCalledWith([
+        {
+          name: 'dummy',
+          chainId: '1',
+          version: '0',
+          checksum: '000000000000000000000000',
+        },
+      ]);
+    });
+  });
+});
