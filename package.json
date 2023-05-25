@@ -1,7 +1,7 @@
 {
   "name": "@metamask/ppom-validator",
   "version": "0.0.0",
-  "description": "The MetaMask Node module template",
+  "description": "This module has code to integrate Blockaid PPOM with MetaMask",
   "homepage": "https://github.com/MetaMask/ppom-validator#readme",
   "bugs": {
     "url": "https://github.com/MetaMask/ppom-validator/issues"
