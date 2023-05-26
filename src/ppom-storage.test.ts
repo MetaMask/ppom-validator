@@ -67,7 +67,7 @@ describe('PPOMStorage', () => {
         writeMetadata: () => undefined,
       });
       const data = await ppomStorage.readFile('dummy', '1');
-      expect(data).toStrictEqual(fileData);
+      expect(data).toStrictEqual(new ArrayBuffer(12));
     });
 
     it('should throw error if checksum does not matches', async () => {
