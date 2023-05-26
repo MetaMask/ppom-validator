@@ -1,11 +1,11 @@
-type FileMetadata = {
+type FileInfo = {
   name: string;
   chainId: string;
   version: string;
   checksum: string;
 };
 
-export type PPOMStorageMetadata = FileMetadata[];
+export type PPOMStorageMetadata = FileInfo[];
 
 export type StorageKey = {
   name: string;
@@ -69,7 +69,9 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  public async syncMetadata(versionInfo: any[]): Promise<PPOMStorageMetadata> {
+  public async syncMetadata(
+    versionInfo: FileInfo[],
+  ): Promise<PPOMStorageMetadata> {
     const metadata = this._readMetadata();
     const syncedMetadata = [];
 
@@ -77,11 +79,11 @@ export class PPOMStorage {
       // check if the file is readable (e.g. corrupted or deleted)
       try {
         await this.readFile(fileMetadata.name, fileMetadata.chainId);
-      } catch {
+      } catch (exp: any) {
         continue;
       }
 
-      // check if the file exits and up to date in the cdn
+      // check if the file exits and up to date in the storage
       if (
         !versionInfo.find(
           (file) =>
@@ -175,6 +177,7 @@ export class PPOMStorage {
     const fileMetadata = metadata.find(
       (file) => file.name === name && file.chainId === chainId,
     );
+
     if (fileMetadata) {
       fileMetadata.version = version;
       fileMetadata.checksum = checksum;
@@ -199,7 +202,6 @@ export class PPOMStorage {
       .map((b) => b.toString(16).padStart(2, '0'))
       .join('');
 
-    console.log('hashString = ', hashString, checksum);
     if (hashString !== checksum) {
       throw new Error('Checksum mismatch');
     }
