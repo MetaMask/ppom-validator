@@ -152,12 +152,12 @@ export class PPOMStorage {
    * 2. Write the file to the local storage.
    * 3. Update the metadata.
    *
-   * @param options0 - Object passed to write to storage.
-   * @param options0.data - File data to be written.
-   * @param options0.name - Name to be assigned to teh storage.
-   * @param options0.chainId - Current ChainId.
-   * @param options0.version - Version of file.
-   * @param options0.checksum - Checksum of file.
+   * @param options - Object passed to write to storage
+   * @param options.data - File data to be written
+   * @param options.name - Name to be assigned to the storage
+   * @param options.chainId - Current ChainId
+   * @param options.version - Version of file
+   * @param options.checksum - Checksum of file
    */
   public async writeFile({
     data,
