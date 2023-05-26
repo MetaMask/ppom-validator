@@ -8,6 +8,8 @@ Object.defineProperty(globalThis, 'crypto', {
   },
 });
 
+const checksum =
+  '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49';
 class MockStorageBackend implements StorageBackend {
   data: undefined;
 
@@ -18,7 +20,7 @@ class MockStorageBackend implements StorageBackend {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async read(key: StorageKey): Promise<any> {
     return new Promise((resolve) => {
-      resolve(new ArrayBuffer(12));
+      resolve(this.data);
     });
   }
 
@@ -58,28 +60,27 @@ describe('PPOMStorage', () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '000000000000000000000000',
+        checksum,
         version: '0',
       };
       const ppomStorage = new PPOMStorage({
-        storageBackend: new MockStorageBackend(fileData),
+        storageBackend: new MockStorageBackend(new ArrayBuffer(123)),
         readMetadata: () => [fileData],
         writeMetadata: () => undefined,
       });
       const data = await ppomStorage.readFile('dummy', '1');
-      expect(data).toStrictEqual(new ArrayBuffer(12));
+      expect(data).toStrictEqual(new ArrayBuffer(123));
     });
 
     it('should throw error if checksum does not matches', async () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '12',
         version: '0',
       };
       const ppomStorage = new PPOMStorage({
-        storageBackend: new MockStorageBackend(fileData),
-        readMetadata: () => [fileData],
+        storageBackend: new MockStorageBackend(new ArrayBuffer(123)),
+        readMetadata: () => [{ ...fileData, checksum: '000' }],
         writeMetadata: () => undefined,
       });
       await expect(async () => {
@@ -88,14 +89,8 @@ describe('PPOMStorage', () => {
     });
 
     it('should throw error if filemetadata if not found', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum: '12',
-        version: '0',
-      };
       const ppomStorage = new PPOMStorage({
-        storageBackend: new MockStorageBackend(fileData),
+        storageBackend: new MockStorageBackend(new ArrayBuffer(123)),
         readMetadata: () => [],
         writeMetadata: () => undefined,
       });
@@ -110,13 +105,11 @@ describe('PPOMStorage', () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '12',
+        checksum,
         version: '0',
       };
       const ppomStorage = new PPOMStorage({
-        storageBackend: {
-          read: async () => Promise.resolve(),
-        } as unknown as StorageBackend,
+        storageBackend: new MockStorageBackend(),
         readMetadata: () => [fileData],
         writeMetadata: () => undefined,
       });
@@ -139,7 +132,7 @@ describe('PPOMStorage', () => {
           name: 'dummy',
           chainId: '1',
           version: '0',
-          checksum: '12',
+          checksum,
         });
       }).rejects.toThrow('Checksum mismatch');
     });
@@ -154,11 +147,11 @@ describe('PPOMStorage', () => {
         writeMetadata: () => undefined,
       });
       await ppomStorage.writeFile({
-        data: new ArrayBuffer(1),
+        data: new ArrayBuffer(123),
         name: 'dummy',
         chainId: '1',
         version: '0',
-        checksum: '000000000000000000000000',
+        checksum,
       });
       expect(mockWrite).toHaveBeenCalledTimes(1);
     });
@@ -167,8 +160,8 @@ describe('PPOMStorage', () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '12',
-        version: '1',
+        checksum,
+        version: '0',
       };
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
@@ -177,18 +170,18 @@ describe('PPOMStorage', () => {
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
-        data: new ArrayBuffer(1),
+        data: new ArrayBuffer(123),
         name: 'dummy',
         chainId: '1',
         version: '0',
-        checksum: '000000000000000000000000',
+        checksum,
       });
       expect(mockWriteMetadata).toHaveBeenCalledWith([
         {
           name: 'dummy',
           chainId: '1',
           version: '0',
-          checksum: '000000000000000000000000',
+          checksum,
         },
       ]);
     });
@@ -201,18 +194,18 @@ describe('PPOMStorage', () => {
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
-        data: new ArrayBuffer(1),
+        data: new ArrayBuffer(123),
         name: 'dummy',
         chainId: '1',
         version: '0',
-        checksum: '000000000000000000000000',
+        checksum,
       });
       expect(mockWriteMetadata).toHaveBeenCalledWith([
         {
           name: 'dummy',
           chainId: '1',
           version: '0',
-          checksum: '000000000000000000000000',
+          checksum,
         },
       ]);
     });
@@ -223,12 +216,12 @@ describe('PPOMStorage', () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '000000000000000000000000',
+        checksum,
         version: '0',
       };
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
-        storageBackend: new MockStorageBackend(fileData),
+        storageBackend: new MockStorageBackend(new ArrayBuffer(123)),
         readMetadata: () => [fileData],
         writeMetadata: mockWriteMetadata,
       });
@@ -239,7 +232,7 @@ describe('PPOMStorage', () => {
           name: 'dummy',
           chainId: '1',
           version: '0',
-          checksum: '000000000000000000000000',
+          checksum,
         },
       ]);
       expect(result).toStrictEqual([fileData]);
@@ -249,7 +242,7 @@ describe('PPOMStorage', () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '000000000000000000000000',
+        checksum,
         version: '0',
       };
       const mockWriteMetadata = jest.fn();
@@ -268,7 +261,7 @@ describe('PPOMStorage', () => {
       const fileData = {
         chainId: '1',
         name: 'dummy',
-        checksum: '000000000000000000000000',
+        checksum,
         version: '0',
       };
       const storageFileData = { ...fileData, version: '1' };

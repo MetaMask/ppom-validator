@@ -1,3 +1,5 @@
+import { calculateSHA256 } from './crypto-utils';
+
 type FileInfo = {
   name: string;
   chainId: string;
@@ -193,16 +195,9 @@ export class PPOMStorage {
    * The checksum is calculated from the file content using SHA-256
    */
   async #validateChecksum(data: ArrayBuffer, checksum: string) {
-    // eslint-disable-next-line no-restricted-globals
-    const hash = await (globalThis as any).crypto.subtle.digest(
-      'SHA-256',
-      data,
-    );
-    const hashString = Array.from(new Uint8Array(hash))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
+    const hash = calculateSHA256(data);
 
-    if (hashString !== checksum) {
+    if (hash !== checksum) {
       throw new Error('Checksum mismatch');
     }
   }
