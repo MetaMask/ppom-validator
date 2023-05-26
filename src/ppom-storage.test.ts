@@ -114,7 +114,9 @@ describe('PPOMStorage', () => {
         version: '0',
       };
       const ppomStorage = new PPOMStorage({
-        storageBackend: new MockStorageBackend(),
+        storageBackend: {
+          read: async () => Promise.resolve(),
+        } as unknown as StorageBackend,
         readMetadata: () => [fileData],
         writeMetadata: () => undefined,
       });
