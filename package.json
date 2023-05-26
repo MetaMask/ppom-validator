@@ -30,6 +30,10 @@
     "test": "jest && jest-it-up",
     "test:watch": "jest --watch"
   },
+  "dependencies": {
+    "@types/crypto-js": "^4.1.1",
+    "crypto-js": "^4.1.1"
+  },
   "devDependencies": {
     "@lavamoat/allow-scripts": "^2.3.1",
     "@lavamoat/preinstall-always-fail": "^1.0.0",
@@ -72,9 +76,5 @@
     "allowScripts": {
       "@lavamoat/preinstall-always-fail": false
     }
-  },
-  "dependencies": {
-    "@types/crypto-js": "^4.1.1",
-    "crypto-js": "^4.1.1"
   }
 }
