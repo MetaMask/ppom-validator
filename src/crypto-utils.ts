@@ -3,9 +3,9 @@ import CryptoJS from 'crypto-js';
 const arrayBufferToHex = (arrayBuffer: ArrayBuffer): string => {
   const uint8Array = new Uint8Array(arrayBuffer);
   let hexString = '';
-  for (const i of uint8Array) {
-    const val = uint8Array[i]?.toString(16).padStart(2, '0');
-    hexString += val;
+  for (const value of uint8Array) {
+    const paddedValue = value.toString(16).padStart(2, '0');
+    hexString += paddedValue;
   }
   return hexString;
 };
