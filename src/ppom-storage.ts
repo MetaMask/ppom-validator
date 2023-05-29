@@ -15,8 +15,8 @@ export type StorageKey = {
 };
 
 export type StorageBackend = {
-  read(key: StorageKey): Promise<any>;
-  write(key: StorageKey, data: any): Promise<void>;
+  read(key: StorageKey): Promise<ArrayBuffer>;
+  write(key: StorageKey, data: ArrayBuffer): Promise<void>;
   delete(key: StorageKey): Promise<void>;
   dir(): Promise<StorageKey[]>;
 };
