@@ -1,4 +1,4 @@
-import { StorageBackend, PPOMStorage, StorageKey } from './ppom-storage';
+import { PPOMStorage, StorageKey } from './ppom-storage';
 
 Object.defineProperty(globalThis, 'crypto', {
   value: {
@@ -29,46 +29,39 @@ const storageBackendReturningData = buildStorageBackend({
     Promise.resolve(new ArrayBuffer(123)),
 });
 
-describe('PPOMStorage', () => {
-  it('should get initialised', () => {
-    const ppomStorage = new PPOMStorage({
-      storageBackend: simpleStorageBackend,
-      readMetadata: () => [],
-      writeMetadata: () => undefined,
-    });
-    expect(ppomStorage).toBeDefined();
-  });
+const DUMMY_NAME = 'dummy';
+const DUMMY_CHAINID = '1';
 
+const getFileData = (data = {}) => ({
+  chainId: DUMMY_CHAINID,
+  name: DUMMY_NAME,
+  checksum,
+  version: '0',
+  ...data,
+});
+
+const simpleFileData = getFileData();
+
+describe('PPOMStorage', () => {
   describe('readFile', () => {
     it('should return data if it matches checksum', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum,
-        version: '0',
-      };
       const ppomStorage = new PPOMStorage({
         storageBackend: storageBackendReturningData,
-        readMetadata: () => [fileData],
+        readMetadata: () => [simpleFileData],
         writeMetadata: () => undefined,
       });
-      const data = await ppomStorage.readFile('dummy', '1');
+      const data = await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
       expect(data).toStrictEqual(new ArrayBuffer(123));
     });
 
     it('should throw error if checksum does not matches', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        version: '0',
-      };
       const ppomStorage = new PPOMStorage({
         storageBackend: storageBackendReturningData,
-        readMetadata: () => [{ ...fileData, checksum: '000' }],
+        readMetadata: () => [getFileData({ checksum: '000' })],
         writeMetadata: () => undefined,
       });
       await expect(async () => {
-        await ppomStorage.readFile('dummy', '1');
+        await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
       }).rejects.toThrow('Checksum mismatch');
     });
 
@@ -79,27 +72,23 @@ describe('PPOMStorage', () => {
         writeMetadata: () => undefined,
       });
       await expect(async () => {
-        await ppomStorage.readFile('dummy', '1');
+        await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
       }).rejects.toThrow(
-        'File metadata not found for File (dummy, 1) not found',
+        `File metadata not found for File (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
       );
     });
 
     it('should throw error if file is not found in storage', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum,
-        version: '0',
-      };
       const ppomStorage = new PPOMStorage({
         storageBackend: simpleStorageBackend,
-        readMetadata: () => [fileData],
+        readMetadata: () => [simpleFileData],
         writeMetadata: () => undefined,
       });
       await expect(async () => {
-        await ppomStorage.readFile('dummy', '1');
-      }).rejects.toThrow('Storage File (dummy, 1) not found');
+        await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
+      }).rejects.toThrow(
+        `Storage File (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
+      );
     });
   });
 
@@ -113,10 +102,7 @@ describe('PPOMStorage', () => {
       await expect(async () => {
         await ppomStorage.writeFile({
           data: new ArrayBuffer(1),
-          name: 'dummy',
-          chainId: '1',
-          version: '0',
-          checksum,
+          ...simpleFileData,
         });
       }).rejects.toThrow('Checksum mismatch');
     });
@@ -124,50 +110,29 @@ describe('PPOMStorage', () => {
     it('should call storageBackend.write if checksum matches', async () => {
       const mockWrite = jest.fn().mockResolvedValue('test');
       const ppomStorage = new PPOMStorage({
-        storageBackend: {
-          write: mockWrite,
-        } as unknown as StorageBackend,
+        storageBackend: buildStorageBackend({ write: mockWrite }),
         readMetadata: () => [],
         writeMetadata: () => undefined,
       });
       await ppomStorage.writeFile({
         data: new ArrayBuffer(123),
-        name: 'dummy',
-        chainId: '1',
-        version: '0',
-        checksum,
+        ...simpleFileData,
       });
       expect(mockWrite).toHaveBeenCalledTimes(1);
     });
 
     it('should invoke writeMetadata if filemetadata exists and checksum matches', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum,
-        version: '0',
-      };
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
         storageBackend: simpleStorageBackend,
-        readMetadata: () => [fileData],
+        readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
         data: new ArrayBuffer(123),
-        name: 'dummy',
-        chainId: '1',
-        version: '0',
-        checksum,
+        ...simpleFileData,
       });
-      expect(mockWriteMetadata).toHaveBeenCalledWith([
-        {
-          name: 'dummy',
-          chainId: '1',
-          version: '0',
-          checksum,
-        },
-      ]);
+      expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
     });
 
     it('should invoke writeMetadata with data passed if checksum matches', async () => {
@@ -179,93 +144,112 @@ describe('PPOMStorage', () => {
       });
       await ppomStorage.writeFile({
         data: new ArrayBuffer(123),
-        name: 'dummy',
-        chainId: '1',
-        version: '0',
-        checksum,
+        ...simpleFileData,
       });
-      expect(mockWriteMetadata).toHaveBeenCalledWith([
-        {
-          name: 'dummy',
-          chainId: '1',
-          version: '0',
-          checksum,
-        },
-      ]);
+      expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
     });
   });
 
   describe('syncMetadata', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum,
-        version: '0',
-      };
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
         storageBackend: storageBackendReturningData,
-        readMetadata: () => [fileData],
+        readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
 
-      const result = await ppomStorage.syncMetadata([fileData]);
-      expect(mockWriteMetadata).toHaveBeenCalledWith([
-        {
-          name: 'dummy',
-          chainId: '1',
-          version: '0',
-          checksum,
-        },
-      ]);
-      expect(result).toStrictEqual([fileData]);
+      const result = await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
+      expect(result).toStrictEqual([simpleFileData]);
     });
 
     it('should not return data if file is not found in storage', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum,
-        version: '0',
-      };
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
         storageBackend: simpleStorageBackend,
-        readMetadata: () => [],
+        readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
 
-      const result = await ppomStorage.syncMetadata([fileData]);
+      const result = await ppomStorage.syncMetadata([simpleFileData]);
       expect(mockWriteMetadata).toHaveBeenCalledWith([]);
       expect(result).toStrictEqual([]);
     });
 
     it('should not return metadata of file if file version in storage is outdated', async () => {
-      const fileData = {
-        chainId: '1',
-        name: 'dummy',
-        checksum,
-        version: '0',
-      };
-      const storageFileData = { ...fileData, version: '1' };
+      const storageFileData = { ...simpleFileData, version: '1' };
       const mockWriteMetadata = jest.fn();
-
       const mockDelete = jest.fn().mockResolvedValue('');
 
       const ppomStorage = new PPOMStorage({
-        storageBackend: {
+        storageBackend: buildStorageBackend({
+          read: async (_key: StorageKey): Promise<any> =>
+            Promise.resolve(new ArrayBuffer(123)),
           dir: async () => Promise.resolve([storageFileData]),
           delete: mockDelete,
-        } as unknown as StorageBackend,
-        readMetadata: () => [fileData],
+        }),
+        readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
 
       const result = await ppomStorage.syncMetadata([storageFileData]);
-      expect(mockDelete).toHaveBeenCalledWith({ name: 'dummy', chainId: '1' });
+      expect(mockDelete).toHaveBeenCalledWith({
+        name: DUMMY_NAME,
+        chainId: DUMMY_CHAINID,
+      });
       expect(mockWriteMetadata).toHaveBeenCalledWith([]);
       expect(result).toStrictEqual([]);
+    });
+
+    it('should delete file from storage backend if its name is not found in file version info passed', async () => {
+      const fileDataInStorage = getFileData({
+        name: 'dummy_2',
+      });
+      const mockWriteMetadata = jest.fn();
+      const mockDelete = jest.fn().mockResolvedValue('');
+
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackend({
+          read: async (_key: StorageKey): Promise<any> =>
+            Promise.resolve(new ArrayBuffer(123)),
+          dir: async () => Promise.resolve([fileDataInStorage]),
+          delete: mockDelete,
+        }),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
+
+      await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockDelete).toHaveBeenCalledWith({
+        name: 'dummy_2',
+        chainId: DUMMY_CHAINID,
+      });
+    });
+
+    it('should delete file from storage backend if its version info is not passed', async () => {
+      const fileDataInStorage = getFileData({
+        chainId: '5',
+      });
+      const mockWriteMetadata = jest.fn();
+      const mockDelete = jest.fn().mockResolvedValue('');
+
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackend({
+          read: async (_key: StorageKey): Promise<any> =>
+            Promise.resolve(new ArrayBuffer(123)),
+          dir: async () => Promise.resolve([fileDataInStorage]),
+          delete: mockDelete,
+        }),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
+
+      await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockDelete).toHaveBeenCalledWith({
+        name: DUMMY_NAME,
+        chainId: '5',
+      });
     });
   });
 });
