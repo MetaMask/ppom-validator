@@ -35,9 +35,9 @@ export type StorageBackend = {
 export class PPOMStorage {
   readonly #storageBackend: StorageBackend;
 
-  readonly _readMetadata: () => PPOMStorageMetadata;
+  readonly #readMetadata: () => PPOMStorageMetadata;
 
-  readonly _writeMetadata: (metadata: PPOMStorageMetadata) => void;
+  readonly #writeMetadata: (metadata: PPOMStorageMetadata) => void;
 
   /**
    * Creates a PPOMStorage instance.
@@ -57,8 +57,8 @@ export class PPOMStorage {
     writeMetadata: (metadata: PPOMStorageMetadata) => void;
   }) {
     this.#storageBackend = storageBackend;
-    this._readMetadata = readMetadata;
-    this._writeMetadata = writeMetadata;
+    this.#readMetadata = readMetadata;
+    this.#writeMetadata = writeMetadata;
   }
 
   /**
@@ -71,10 +71,8 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  public async syncMetadata(
-    versionInfo: FileInfo[],
-  ): Promise<PPOMStorageMetadata> {
-    const metadata = this._readMetadata();
+  async syncMetadata(versionInfo: FileInfo[]): Promise<PPOMStorageMetadata> {
+    const metadata = this.#readMetadata();
     const syncedMetadata = [];
 
     for (const fileMetadata of metadata) {
@@ -112,7 +110,7 @@ export class PPOMStorage {
       }
     }
 
-    this._writeMetadata(syncedMetadata);
+    this.#writeMetadata(syncedMetadata);
     return syncedMetadata;
   }
 
@@ -125,8 +123,8 @@ export class PPOMStorage {
    * @param name - Name assigned to storage.
    * @param chainId - ChainId for which file is queried.
    */
-  public async readFile(name: string, chainId: string): Promise<ArrayBuffer> {
-    const metadata = this._readMetadata();
+  async readFile(name: string, chainId: string): Promise<ArrayBuffer> {
+    const metadata = this.#readMetadata();
     const fileMetadata = metadata.find(
       (file) => file.name === name && file.chainId === chainId,
     );
@@ -152,14 +150,14 @@ export class PPOMStorage {
    * 2. Write the file to the local storage.
    * 3. Update the metadata.
    *
-   * @param options - Object passed to write to storage
-   * @param options.data - File data to be written
-   * @param options.name - Name to be assigned to the storage
-   * @param options.chainId - Current ChainId
-   * @param options.version - Version of file
-   * @param options.checksum - Checksum of file
+   * @param options - Object passed to write to storage.
+   * @param options.data - File data to be written.
+   * @param options.name - Name to be assigned to the storage.
+   * @param options.chainId - Current ChainId.
+   * @param options.version - Version of file.
+   * @param options.checksum - Checksum of file.
    */
-  public async writeFile({
+  async writeFile({
     data,
     name,
     chainId,
@@ -175,7 +173,7 @@ export class PPOMStorage {
     await this.#validateChecksum(data, checksum);
     await this.#storageBackend.write({ name, chainId }, data);
 
-    const metadata = this._readMetadata();
+    const metadata = this.#readMetadata();
     const fileMetadata = metadata.find(
       (file) => file.name === name && file.chainId === chainId,
     );
@@ -187,7 +185,7 @@ export class PPOMStorage {
       metadata.push({ name, chainId, version, checksum });
     }
 
-    this._writeMetadata(metadata);
+    this.#writeMetadata(metadata);
   }
 
   /*

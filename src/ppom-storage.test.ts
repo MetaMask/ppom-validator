@@ -17,22 +17,19 @@ class MockStorageBackend implements StorageBackend {
     this.data = data;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async read(key: StorageKey): Promise<any> {
+  async read(_key: StorageKey): Promise<any> {
     return new Promise((resolve) => {
       resolve(this.data);
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async write(key: StorageKey, data: any): Promise<void> {
+  async write(_key: StorageKey, _data: any): Promise<void> {
     return new Promise((resolve) => {
       resolve();
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async delete(key: StorageKey): Promise<void> {
+  async delete(_key: StorageKey): Promise<void> {
     return new Promise((resolve) => {
       resolve();
     });
