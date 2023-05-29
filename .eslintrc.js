@@ -32,5 +32,6 @@ module.exports = {
     'dist/',
     'docs/',
     '.yarn/',
+    'src/ppom.js',
   ],
 };
