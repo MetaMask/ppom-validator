@@ -119,7 +119,7 @@ describe('PPOMStorage', () => {
     });
   });
 
-  describe('PPOMStorage:writeFile', () => {
+  describe('writeFile', () => {
     it('should throw error if checksum does not match', async () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: new MockStorageBackend(),
