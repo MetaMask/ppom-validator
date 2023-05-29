@@ -52,7 +52,7 @@ describe('PPOMStorage', () => {
     expect(ppomStorage).toBeDefined();
   });
 
-  describe('PPOMStorage:readFile', () => {
+  describe('readFile', () => {
     it('should return data if it matches checksum', async () => {
       const fileData = {
         chainId: '1',
@@ -116,7 +116,7 @@ describe('PPOMStorage', () => {
     });
   });
 
-  describe('PPOMStorage:writeFile', () => {
+  describe('writeFile', () => {
     it('should throw error if checksum does not match', async () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: new MockStorageBackend(),
@@ -208,7 +208,7 @@ describe('PPOMStorage', () => {
     });
   });
 
-  describe('PPOMStorage:syncMetadata', () => {
+  describe('syncMetadata', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
       const fileData = {
         chainId: '1',
