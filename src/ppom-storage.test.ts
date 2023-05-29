@@ -55,7 +55,7 @@ describe('PPOMStorage', () => {
     expect(ppomStorage).toBeDefined();
   });
 
-  describe('PPOMStorage:readFile', () => {
+  describe('readFile', () => {
     it('should return data if it matches checksum', async () => {
       const fileData = {
         chainId: '1',
