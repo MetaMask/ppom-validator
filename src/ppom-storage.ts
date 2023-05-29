@@ -42,10 +42,10 @@ export class PPOMStorage {
   /**
    * Creates a PPOMStorage instance.
    *
-   * @param options0 - The options passed to the function.
-   * @param options0.storageBackend - The storage backend to use for the local storage.
-   * @param options0.readMetadata - A function to read the metadata from the local storage.
-   * @param options0.writeMetadata - A function to write the metadata to the local storage.
+   * @param options - The options passed to the function.
+   * @param options.storageBackend - The storage backend to use for the local storage.
+   * @param options.readMetadata - A function to read the metadata from the local storage.
+   * @param options.writeMetadata - A function to write the metadata to the local storage.
    */
   constructor({
     storageBackend,
