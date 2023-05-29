@@ -1,5 +1,9 @@
 import { calculateSHA256 } from './crypto-utils';
 
+/**
+ * FileInfo Type
+ * Defined type for information about file saved in storage backend.
+ */
 type FileInfo = {
   name: string;
   chainId: string;
@@ -7,13 +11,29 @@ type FileInfo = {
   checksum: string;
 };
 
-export type PPOMStorageMetadata = FileInfo[];
+/**
+ * PPOMFileMetadata Type
+ * This is type of metadata about files saved in storage,
+ * this information is saved in PPOMController state.
+ */
+export type PPOMFileMetadata = FileInfo[];
 
+/**
+ * StorageKey Type
+ * This defines type of key that is used for indexing file data saved in StorageBackend.
+ */
 export type StorageKey = {
   name: string;
   chainId: string;
 };
 
+/**
+ * StorageBackend Type
+ * This defines type for storage backend implementation.
+ * There will be different storage implementations depending on platform:
+ * 1. extension - indexDB
+ * 2. mobile app - <TBD>
+ */
 export type StorageBackend = {
   read(key: StorageKey): Promise<ArrayBuffer>;
   write(key: StorageKey, data: ArrayBuffer): Promise<void>;
@@ -35,9 +55,9 @@ export type StorageBackend = {
 export class PPOMStorage {
   readonly #storageBackend: StorageBackend;
 
-  readonly #readMetadata: () => PPOMStorageMetadata;
+  readonly #readMetadata: () => PPOMFileMetadata;
 
-  readonly #writeMetadata: (metadata: PPOMStorageMetadata) => void;
+  readonly #writeMetadata: (metadata: PPOMFileMetadata) => void;
 
   /**
    * Creates a PPOMStorage instance.
@@ -53,8 +73,8 @@ export class PPOMStorage {
     writeMetadata,
   }: {
     storageBackend: StorageBackend;
-    readMetadata: () => PPOMStorageMetadata;
-    writeMetadata: (metadata: PPOMStorageMetadata) => void;
+    readMetadata: () => PPOMFileMetadata;
+    writeMetadata: (metadata: PPOMFileMetadata) => void;
   }) {
     this.#storageBackend = storageBackend;
     this.#readMetadata = readMetadata;
@@ -71,7 +91,7 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  async syncMetadata(versionInfo: FileInfo[]): Promise<PPOMStorageMetadata> {
+  async syncMetadata(versionInfo: FileInfo[]): Promise<PPOMFileMetadata> {
     const metadata = this.#readMetadata();
     const syncedMetadata = [];
 
