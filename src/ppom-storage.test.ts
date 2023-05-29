@@ -208,7 +208,7 @@ describe('PPOMStorage', () => {
     });
   });
 
-  describe('PPOMStorage:syncMetadata', () => {
+  describe('syncMetadata', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
       const fileData = {
         chainId: '1',
