@@ -28,7 +28,15 @@ module.exports = {
   coverageDirectory: 'coverage',
 
   // An array of regexp pattern strings used to skip coverage collection
+<<<<<<< HEAD
   coveragePathIgnorePatterns: ['/node_modules/', '/src/ppom.ts'],
+=======
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    'src/ppom.d.ts',
+    'src/index.ts',
+  ],
+>>>>>>> 6ae1fc4 (Adding controller)
 
   // Indicates which provider should be used to instrument code for coverage
   coverageProvider: 'babel',
