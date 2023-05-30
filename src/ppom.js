@@ -429,5 +429,4 @@ async function init(input) {
   return finalizeInit(instance, module);
 }
 
-export { initSync };
-export default init;
+export { initSync, init as ppomInit };
