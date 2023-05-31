@@ -44,8 +44,8 @@ export type StorageKey = {
  * @property dir - Get list of all files in storage.
  */
 export type StorageBackend = {
-  read(key: StorageKey): Promise<ArrayBuffer>;
-  write(key: StorageKey, data: ArrayBuffer): Promise<void>;
+  read(key: StorageKey, checksum: string): Promise<ArrayBuffer>;
+  write(key: StorageKey, data: ArrayBuffer, checksum: string): Promise<void>;
   delete(key: StorageKey): Promise<void>;
   dir(): Promise<StorageKey[]>;
 };

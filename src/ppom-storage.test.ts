@@ -9,6 +9,7 @@ import { PPOMStorage, StorageKey } from './ppom-storage';
 const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
 const DUMMY_NAME = 'DUMMY_NAME';
 const DUMMY_CHAINID = '1';
+const ARRAY_BUFFER_DATA = new ArrayBuffer(123);
 
 const getFileData = (data = {}) => ({
   chainId: DUMMY_CHAINID,
@@ -24,7 +25,7 @@ describe('PPOMStorage', () => {
   describe('readFile', () => {
     it('should return data', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [simpleFileData],
         writeMetadata: () => undefined,
       });
@@ -34,7 +35,7 @@ describe('PPOMStorage', () => {
 
     it('should throw error if file metadata not found', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [],
         writeMetadata: () => undefined,
       });
@@ -107,7 +108,7 @@ describe('PPOMStorage', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
