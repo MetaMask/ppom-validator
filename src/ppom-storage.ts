@@ -1,5 +1,3 @@
-import { calculateSHA256 } from './crypto-utils';
-
 /**
  * FileInfo Type
  * Defined type for information about file saved in storage backend.
@@ -35,8 +33,8 @@ export type StorageKey = {
  * 2. mobile app - <TBD>
  */
 export type StorageBackend = {
-  read(key: StorageKey): Promise<ArrayBuffer>;
-  write(key: StorageKey, data: ArrayBuffer): Promise<void>;
+  read(key: StorageKey, checksum: string): Promise<ArrayBuffer>;
+  write(key: StorageKey, data: ArrayBuffer, checksum: string): Promise<void>;
   delete(key: StorageKey): Promise<void>;
   dir(): Promise<StorageKey[]>;
 };
@@ -154,12 +152,13 @@ export class PPOMStorage {
       );
     }
 
-    const data = await this.#storageBackend.read({ name, chainId });
+    const data = await this.#storageBackend.read(
+      { name, chainId },
+      fileMetadata.checksum,
+    );
     if (!data) {
       throw new Error(`Storage File (${name}, ${chainId}) not found`);
     }
-
-    await this.#validateChecksum(data, fileMetadata.checksum);
 
     return data;
   }
@@ -190,8 +189,7 @@ export class PPOMStorage {
     version: string;
     checksum: string;
   }): Promise<void> {
-    await this.#validateChecksum(data, checksum);
-    await this.#storageBackend.write({ name, chainId }, data);
+    await this.#storageBackend.write({ name, chainId }, data, checksum);
 
     const metadata = this.#readMetadata();
     const fileMetadata = metadata.find(
@@ -206,17 +204,5 @@ export class PPOMStorage {
     }
 
     this.#writeMetadata(metadata);
-  }
-
-  /*
-   * Validate the checksum of the file
-   * The checksum is calculated from the file content using SHA-256
-   */
-  async #validateChecksum(data: ArrayBuffer, checksum: string) {
-    const hash = calculateSHA256(data);
-
-    if (hash !== checksum) {
-      throw new Error('Checksum mismatch');
-    }
   }
 }
