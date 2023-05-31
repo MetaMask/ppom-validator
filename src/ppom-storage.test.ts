@@ -1,16 +1,5 @@
 import { PPOMStorage, StorageKey } from './ppom-storage';
 
-Object.defineProperty(globalThis, 'crypto', {
-  value: {
-    subtle: {
-      digest: () => new ArrayBuffer(12),
-    },
-  },
-});
-
-const checksum =
-  '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49';
-
 const buildStorageBackend = (obj = {}) => {
   return {
     read: async (_key: StorageKey): Promise<any> => Promise.resolve(),
@@ -24,18 +13,20 @@ const buildStorageBackend = (obj = {}) => {
 
 const simpleStorageBackend = buildStorageBackend();
 
-const storageBackendReturningData = buildStorageBackend({
-  read: async (_key: StorageKey): Promise<any> =>
-    Promise.resolve(new ArrayBuffer(123)),
-});
+const buildStorageBackendReturningData = (data: ArrayBuffer) =>
+  buildStorageBackend({
+    read: async (_key: StorageKey): Promise<any> => Promise.resolve(data),
+  });
 
-const DUMMY_NAME = 'dummy';
+const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
+const DUMMY_NAME = 'DUMMY';
 const DUMMY_CHAINID = '1';
+const ARRAY_BUFFER_DATA = new ArrayBuffer(123);
 
 const getFileData = (data = {}) => ({
   chainId: DUMMY_CHAINID,
   name: DUMMY_NAME,
-  checksum,
+  checksum: DUMMY_CHECKSUM,
   version: '0',
   ...data,
 });
@@ -44,30 +35,19 @@ const simpleFileData = getFileData();
 
 describe('PPOMStorage', () => {
   describe('readFile', () => {
-    it('should return data if it matches checksum', async () => {
+    it('should return data', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [simpleFileData],
         writeMetadata: () => undefined,
       });
       const data = await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
-      expect(data).toStrictEqual(new ArrayBuffer(123));
-    });
-
-    it('should throw error if checksum does not matches', async () => {
-      const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
-        readMetadata: () => [getFileData({ checksum: '000' })],
-        writeMetadata: () => undefined,
-      });
-      await expect(async () => {
-        await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
-      }).rejects.toThrow('Checksum mismatch');
+      expect(data).toStrictEqual(ARRAY_BUFFER_DATA);
     });
 
     it('should throw error if filemetadata if not found', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [],
         writeMetadata: () => undefined,
       });
@@ -93,21 +73,7 @@ describe('PPOMStorage', () => {
   });
 
   describe('writeFile', () => {
-    it('should throw error if checksum does not match', async () => {
-      const ppomStorage = new PPOMStorage({
-        storageBackend: simpleStorageBackend,
-        readMetadata: () => [],
-        writeMetadata: () => undefined,
-      });
-      await expect(async () => {
-        await ppomStorage.writeFile({
-          data: new ArrayBuffer(1),
-          ...simpleFileData,
-        });
-      }).rejects.toThrow('Checksum mismatch');
-    });
-
-    it('should call storageBackend.write if checksum matches', async () => {
+    it('should call storageBackend.write', async () => {
       const mockWrite = jest.fn().mockResolvedValue('test');
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({ write: mockWrite }),
@@ -115,13 +81,13 @@ describe('PPOMStorage', () => {
         writeMetadata: () => undefined,
       });
       await ppomStorage.writeFile({
-        data: new ArrayBuffer(123),
+        data: ARRAY_BUFFER_DATA,
         ...simpleFileData,
       });
       expect(mockWrite).toHaveBeenCalledTimes(1);
     });
 
-    it('should invoke writeMetadata if filemetadata exists and checksum matches', async () => {
+    it('should invoke writeMetadata if filemetadata exists', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
         storageBackend: simpleStorageBackend,
@@ -129,13 +95,13 @@ describe('PPOMStorage', () => {
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
-        data: new ArrayBuffer(123),
+        data: ARRAY_BUFFER_DATA,
         ...simpleFileData,
       });
       expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
     });
 
-    it('should invoke writeMetadata with data passed if checksum matches', async () => {
+    it('should invoke writeMetadata with data passed', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
         storageBackend: simpleStorageBackend,
@@ -143,7 +109,7 @@ describe('PPOMStorage', () => {
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
-        data: new ArrayBuffer(123),
+        data: ARRAY_BUFFER_DATA,
         ...simpleFileData,
       });
       expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
@@ -154,7 +120,7 @@ describe('PPOMStorage', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
-        storageBackend: storageBackendReturningData,
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
@@ -185,7 +151,7 @@ describe('PPOMStorage', () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({
           read: async (_key: StorageKey): Promise<any> =>
-            Promise.resolve(new ArrayBuffer(123)),
+            Promise.resolve(ARRAY_BUFFER_DATA),
           dir: async () => Promise.resolve([storageFileData]),
           delete: mockDelete,
         }),
@@ -212,7 +178,7 @@ describe('PPOMStorage', () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({
           read: async (_key: StorageKey): Promise<any> =>
-            Promise.resolve(new ArrayBuffer(123)),
+            Promise.resolve(ARRAY_BUFFER_DATA),
           dir: async () => Promise.resolve([fileDataInStorage]),
           delete: mockDelete,
         }),
@@ -237,7 +203,7 @@ describe('PPOMStorage', () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({
           read: async (_key: StorageKey): Promise<any> =>
-            Promise.resolve(new ArrayBuffer(123)),
+            Promise.resolve(ARRAY_BUFFER_DATA),
           dir: async () => Promise.resolve([fileDataInStorage]),
           delete: mockDelete,
         }),
