@@ -76,7 +76,9 @@
   },
   "lavamoat": {
     "allowScripts": {
-      "@lavamoat/preinstall-always-fail": false
+      "@lavamoat/preinstall-always-fail": false,
+      "@metamask/controller-utils>ethereumjs-util>ethereum-cryptography>keccak": false,
+      "@metamask/controller-utils>ethereumjs-util>ethereum-cryptography>secp256k1": false
     }
   }
 }
