@@ -304,7 +304,7 @@ export class PPOMController extends BaseController<
    */
   async #fetchBlob(input: string): Promise<ArrayBuffer | null> {
     const response = await safelyExecute(
-      () => fetch(input, { cache: 'no-cache' }),
+      async () => fetch(input, { cache: 'no-cache' }),
       true,
     );
 
@@ -324,7 +324,7 @@ export class PPOMController extends BaseController<
    */
   async #fetchVersionInfo(input: string): Promise<PPOMVersionResponse | null> {
     const response = await safelyExecute(
-      () => fetch(input, { cache: 'no-cache' }),
+      async () => fetch(input, { cache: 'no-cache' }),
       true,
     );
     switch (response?.status) {
