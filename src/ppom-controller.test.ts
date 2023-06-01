@@ -1,8 +1,6 @@
-import { ControllerMessenger } from '@metamask/base-controller';
-
-import { VERSION_INFO, storageBackendReturningData } from '../test/test-utils';
+import { VERSION_INFO, buildPPOMController } from '../test/test-utils';
 import { PPOM } from './ppom';
-import { PPOMController, DAY_IN_MILLISECONDS } from './ppom-controller';
+import { DAY_IN_MILLISECONDS } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -49,21 +47,6 @@ const buildFetchSpy = (
       }
       return blobData;
     });
-};
-
-const buildPPOMController = (args?: any) => {
-  const controllerMessenger = new ControllerMessenger();
-  const ppomController = new PPOMController({
-    storageBackend: storageBackendReturningData,
-    provider: () => undefined,
-    chainId: '0x1',
-    onNetworkChange: () => undefined,
-    messenger: controllerMessenger.getRestricted({
-      name: 'PPOMController',
-    }),
-    ...args,
-  });
-  return ppomController;
 };
 
 describe('PPOMController', () => {
@@ -261,16 +244,11 @@ describe('PPOMController', () => {
     it('should clear controller state', async () => {
       const ppomController = buildPPOMController();
       const spy = buildFetchSpy();
-
-      // controller fetches new data files when state is cleared
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
       expect(spy).toHaveBeenCalledTimes(3);
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(ppomController.state.storageMetadata).toHaveLength(2);
       ppomController.clear();
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
