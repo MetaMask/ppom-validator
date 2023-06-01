@@ -22,27 +22,53 @@ jest.mock('./ppom.js', () => ({
 }));
 
 describe('createPPOMMiddleware', () => {
-  let ppomController: any;
-  beforeEach(() => {
-    ppomController = new PPOMController({
+  it('should return PPOM Middleware function', () => {
+    const ppomController = new PPOMController({
       storageBackend: storageBackendReturningData,
       provider: { sendAsync: Promise.resolve() },
       chainId: '0x1',
       onNetworkChange: (_callback) => undefined,
     });
-  });
-
-  it('should return PPOM Middleware function', () => {
     const middlewareFunction = createPPOMMiddleware(ppomController);
     expect(middlewareFunction).toBeDefined();
   });
 
   describe('PPOMMiddleware', () => {
     it('should call ppomController.use when invoked', async () => {
-      const useSpy = jest.spyOn(ppomController, 'use');
-      const middlewareFunction = createPPOMMiddleware(ppomController);
+      const useMock = jest.fn();
+      const controller = {
+        use: useMock,
+      };
+      const middlewareFunction = createPPOMMiddleware(controller as any);
       await middlewareFunction({}, undefined, () => undefined);
-      expect(useSpy).toHaveBeenCalledTimes(1);
+      expect(useMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call next method when ppomController.use completes', async () => {
+      const ppom = {
+        validateJsonRpc: () => undefined,
+      };
+      const controller = {
+        use: async (callback: any) => {
+          callback(ppom);
+        },
+      };
+      const middlewareFunction = createPPOMMiddleware(controller as any);
+      const nextMock = jest.fn();
+      await middlewareFunction({}, undefined, nextMock);
+      expect(nextMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call next method when ppomController.use throws error', async () => {
+      const controller = {
+        use: async (_callback: any) => {
+          throw Error('Some error');
+        },
+      };
+      const middlewareFunction = createPPOMMiddleware(controller as any);
+      const nextMock = jest.fn();
+      await middlewareFunction({}, undefined, nextMock);
+      expect(nextMock).toHaveBeenCalledTimes(1);
     });
 
     it('should call ppom.validateJsonRpc when invoked', async () => {
