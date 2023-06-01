@@ -1,4 +1,8 @@
-import { VERSION_INFO, storageBackendReturningData } from '../test/test-utils';
+import {
+  VERSION_INFO,
+  buildFetchDataSpy,
+  storageBackendReturningData,
+} from '../test/test-utils';
 import { PPOM } from './ppom';
 import { PPOMController } from './ppom-controller';
 
@@ -26,29 +30,6 @@ jest.mock('./ppom.js', () => ({
   ppomInit: () => undefined,
 }));
 
-const PPOM_VERSION_PATH =
-  'https://storage.googleapis.com/ppom-cdn/ppom_version.json';
-
-const buildFetchSpy = (
-  versionData: any = {
-    status: 200,
-    json: () => VERSION_INFO,
-  },
-  blobData: any = {
-    status: 200,
-    arrayBuffer: () => new ArrayBuffer(123),
-  },
-) => {
-  return jest
-    .spyOn(globalThis, 'fetch' as any)
-    .mockImplementation((url: any) => {
-      if (url === PPOM_VERSION_PATH) {
-        return versionData;
-      }
-      return blobData;
-    });
-};
-
 describe('PPOMController', () => {
   describe('use', () => {
     let ppomController: any;
@@ -62,7 +43,7 @@ describe('PPOMController', () => {
     });
 
     it('should be able to invoke use', async () => {
-      buildFetchSpy();
+      buildFetchDataSpy();
 
       await ppomController.use(async (ppom: PPOM) => {
         expect(ppom).toBeDefined();
@@ -71,7 +52,7 @@ describe('PPOMController', () => {
     });
 
     it('should not fetch file if chainId is different from current chainId', async () => {
-      const spy = buildFetchSpy({
+      const spy = buildFetchDataSpy({
         status: 200,
         json: () => [
           ...VERSION_INFO,
@@ -94,7 +75,7 @@ describe('PPOMController', () => {
     });
 
     it('should throw error', async () => {
-      buildFetchSpy({
+      buildFetchDataSpy({
         status: 500,
       });
 
@@ -106,7 +87,7 @@ describe('PPOMController', () => {
     });
 
     it('should throw error if fetch for blob return 500', async () => {
-      buildFetchSpy(undefined, {
+      buildFetchDataSpy(undefined, {
         status: 500,
       });
 
@@ -118,7 +99,7 @@ describe('PPOMController', () => {
     });
 
     it('should refresh data if refreshInterval is passed', async () => {
-      const spy = buildFetchSpy();
+      const spy = buildFetchDataSpy();
 
       await ppomController.use(async () => {
         return Promise.resolve();
@@ -146,7 +127,7 @@ describe('PPOMController', () => {
           callBack = func;
         },
       });
-      const spy = buildFetchSpy({
+      const spy = buildFetchDataSpy({
         status: 200,
         json: () => [
           ...VERSION_INFO,
@@ -190,7 +171,7 @@ describe('PPOMController', () => {
         onNetworkChange: (_callback) => undefined,
       });
 
-      buildFetchSpy();
+      buildFetchDataSpy();
 
       await ppomController.use(async (ppom: PPOM) => {
         expect(ppom).toBeDefined();

@@ -38,3 +38,26 @@ export const VERSION_INFO = [
     filePath: 'data',
   },
 ];
+
+const PPOM_VERSION_PATH =
+  'https://storage.googleapis.com/ppom-cdn/ppom_version.json';
+
+export const buildFetchDataSpy = (
+  versionData: any = {
+    status: 200,
+    json: () => VERSION_INFO,
+  },
+  blobData: any = {
+    status: 200,
+    arrayBuffer: () => new ArrayBuffer(123),
+  },
+) => {
+  return jest
+    .spyOn(globalThis, 'fetch' as any)
+    .mockImplementation((url: any) => {
+      if (url === PPOM_VERSION_PATH) {
+        return versionData;
+      }
+      return blobData;
+    });
+};
