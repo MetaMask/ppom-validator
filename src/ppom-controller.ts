@@ -16,6 +16,9 @@ import {
 
 const DAY = 1000 * 60 * 60 * 24;
 
+const numberToHexString = (chainId: number | string): string =>
+  `0x${Number(chainId).toString(16)}`;
+
 /**
  * @type PPOMFileVersion
  * @augments FileInfo
@@ -132,7 +135,7 @@ export class PPOMController extends BaseController<
       versionInfo: [],
       storageMetadata: [],
       lastChainId: '',
-      newChainId: chainId,
+      newChainId: numberToHexString(chainId),
     };
     super(config ?? defaultConfig, state ?? defaultState);
 
@@ -152,7 +155,7 @@ export class PPOMController extends BaseController<
     this.#ppomMutex = new Mutex();
 
     onNetworkChange((id: string) => {
-      this.update({ newChainId: id });
+      this.update({ newChainId: numberToHexString(id) });
     });
 
     this.initialize();
