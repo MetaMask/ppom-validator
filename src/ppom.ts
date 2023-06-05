@@ -292,7 +292,10 @@ async function load(module, imports) {
 
 function getImports() {
   const imports = {};
-  imports.wbg = {};
+  (imports as any).wbg = {};
+  imports.wbg.__wbindgen_object_drop_ref = function (arg0) {
+    takeObject(arg0);
+  };
   imports.wbg.__wbg_log_51761b27de744db2 = function (arg0, arg1) {
     console.log(getStringFromWasm0(arg0, arg1));
   };
