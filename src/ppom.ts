@@ -1,4 +1,6 @@
 /* eslint-disable */
+// @ts-nocheck
+
 let wasm;
 
 const heap = new Array(128).fill(undefined);
@@ -268,7 +270,7 @@ async function load(module, imports) {
 
 function getImports() {
   const imports = {};
-  imports.wbg = {};
+  (imports as any).wbg = {};
   imports.wbg.__wbindgen_object_drop_ref = function (arg0) {
     takeObject(arg0);
   };
