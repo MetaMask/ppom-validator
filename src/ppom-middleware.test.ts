@@ -2,7 +2,7 @@ import { storageBackendReturningData } from '../test/test-utils';
 import { PPOMController } from './ppom-controller';
 import { createPPOMMiddleware } from './ppom-middleware';
 
-jest.mock('./ppom.js', () => ({
+jest.mock('./ppom.ts', () => ({
   PPOM: class PPOMClass {
     #jsonRpcRequest;
 
