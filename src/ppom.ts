@@ -470,7 +470,7 @@ async function init(input) {
     (typeof Request === 'function' && input instanceof Request) ||
     (typeof URL === 'function' && input instanceof URL)
   ) {
-    input = fetch(input);
+    input = require(input);
   }
 
   initMemory(imports);
