@@ -11,7 +11,7 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
-jest.mock('./ppom.js', () => ({
+jest.mock('./ppom.ts', () => ({
   PPOM: class PPOMClass {
     #jsonRpcRequest;
 
