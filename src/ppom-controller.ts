@@ -161,6 +161,23 @@ export class PPOMController extends BaseController<
     this.initialize();
   }
 
+  #getDefaultState(): PPOMState {
+    return {
+      lastFetched: 0,
+      versionInfo: [],
+      storageMetadata: [],
+      lastChainId: '',
+      newChainId: '',
+    };
+  }
+
+  /**
+   * Clear the controller state.
+   */
+  clear(): void {
+    this.update(this.#getDefaultState());
+  }
+
   /**
    * Set the interval at which the ppom version info will be fetched.
    * Fetching will only occur on the next call to test/bypass.
