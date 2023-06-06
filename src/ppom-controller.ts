@@ -175,6 +175,7 @@ export class PPOMController extends BaseController<
    * Clear the controller state.
    */
   clear(): void {
+    console.log('------------- into clear-----------');
     this.update(this.#getDefaultState());
   }
 

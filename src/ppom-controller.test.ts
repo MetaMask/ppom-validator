@@ -180,4 +180,19 @@ describe('PPOMController', () => {
       });
     });
   });
+
+  describe('clear', () => {
+    it('should clear controller state', async () => {
+      const ppomController = new PPOMController({
+        storageBackend: storageBackendReturningData,
+        provider: () => undefined,
+        chainId: '0x1',
+        onNetworkChange: (_callback) => undefined,
+      });
+
+      expect(ppomController.state.newChainId).toBe('0x1');
+      ppomController.clear();
+      expect(ppomController.state.newChainId).toBe('');
+    });
+  });
 });
