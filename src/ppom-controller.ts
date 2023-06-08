@@ -14,7 +14,7 @@ import {
   FileInfo,
 } from './ppom-storage';
 
-const DAY = 1000 * 60 * 60 * 24;
+const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
 /**
  * @type PPOMFileVersion
