@@ -147,9 +147,7 @@ export class PPOMStorage {
       (file) => file.name === name && file.chainId === chainId,
     );
     if (!fileMetadata) {
-      throw new Error(
-        `File metadata (${name}, ${chainId}) not found`,
-      );
+      throw new Error(`File metadata (${name}, ${chainId}) not found`);
     }
 
     const data = await this.#storageBackend.read(
