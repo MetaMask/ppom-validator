@@ -390,13 +390,11 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the blob from the PPOM cdn.
    */
   async #fetchBlob(fileUrl: string): Promise<ArrayBuffer> {
-    console.log('---------------------- fetch blob');
     const response = await safelyExecute(
       async () => fetch(fileUrl, { cache: 'no-cache' }),
       true,
     );
 
-    console.log(' response?.status = ', response?.status);
     switch (response?.status) {
       case 200: {
         return await response.arrayBuffer();
@@ -433,9 +431,9 @@ export class PPOMController extends BaseControllerV2<
    */
   async #jsonRpcRequest(req: any): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.#provider.sendAsync(req, (_err: any, res: any) => {
-        if (_err) {
-          reject(_err);
+      this.#provider.sendAsync(req, (error: any, res: any) => {
+        if (error) {
+          reject(error);
         } else {
           resolve(res);
         }

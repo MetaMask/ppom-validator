@@ -23,7 +23,7 @@ jest.mock('./ppom.ts', () => ({
 
     free = () => undefined;
 
-    testJsonRPCRequest = () => this.#jsonRpcRequest();
+    testJsonRPCRequest = async () => await this.#jsonRpcRequest();
   },
   ppomInit: () => undefined,
 }));
@@ -51,32 +51,25 @@ const buildFetchSpy = (
     });
 };
 
-const controllerMessenger = new ControllerMessenger();
-
-describe('PPOMController', () => {
-  const sendAsync = (_arg1: any, arg2: any) => {
-    arg2(undefined, 'DUMMY_VALUE');
-  };
-  let callBack: any;
-
+const buildPPOMController = (args?: any) => {
+  const controllerMessenger = new ControllerMessenger();
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,
-    provider: { sendAsync },
+    provider: () => undefined,
     chainId: '0x1',
-    onNetworkChange: (func: any) => {
-      callBack = func;
-    },
+    onNetworkChange: () => undefined,
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
     }),
+    ...args,
   });
+  return ppomController;
+};
 
+describe('PPOMController', () => {
   describe('usePPOM', () => {
-    beforeEach(() => {
-      ppomController.clear();
-    });
-
     it('should be able to invoke usePPOM', async () => {
+      const ppomController = buildPPOMController();
       buildFetchSpy();
 
       await ppomController.usePPOM(async (ppom: PPOM) => {
@@ -101,6 +94,7 @@ describe('PPOMController', () => {
         ],
       });
 
+      const ppomController = buildPPOMController();
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
@@ -113,6 +107,7 @@ describe('PPOMController', () => {
         status: 500,
       });
 
+      const ppomController = buildPPOMController();
       await expect(async () => {
         await ppomController.usePPOM(async () => {
           return Promise.resolve();
@@ -125,6 +120,7 @@ describe('PPOMController', () => {
         status: 500,
       });
 
+      const ppomController = buildPPOMController();
       await expect(async () => {
         await ppomController.usePPOM(async () => {
           return Promise.resolve();
@@ -150,6 +146,12 @@ describe('PPOMController', () => {
         ],
       });
 
+      let callBack: any;
+      const ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+      });
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
@@ -170,18 +172,41 @@ describe('PPOMController', () => {
     it('should be able to send JSON RPC request to provider', async () => {
       buildFetchSpy();
 
+      const ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2(undefined, 'DUMMY_VALUE');
+          },
+        },
+      });
+
       await ppomController.usePPOM(async (ppom: PPOM) => {
-        expect(ppom).toBeDefined();
         const result = await (ppom as any).testJsonRPCRequest({});
         expect(result).toBe('DUMMY_VALUE');
+      });
+    });
+
+    it('should throw error if JSON RPC request on provider fails', async () => {
+      const ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2('DUMMY_ERROR');
+          },
+        },
+      });
+      buildFetchSpy();
+      await ppomController.usePPOM(async (ppom: PPOM) => {
+        (ppom as any).testJsonRPCRequest({}).catch((exp: any) => {
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(exp).toBe('DUMMY_ERROR');
+        });
       });
     });
   });
 
   describe('setRefreshInterval', () => {
-    it('should refresh data if refreshInterval is passed', async () => {
-      ppomController.clear();
-      ppomController.setRefreshInterval(0);
+    it('should refresh data if refreshInterval is passed the time', async () => {
+      const ppomController = buildPPOMController();
       const spy = buildFetchSpy();
 
       await ppomController.usePPOM(async () => {
@@ -200,6 +225,27 @@ describe('PPOMController', () => {
       });
       expect(spy).toHaveBeenCalledTimes(4);
       ppomController.setRefreshInterval(DAY_IN_MILLISECONDS);
+    });
+  });
+
+  describe('clear', () => {
+    it('should clear controller state', async () => {
+      const ppomController = buildPPOMController();
+      const spy = buildFetchSpy();
+
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(spy).toHaveBeenCalledTimes(3);
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(spy).toHaveBeenCalledTimes(3);
+      ppomController.clear();
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(spy).toHaveBeenCalledTimes(6);
     });
   });
 });
