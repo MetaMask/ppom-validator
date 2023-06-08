@@ -1,6 +1,8 @@
+import { ControllerMessenger } from '@metamask/base-controller';
+
 import { VERSION_INFO, storageBackendReturningData } from '../test/test-utils';
 import { PPOM } from './ppom';
-import { PPOMController } from './ppom-controller';
+import { PPOMController, DAY_IN_MILLISECONDS } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -49,22 +51,35 @@ const buildFetchSpy = (
     });
 };
 
+const controllerMessenger = new ControllerMessenger();
+
 describe('PPOMController', () => {
-  describe('use', () => {
-    let ppomController: any;
+  const sendAsync = (_arg1: any, arg2: any) => {
+    arg2(undefined, 'DUMMY_VALUE');
+  };
+  let callBack: any;
+
+  const ppomController = new PPOMController({
+    storageBackend: storageBackendReturningData,
+    provider: { sendAsync },
+    chainId: '0x1',
+    onNetworkChange: (func: any) => {
+      callBack = func;
+    },
+    messenger: controllerMessenger.getRestricted({
+      name: 'PPOMController',
+    }),
+  });
+
+  describe('usePPOM', () => {
     beforeEach(() => {
-      ppomController = new PPOMController({
-        storageBackend: storageBackendReturningData,
-        provider: { sendAsync: Promise.resolve() },
-        chainId: '0x1',
-        onNetworkChange: (_callback) => undefined,
-      });
+      ppomController.clear();
     });
 
-    it('should be able to invoke use', async () => {
+    it('should be able to invoke usePPOM', async () => {
       buildFetchSpy();
 
-      await ppomController.use(async (ppom: PPOM) => {
+      await ppomController.usePPOM(async (ppom: PPOM) => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
@@ -86,20 +101,20 @@ describe('PPOMController', () => {
         ],
       });
 
-      await ppomController.use(async () => {
+      await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
 
       expect(spy).toHaveBeenCalledTimes(3);
     });
 
-    it('should throw error', async () => {
+    it('should throw error if fetch for version info return 500', async () => {
       buildFetchSpy({
         status: 500,
       });
 
       await expect(async () => {
-        await ppomController.use(async () => {
+        await ppomController.usePPOM(async () => {
           return Promise.resolve();
         });
       }).rejects.toThrow('Failed to fetch version info');
@@ -111,41 +126,15 @@ describe('PPOMController', () => {
       });
 
       await expect(async () => {
-        await ppomController.use(async () => {
+        await ppomController.usePPOM(async () => {
           return Promise.resolve();
         });
-      }).rejects.toThrow('Failed to fetch file data');
-    });
-
-    it('should refresh data if refreshInterval is passed', async () => {
-      const spy = buildFetchSpy();
-
-      await ppomController.use(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(3);
-      await ppomController.use(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(3);
-
-      ppomController.setRefreshInterval(0);
-      await ppomController.use(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(4);
+      }).rejects.toThrow(
+        'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
+      );
     });
 
     it('should refresh data if network is changed', async () => {
-      let callBack: any;
-      ppomController = new PPOMController({
-        storageBackend: storageBackendReturningData,
-        provider: { sendAsync: Promise.resolve() },
-        chainId: '0x1',
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-      });
       const spy = buildFetchSpy({
         status: 200,
         json: () => [
@@ -161,42 +150,56 @@ describe('PPOMController', () => {
         ],
       });
 
-      await ppomController.use(async () => {
+      await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
       expect(spy).toHaveBeenCalledTimes(3);
-      await ppomController.use(async () => {
+      await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
       expect(spy).toHaveBeenCalledTimes(3);
 
       callBack('0x2');
-      await ppomController.use(async () => {
+      await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
       expect(spy).toHaveBeenCalledTimes(4);
+      callBack('0x1');
     });
-  });
 
-  describe('PPOM', () => {
     it('should be able to send JSON RPC request to provider', async () => {
-      const sendAsync = (_arg1: any, arg2: any) => {
-        arg2(undefined, 'DUMMY_VALUE');
-      };
-      const ppomController = new PPOMController({
-        storageBackend: storageBackendReturningData,
-        provider: { sendAsync },
-        chainId: '0x1',
-        onNetworkChange: (_callback) => undefined,
-      });
-
       buildFetchSpy();
 
-      await ppomController.use(async (ppom: PPOM) => {
+      await ppomController.usePPOM(async (ppom: PPOM) => {
         expect(ppom).toBeDefined();
         const result = await (ppom as any).testJsonRPCRequest({});
         expect(result).toBe('DUMMY_VALUE');
       });
+    });
+  });
+
+  describe('setRefreshInterval', () => {
+    it('should refresh data if refreshInterval is passed', async () => {
+      ppomController.clear();
+      ppomController.setRefreshInterval(0);
+      const spy = buildFetchSpy();
+
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(spy).toHaveBeenCalledTimes(3);
+      ppomController.setRefreshInterval(0);
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(spy).toHaveBeenCalledTimes(4);
+
+      ppomController.setRefreshInterval(1000);
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(spy).toHaveBeenCalledTimes(4);
+      ppomController.setRefreshInterval(DAY_IN_MILLISECONDS);
     });
   });
 });
