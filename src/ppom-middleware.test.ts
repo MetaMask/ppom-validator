@@ -40,7 +40,11 @@ describe('createPPOMMiddleware', () => {
         use: useMock,
       };
       const middlewareFunction = createPPOMMiddleware(controller as any);
-      await middlewareFunction({}, undefined, () => undefined);
+      await middlewareFunction(
+        { method: 'eth_sendTransaction' },
+        undefined,
+        () => undefined,
+      );
       expect(useMock).toHaveBeenCalledTimes(1);
     });
 
@@ -55,7 +59,11 @@ describe('createPPOMMiddleware', () => {
       };
       const middlewareFunction = createPPOMMiddleware(controller as any);
       const nextMock = jest.fn();
-      await middlewareFunction({}, undefined, nextMock);
+      await middlewareFunction(
+        { method: 'eth_sendTransaction' },
+        undefined,
+        nextMock,
+      );
       expect(nextMock).toHaveBeenCalledTimes(1);
     });
 
@@ -67,7 +75,11 @@ describe('createPPOMMiddleware', () => {
       };
       const middlewareFunction = createPPOMMiddleware(controller as any);
       const nextMock = jest.fn();
-      await middlewareFunction({}, undefined, nextMock);
+      await middlewareFunction(
+        { method: 'eth_sendTransaction' },
+        undefined,
+        nextMock,
+      );
       expect(nextMock).toHaveBeenCalledTimes(1);
     });
 
@@ -82,7 +94,11 @@ describe('createPPOMMiddleware', () => {
         },
       };
       const middlewareFunction = createPPOMMiddleware(controller as any);
-      await middlewareFunction({}, undefined, () => undefined);
+      await middlewareFunction(
+        { method: 'eth_sendTransaction' },
+        undefined,
+        () => undefined,
+      );
       expect(validateMock).toHaveBeenCalledTimes(1);
     });
   });

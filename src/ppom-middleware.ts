@@ -1,6 +1,17 @@
 import { PPOM } from './ppom';
 import { PPOMController } from './ppom-controller';
 
+const ConfirmationMethods = [
+  'eth_sendRawTransaction',
+  'eth_sendTransaction',
+  'eth_sign',
+  'eth_signTypedData',
+  'eth_signTypedData_v1',
+  'eth_signTypedData_v3',
+  'eth_signTypedData_v4',
+  'personal_sign',
+];
+
 /**
  * Middleware function that handles JSON RPC requests.
  * This function will be called for every JSON RPC request.
@@ -16,9 +27,12 @@ import { PPOMController } from './ppom-controller';
 export function createPPOMMiddleware(ppomController: PPOMController) {
   return async (req: any, _res: any, next: () => void) => {
     try {
-      req.ppomResponse = await ppomController.use(async (ppom: PPOM) => {
-        return ppom.validateJsonRpc(req);
-      });
+      if (ConfirmationMethods.includes(req.method)) {
+        // eslint-disable-next-line require-atomic-updates
+        req.ppomResponse = await ppomController.use(async (ppom: PPOM) => {
+          return ppom.validateJsonRpc(req);
+        });
+      }
     } catch (error: unknown) {
       console.error('Error validating JSON RPC using PPOM: ', error);
     } finally {
