@@ -89,7 +89,7 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  async syncMetadata(versionInfo: FileInfo[]): Promise<PPOMFileMetadata> {
+  async syncMetadata(versionInfo: PPOMFileMetadata): Promise<PPOMFileMetadata> {
     const metadata = this.#readMetadata();
     const syncedMetadata = [];
 
