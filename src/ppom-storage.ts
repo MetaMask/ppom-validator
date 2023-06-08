@@ -148,7 +148,7 @@ export class PPOMStorage {
     );
     if (!fileMetadata) {
       throw new Error(
-        `File metadata not found for File (${name}, ${chainId}) not found`,
+        `File metadata (${name}, ${chainId}) not found`,
       );
     }
 
