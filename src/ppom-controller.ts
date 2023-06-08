@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from './ppom-storage';
 
-const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
+export const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
 /**
  * @type PPOMFileVersion
@@ -169,7 +169,7 @@ export class PPOMController extends BaseControllerV2<
       name: controllerName,
       metadata: stateMetaData,
       messenger,
-      state: state ?? defaultState,
+      state: { ...defaultState, ...state },
     });
 
     this.#defaultState = defaultState;
@@ -178,7 +178,7 @@ export class PPOMController extends BaseControllerV2<
     this.#storage = new PPOMStorage({
       storageBackend,
       readMetadata: () => {
-        return this.state.storageMetadata;
+        return JSON.parse(JSON.stringify(this.state.storageMetadata));
       },
       writeMetadata: (metadata) => {
         this.update((draftState) => {
@@ -390,11 +390,13 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the blob from the PPOM cdn.
    */
   async #fetchBlob(fileUrl: string): Promise<ArrayBuffer> {
+    console.log('---------------------- fetch blob');
     const response = await safelyExecute(
       async () => fetch(fileUrl, { cache: 'no-cache' }),
       true,
     );
 
+    console.log(' response?.status = ', response?.status);
     switch (response?.status) {
       case 200: {
         return await response.arrayBuffer();
