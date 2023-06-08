@@ -54,7 +54,7 @@ describe('PPOMStorage', () => {
       await expect(async () => {
         await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
       }).rejects.toThrow(
-        `File metadata not found for File (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
+        `File metadata (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
       );
     });
 
