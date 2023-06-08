@@ -45,7 +45,7 @@ describe('PPOMStorage', () => {
       expect(data).toStrictEqual(ARRAY_BUFFER_DATA);
     });
 
-    it('should throw error if filemetadata if not found', async () => {
+    it('should throw error if file metadata not found', async () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
         readMetadata: () => [],

@@ -89,7 +89,7 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  async syncMetadata(versionInfo: FileInfo[]): Promise<PPOMFileMetadata> {
+  async syncMetadata(versionInfo: PPOMFileMetadata): Promise<PPOMFileMetadata> {
     const metadata = this.#readMetadata();
     const syncedMetadata = [];
 
@@ -147,9 +147,7 @@ export class PPOMStorage {
       (file) => file.name === name && file.chainId === chainId,
     );
     if (!fileMetadata) {
-      throw new Error(
-        `File metadata not found for File (${name}, ${chainId}) not found`,
-      );
+      throw new Error(`File metadata (${name}, ${chainId}) not found`);
     }
 
     const data = await this.#storageBackend.read(
