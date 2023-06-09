@@ -1,5 +1,4 @@
-import { storageBackendReturningData } from '../test/test-utils';
-import { PPOMController } from './ppom-controller';
+import { buildPPOMController } from '../test/test-utils';
 import { createPPOMMiddleware } from './ppom-middleware';
 
 jest.mock('./ppom.ts', () => ({
@@ -23,12 +22,7 @@ jest.mock('./ppom.ts', () => ({
 
 describe('createPPOMMiddleware', () => {
   it('should return PPOM Middleware function', () => {
-    const ppomController = new PPOMController({
-      storageBackend: storageBackendReturningData,
-      provider: { sendAsync: Promise.resolve() },
-      chainId: '0x1',
-      onNetworkChange: (_callback) => undefined,
-    });
+    const ppomController = buildPPOMController();
     const middlewareFunction = createPPOMMiddleware(ppomController);
     expect(middlewareFunction).toBeDefined();
   });
@@ -37,7 +31,7 @@ describe('createPPOMMiddleware', () => {
     it('should call ppomController.use when invoked', async () => {
       const useMock = jest.fn();
       const controller = {
-        use: useMock,
+        usePPOM: useMock,
       };
       const middlewareFunction = createPPOMMiddleware(controller as any);
       await middlewareFunction(
@@ -53,7 +47,7 @@ describe('createPPOMMiddleware', () => {
         validateJsonRpc: () => undefined,
       };
       const controller = {
-        use: async (callback: any) => {
+        usePPOM: async (callback: any) => {
           callback(ppom);
         },
       };
@@ -69,7 +63,7 @@ describe('createPPOMMiddleware', () => {
 
     it('should call next method when ppomController.use throws error', async () => {
       const controller = {
-        use: async (_callback: any) => {
+        usePPOM: async (_callback: any) => {
           throw Error('Some error');
         },
       };
@@ -89,7 +83,7 @@ describe('createPPOMMiddleware', () => {
         validateJsonRpc: validateMock,
       };
       const controller = {
-        use: async (callback: any) => {
+        usePPOM: async (callback: any) => {
           callback(ppom);
         },
       };

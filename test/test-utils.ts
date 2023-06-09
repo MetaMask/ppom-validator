@@ -1,3 +1,6 @@
+import { ControllerMessenger } from '@metamask/base-controller';
+
+import { PPOMController } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildStorageBackend = (obj = {}) => {
@@ -60,4 +63,19 @@ export const buildFetchDataSpy = (
       }
       return blobData;
     });
+};
+
+export const buildPPOMController = (args?: any) => {
+  const controllerMessenger = new ControllerMessenger();
+  const ppomController = new PPOMController({
+    storageBackend: storageBackendReturningData,
+    provider: () => undefined,
+    chainId: '0x1',
+    onNetworkChange: () => undefined,
+    messenger: controllerMessenger.getRestricted({
+      name: 'PPOMController',
+    }),
+    ...args,
+  });
+  return ppomController;
 };

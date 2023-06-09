@@ -29,7 +29,7 @@ export function createPPOMMiddleware(ppomController: PPOMController) {
     try {
       if (ConfirmationMethods.includes(req.method)) {
         // eslint-disable-next-line require-atomic-updates
-        req.ppomResponse = await ppomController.use(async (ppom: PPOM) => {
+        req.ppomResponse = await ppomController.usePPOM(async (ppom: PPOM) => {
           return ppom.validateJsonRpc(req);
         });
       }
