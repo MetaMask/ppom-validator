@@ -458,7 +458,7 @@ export class PPOMController extends BaseControllerV2<
    * It will load the PPOM data from storage and initialize the PPOM.
    */
   async #getPPOM(): Promise<PPOM> {
-    await ppomInit('./ppom.wasm');
+    await ppomInit('/ppom.wasm');
 
     const chainId = this.state.lastChainId;
 
