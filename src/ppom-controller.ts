@@ -25,6 +25,16 @@ type PPOMFileVersion = FileInfo & {
 };
 
 /**
+ * @type PPOMFileVersion
+ * @augments FileInfo
+ * @property filePath - Path of the file in CDN.
+ */
+type PPOMFile = FileInfo & {
+  filePath: string;
+  data: ArrayBuffer;
+};
+
+/**
  * @type PPOMVersionResponse - array of objects of type PPOMFileVersion
  */
 type PPOMVersionResponse = PPOMFileVersion[];
@@ -327,8 +337,11 @@ export class PPOMController extends BaseControllerV2<
    * @param storageMetadata - An array of file metadata objects already in storage.
    * @returns A promise that resolves to an array of new files to download and save to storage.
    */
-  async #getNewFiles(chainId: string, storageMetadata: any[]): Promise<any[]> {
-    const newFiles: any[] = [];
+  async #getNewFiles(
+    chainId: string,
+    storageMetadata: PPOMFileMetadata,
+  ): Promise<PPOMFile[]> {
+    const newFiles: PPOMFile[] = [];
 
     for (const fileVersionInfo of this.state.versionInfo) {
       //  download all files for the current chain + generally required files.
@@ -448,12 +461,19 @@ export class PPOMController extends BaseControllerV2<
    * It will load the PPOM data from storage and initialize the PPOM.
    */
   async #getPPOM(): Promise<PPOM> {
-    await ppomInit(this.#storage.readFile(PPOM_BLOB_NAME, ''));
-    const data = await this.#storage.readFile(
-      PPOM_DATA_NAME,
-      this.state.newChainId,
+    await ppomInit('./ppom.wasm');
+
+    const chainId = this.state.lastChainId;
+
+    const files = await Promise.all(
+      this.state.versionInfo
+        .filter((file) => !file.chainId || file.chainId === chainId)
+        .map(async (file) => {
+          const data = await this.#storage.readFile(file.name, file.chainId);
+          return [file.name, new Uint8Array(data)];
+        }),
     );
 
-    return new PPOM(this.#jsonRpcRequest.bind(this), new Uint8Array(data));
+    return new PPOM(this.#jsonRpcRequest.bind(this), files);
   }
 }
