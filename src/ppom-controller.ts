@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from './ppom-storage';
 
-export const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
+export const TWO_HOURS_IN_MILLISECONDS = 1000 * 60 * 60 * 2;
 
 /**
  * @type PPOMFileVersion
@@ -129,13 +129,15 @@ export class PPOMController extends BaseControllerV2<
 
   #storage: PPOMStorage;
 
+  #refreshDataInterval: any;
+
   /*
    * This mutex is used to prevent concurrent usage of the PPOM instance
    * and protect the PPOM instance from being used while it is being initialized/updated
    */
   #ppomMutex: Mutex;
 
-  #defaultState: PPOMControllerState;
+  #initState: PPOMControllerState;
 
   /**
    * Creates a PPOMController instance.
@@ -164,22 +166,23 @@ export class PPOMController extends BaseControllerV2<
     state?: PPOMControllerState;
     storageBackend: StorageBackend;
   }) {
-    const defaultState = {
+    const initState = {
       lastFetched: 0,
       versionInfo: [],
       storageMetadata: [],
       lastChainId: '',
       newChainId: chainId,
-      refreshInterval: DAY_IN_MILLISECONDS,
+      refreshInterval: TWO_HOURS_IN_MILLISECONDS,
+      ...state,
     };
     super({
       name: controllerName,
       metadata: stateMetaData,
       messenger,
-      state: { ...defaultState, ...state },
+      state: initState,
     });
 
-    this.#defaultState = defaultState;
+    this.#initState = initState;
 
     this.#provider = provider;
     this.#storage = new PPOMStorage({
@@ -202,13 +205,15 @@ export class PPOMController extends BaseControllerV2<
     });
 
     this.#registerMessageHandlers();
+    this.#startDataRefreshTask();
   }
 
   /**
    * Clear the controller state.
    */
   clear(): void {
-    this.update(() => this.#defaultState);
+    this.update(() => this.#initState);
+    this.#startDataRefreshTask();
   }
 
   /**
@@ -222,37 +227,24 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.refreshInterval = interval;
     });
+    this.#startDataRefreshTask(interval);
   }
 
   /**
-   * Update the PPOM configuration.
-   * This function will fetch the latest version info when needed, and update the PPOM storage.
+   * Clears the periodic job to refresh file data.
+   */
+  clearRefreshInterval() {
+    clearInterval(this.#refreshDataInterval);
+  }
+
+  /**
+   * Update the PPOM.
+   * This function will acquire mutex lock and invoke internal method #updatePPOM.
    */
   async updatePPOM() {
-    if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
-    }
-
-    if (this.#isOutOfDate()) {
-      await this.#updateVersionInfo();
-    }
-
-    this.update((draftState) => {
-      draftState.lastChainId = this.state.newChainId;
+    await this.#ppomMutex.use(async () => {
+      await this.#updatePPOM();
     });
-
-    const storageMetadata = await this.#storage.syncMetadata(
-      this.state.versionInfo,
-    );
-    const newFiles = await this.#getNewFiles(
-      this.state.newChainId,
-      storageMetadata,
-    );
-
-    for (const file of newFiles) {
-      await this.#storage.writeFile(file);
-    }
   }
 
   /**
@@ -310,21 +302,40 @@ export class PPOMController extends BaseControllerV2<
    * @returns True if PPOM data requires update.
    */
   async #shouldUpdate(): Promise<boolean> {
-    if (
-      this.state.newChainId !== this.state.lastChainId ||
-      this.#isOutOfDate()
-    ) {
+    if (this.state.newChainId !== this.state.lastChainId) {
       return true;
     }
 
     return this.#ppom === undefined;
   }
 
-  /*
-   * check if the ppom is out of date
+  /**
+   * Update the PPOM configuration.
+   * This function will fetch the latest version info when needed, and update the PPOM storage.
    */
-  #isOutOfDate(): boolean {
-    return Date.now() - this.state.lastFetched >= this.state.refreshInterval;
+  async #updatePPOM() {
+    if (this.#ppom) {
+      this.#ppom.free();
+      this.#ppom = undefined;
+    }
+
+    await this.#updateVersionInfo();
+
+    this.update((draftState) => {
+      draftState.lastChainId = this.state.newChainId;
+    });
+
+    const storageMetadata = await this.#storage.syncMetadata(
+      this.state.versionInfo,
+    );
+    const newFiles = await this.#getNewFiles(
+      this.state.newChainId,
+      storageMetadata,
+    );
+
+    for (const file of newFiles) {
+      await this.#storage.writeFile(file);
+    }
   }
 
   /**
@@ -392,7 +403,7 @@ export class PPOMController extends BaseControllerV2<
    */
   async #maybeUpdatePPOM() {
     if (await this.#shouldUpdate()) {
-      await this.updatePPOM();
+      await this.#updatePPOM();
     }
   }
 
@@ -472,5 +483,27 @@ export class PPOMController extends BaseControllerV2<
     );
 
     return new PPOM(this.#jsonRpcRequest.bind(this), files);
+  }
+
+  /**
+   * Starts the periodic task to refresh data.
+   *
+   * @param refreshInterval - Time interval at which the refresh will be done.
+   */
+  #startDataRefreshTask(refreshInterval?: number) {
+    if (this.#refreshDataInterval) {
+      clearInterval(this.#refreshDataInterval);
+    }
+    const updatePPOMfn = () => {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this.updatePPOM().catch(() => {
+        // do noting;
+      });
+    };
+    updatePPOMfn();
+    this.#refreshDataInterval = setInterval(
+      updatePPOMfn,
+      refreshInterval ?? this.#initState.refreshInterval,
+    );
   }
 }

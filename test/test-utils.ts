@@ -1,6 +1,9 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 
-import { PPOMController } from '../src/ppom-controller';
+import {
+  PPOMController,
+  TWO_HOURS_IN_MILLISECONDS,
+} from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildStorageBackend = (obj = {}) => {
@@ -65,6 +68,26 @@ export const buildFetchDataSpy = (
     });
 };
 
+export const buildFetchSpy = (
+  versionData: any = {
+    status: 200,
+    json: () => VERSION_INFO,
+  },
+  blobData: any = {
+    status: 200,
+    arrayBuffer: () => new ArrayBuffer(123),
+  },
+) => {
+  return jest
+    .spyOn(globalThis, 'fetch' as any)
+    .mockImplementation((url: any) => {
+      if (url === PPOM_VERSION_PATH) {
+        return versionData;
+      }
+      return blobData;
+    });
+};
+
 export const buildPPOMController = (args?: any) => {
   const controllerMessenger = new ControllerMessenger();
   const ppomController = new PPOMController({
@@ -75,6 +98,7 @@ export const buildPPOMController = (args?: any) => {
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
     }),
+    refreshInterval: TWO_HOURS_IN_MILLISECONDS,
     ...args,
   });
   return ppomController;
