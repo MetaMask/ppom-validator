@@ -255,7 +255,7 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM(callback: (ppom: PPOM) => Promise<any>): Promise<any> {
+  async usePPOM<T>(callback: (ppom: PPOM) => Promise<T>): Promise<T> {
     return await this.#ppomMutex.use(async () => {
       await this.#maybeUpdatePPOM();
 
