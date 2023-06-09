@@ -1,6 +1,10 @@
-import { VERSION_INFO, buildPPOMController } from '../test/test-utils';
+import {
+  VERSION_INFO,
+  buildFetchSpy,
+  buildPPOMController,
+} from '../test/test-utils';
 import { PPOM } from './ppom';
-import { DAY_IN_MILLISECONDS } from './ppom-controller';
+import { REFRESH_TIME_DURATION } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -26,34 +30,15 @@ jest.mock('./ppom.ts', () => ({
   ppomInit: () => undefined,
 }));
 
-const PPOM_VERSION_PATH =
-  'https://storage.googleapis.com/ppom-cdn/ppom_version.json';
-
-const buildFetchSpy = (
-  versionData: any = {
-    status: 200,
-    json: () => VERSION_INFO,
-  },
-  blobData: any = {
-    status: 200,
-    arrayBuffer: () => new ArrayBuffer(123),
-  },
-) => {
-  return jest
-    .spyOn(globalThis, 'fetch' as any)
-    .mockImplementation((url: any) => {
-      if (url === PPOM_VERSION_PATH) {
-        return versionData;
-      }
-      return blobData;
-    });
-};
-
 describe('PPOMController', () => {
+  let ppomController: any;
+  afterEach(() => {
+    ppomController.clearRefreshInterval();
+  });
   describe('usePPOM', () => {
     it('should provide instance of ppom to the passed ballback', async () => {
-      const ppomController = buildPPOMController();
       buildFetchSpy();
+      ppomController = buildPPOMController();
 
       await ppomController.usePPOM(async (ppom: PPOM) => {
         expect(ppom).toBeDefined();
@@ -62,8 +47,8 @@ describe('PPOMController', () => {
     });
 
     it('should return the value returned by callback', async () => {
-      const ppomController = buildPPOMController();
       buildFetchSpy();
+      ppomController = buildPPOMController();
 
       const result = await ppomController.usePPOM(async (ppom: PPOM) => {
         expect(ppom).toBeDefined();
@@ -89,7 +74,7 @@ describe('PPOMController', () => {
       });
 
       let callBack: any;
-      const ppomController = buildPPOMController({
+      ppomController = buildPPOMController({
         onNetworkChange: (func: any) => {
           callBack = func;
         },
@@ -97,24 +82,24 @@ describe('PPOMController', () => {
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy).toHaveBeenCalledTimes(4);
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy).toHaveBeenCalledTimes(4);
 
       callBack('0x2');
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(6);
       callBack('0x1');
     });
 
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
       buildFetchSpy();
 
-      const ppomController = buildPPOMController({
+      ppomController = buildPPOMController({
         provider: {
           sendAsync: (_arg1: any, arg2: any) => {
             arg2(undefined, 'DUMMY_VALUE');
@@ -129,7 +114,7 @@ describe('PPOMController', () => {
     });
 
     it('should propogate to ppom if JSON RPC request on provider fails', async () => {
-      const ppomController = buildPPOMController({
+      ppomController = buildPPOMController({
         provider: {
           sendAsync: (_arg1: any, arg2: any) => {
             arg2('DUMMY_ERROR');
@@ -163,26 +148,21 @@ describe('PPOMController', () => {
         ],
       });
 
-      const ppomController = buildPPOMController();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-
-      expect(spy).toHaveBeenCalledTimes(3);
+      ppomController = buildPPOMController();
+      await ppomController.updatePPOM();
+      expect(spy).toHaveBeenCalledTimes(4);
     });
 
     it('should not fetch file if it already exists', async () => {
       const spy = buildFetchSpy();
 
-      const ppomController = buildPPOMController();
+      ppomController = buildPPOMController();
+      await ppomController.updatePPOM();
+      expect(spy).toHaveBeenCalledTimes(4);
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(3);
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy).toHaveBeenCalledTimes(5);
     });
 
     it('should throw error if fetch for version info return 500', async () => {
@@ -190,11 +170,9 @@ describe('PPOMController', () => {
         status: 500,
       });
 
-      const ppomController = buildPPOMController();
+      ppomController = buildPPOMController();
       await expect(async () => {
-        await ppomController.usePPOM(async () => {
-          return Promise.resolve();
-        });
+        await ppomController.updatePPOM();
       }).rejects.toThrow('Failed to fetch version info');
     });
 
@@ -203,11 +181,9 @@ describe('PPOMController', () => {
         status: 500,
       });
 
-      const ppomController = buildPPOMController();
+      ppomController = buildPPOMController();
       await expect(async () => {
-        await ppomController.usePPOM(async () => {
-          return Promise.resolve();
-        });
+        await ppomController.updatePPOM();
       }).rejects.toThrow(
         'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
       );
@@ -216,7 +192,7 @@ describe('PPOMController', () => {
 
   describe('setRefreshInterval', () => {
     it('should update refresh interval', async () => {
-      const ppomController = buildPPOMController();
+      ppomController = buildPPOMController();
       const spy = buildFetchSpy();
 
       // controller fetches new data files is difference from last updated time
@@ -224,36 +200,31 @@ describe('PPOMController', () => {
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(ppomController.state.refreshInterval).toBe(REFRESH_TIME_DURATION);
+      expect(spy).toHaveBeenCalledTimes(4);
       ppomController.setRefreshInterval(0);
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(4);
-
-      ppomController.setRefreshInterval(1000);
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(4);
-      ppomController.setRefreshInterval(DAY_IN_MILLISECONDS);
+      expect(ppomController.state.refreshInterval).toBe(0);
+      expect(spy).toHaveBeenCalledTimes(6);
     });
   });
 
   describe('clear', () => {
     it('should clear controller state', async () => {
-      const ppomController = buildPPOMController();
+      ppomController = buildPPOMController();
       const spy = buildFetchSpy();
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy).toHaveBeenCalledTimes(4);
       expect(ppomController.state.storageMetadata).toHaveLength(2);
       ppomController.clear();
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(6);
+      expect(spy).toHaveBeenCalledTimes(8);
     });
   });
 });
