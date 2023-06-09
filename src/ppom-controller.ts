@@ -67,9 +67,6 @@ const stateMetaData = {
   refreshInterval: { persist: false, anonymous: false },
 };
 
-const PPOM_DATA_NAME = 'data';
-const PPOM_BLOB_NAME = 'blob';
-
 // TODO: replace with metamask cdn
 const PPOM_CDN_BASE_URL = 'https://storage.googleapis.com/ppom-cdn/';
 const PPOM_VERSION = 'ppom_version.json';
