@@ -398,7 +398,7 @@ async function init(input) {
     if (typeof input === 'string' ||
         (typeof Request === 'function' && input instanceof Request) ||
         (typeof URL === 'function' && input instanceof URL)) {
-        input = require(input);
+        input = fetch(input);
     }
     initMemory(imports);
     const { instance, module } = await load(await input, imports);
