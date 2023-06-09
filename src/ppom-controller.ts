@@ -15,9 +15,6 @@ import {
 
 export const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
-const numberToHexString = (chainId: number | string): string =>
-  `0x${Number(chainId).toString(16)}`;
-
 /**
  * @type PPOMFileVersion
  * @augments FileInfo
@@ -172,7 +169,7 @@ export class PPOMController extends BaseControllerV2<
       versionInfo: [],
       storageMetadata: [],
       lastChainId: '',
-      newChainId: numberToHexString(chainId),
+      newChainId: chainId,
       refreshInterval: DAY_IN_MILLISECONDS,
     };
     super({
@@ -200,7 +197,7 @@ export class PPOMController extends BaseControllerV2<
 
     onNetworkChange((id: string) => {
       this.update((draftState) => {
-        draftState.newChainId = numberToHexString(id);
+        draftState.newChainId = id;
       });
     });
 
