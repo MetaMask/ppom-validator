@@ -1,7 +1,6 @@
 import {
-  BaseController,
-  BaseConfig,
-  BaseState,
+  BaseControllerV2,
+  RestrictedControllerMessenger,
 } from '@metamask/base-controller';
 import { safelyExecute } from '@metamask/controller-utils';
 import { Mutex } from 'await-semaphore';
@@ -14,7 +13,7 @@ import {
   FileInfo,
 } from './ppom-storage';
 
-const DAY = 1000 * 60 * 60 * 24;
+export const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
 const numberToHexString = (chainId: number | string): string =>
   `0x${Number(chainId).toString(16)}`;
@@ -34,7 +33,7 @@ type PPOMFileVersion = FileInfo & {
 type PPOMVersionResponse = PPOMFileVersion[];
 
 /**
- * @type PPOMState
+ * @type PPOMControllerState
  *
  * Controller state
  * @property lastFetched - Time when files were last updated.
@@ -43,22 +42,22 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
  */
-export type PPOMState = BaseState & {
+export type PPOMControllerState = {
   lastFetched: number;
   lastChainId: string;
   newChainId: string;
   versionInfo: PPOMVersionResponse;
   storageMetadata: PPOMFileMetadata;
+  refreshInterval: number;
 };
 
-/**
- * @type PPOMControllerConfig
- *
- * Controller configuration
- * @property refreshInterval - Polling interval used to fetch new PPOM lists
- */
-export type PPOMControllerConfig = BaseConfig & {
-  refreshInterval: number;
+const stateMetaData = {
+  lastFetched: { persist: false, anonymous: false },
+  lastChainId: { persist: false, anonymous: false },
+  newChainId: { persist: false, anonymous: false },
+  versionInfo: { persist: false, anonymous: false },
+  storageMetadata: { persist: false, anonymous: false },
+  refreshInterval: { persist: false, anonymous: false },
 };
 
 const PPOM_DATA_NAME = 'data';
@@ -68,6 +67,42 @@ const PPOM_BLOB_NAME = 'blob';
 const PPOM_CDN_BASE_URL = 'https://storage.googleapis.com/ppom-cdn/';
 const PPOM_VERSION = 'ppom_version.json';
 const PPOM_VERSION_PATH = `${PPOM_CDN_BASE_URL}${PPOM_VERSION}`;
+
+const controllerName = 'PPOMController';
+
+export type Clear = {
+  type: `${typeof controllerName}:clear`;
+  handler: () => void;
+};
+
+export type UsePPOM = {
+  type: `${typeof controllerName}:usePPOM`;
+  handler: (callback: (ppom: PPOM) => Promise<any>) => Promise<any>;
+};
+
+export type SetRefreshInterval = {
+  type: `${typeof controllerName}:setRefreshInterval`;
+  handler: (interval: number) => void;
+};
+
+export type UpdatePPOM = {
+  type: `${typeof controllerName}:updatePPOM`;
+  handler: () => void;
+};
+
+export type PPOMControllerActions =
+  | Clear
+  | UsePPOM
+  | SetRefreshInterval
+  | UpdatePPOM;
+
+export type PPOMControllerMessenger = RestrictedControllerMessenger<
+  typeof controllerName,
+  PPOMControllerActions,
+  never,
+  never,
+  never
+>;
 
 /**
  * PPOMController
@@ -79,15 +114,11 @@ const PPOM_VERSION_PATH = `${PPOM_CDN_BASE_URL}${PPOM_VERSION}`;
  * @property ppom - The PPOM instance
  * @property provider - The provider used to create the PPOM instance
  */
-export class PPOMController extends BaseController<
-  PPOMControllerConfig,
-  PPOMState
+export class PPOMController extends BaseControllerV2<
+  typeof controllerName,
+  PPOMControllerState,
+  PPOMControllerMessenger
 > {
-  /**
-   * Name of this controller used during composition
-   */
-  override name = 'PPOMController';
-
   #ppom: PPOM | undefined;
 
   #provider: any;
@@ -100,82 +131,80 @@ export class PPOMController extends BaseController<
    */
   #ppomMutex: Mutex;
 
+  #defaultState: PPOMControllerState;
+
   /**
    * Creates a PPOMController instance.
    *
    * @param options - Constructor options.
-   * @param options.storageBackend - The storage backend to use for storing PPOM data.
-   * @param options.provider - The provider used to create the PPOM instance.
    * @param options.chainId - Id of current chain.
+   * @param options.messenger - Controller messenger.
    * @param options.onNetworkChange - Callback tobe invoked when network changes.
-   * @param options.config - The controller configuration.
+   * @param options.provider - The provider used to create the PPOM instance.
    * @param options.state - The controller state.
+   * @param options.storageBackend - The storage backend to use for storing PPOM data.
    * @returns The PPOMController instance.
    */
   constructor({
-    storageBackend,
-    provider,
     chainId,
+    messenger,
     onNetworkChange,
-    config,
+    provider,
     state,
+    storageBackend,
   }: {
-    storageBackend: StorageBackend;
-    provider: any;
     chainId: string;
+    messenger: PPOMControllerMessenger;
     onNetworkChange: (callback: (chainId: string) => void) => void;
-    config?: PPOMControllerConfig;
-    state?: PPOMState;
+    provider: any;
+    state?: PPOMControllerState;
+    storageBackend: StorageBackend;
   }) {
-    const defaultConfig = {
-      refreshInterval: DAY,
-    };
     const defaultState = {
       lastFetched: 0,
       versionInfo: [],
       storageMetadata: [],
       lastChainId: '',
       newChainId: numberToHexString(chainId),
+      refreshInterval: DAY_IN_MILLISECONDS,
     };
-    super(config ?? defaultConfig, state ?? defaultState);
+    super({
+      name: controllerName,
+      metadata: stateMetaData,
+      messenger,
+      state: { ...defaultState, ...state },
+    });
 
-    this.defaultConfig = defaultConfig;
-    this.defaultState = defaultState;
+    this.#defaultState = defaultState;
 
     this.#provider = provider;
     this.#storage = new PPOMStorage({
       storageBackend,
       readMetadata: () => {
-        return this.state.storageMetadata;
+        return JSON.parse(JSON.stringify(this.state.storageMetadata));
       },
       writeMetadata: (metadata) => {
-        this.update({ storageMetadata: metadata });
+        this.update((draftState) => {
+          draftState.storageMetadata = metadata;
+        });
       },
     });
     this.#ppomMutex = new Mutex();
 
     onNetworkChange((id: string) => {
-      this.update({ newChainId: numberToHexString(id) });
+      this.update((draftState) => {
+        draftState.newChainId = numberToHexString(id);
+      });
     });
 
-    this.initialize();
-  }
-
-  #getDefaultState(): PPOMState {
-    return {
-      lastFetched: 0,
-      versionInfo: [],
-      storageMetadata: [],
-      lastChainId: '',
-      newChainId: '',
-    };
+    this.#registerMessageHandlers();
   }
 
   /**
    * Clear the controller state.
    */
   clear(): void {
-    this.update(this.#getDefaultState());
+    this.update(() => this.#defaultState);
   }
 
   /**
@@ -186,7 +215,85 @@ export class PPOMController extends BaseController<
    * @param interval - The new interval in ms.
    */
   setRefreshInterval(interval: number) {
-    this.configure({ refreshInterval: interval }, false, false);
+    this.update((draftState) => {
+      draftState.refreshInterval = interval;
+    });
+  }
+
+  /**
+   * Update the PPOM configuration.
+   * This function will fetch the latest version info when needed, and update the PPOM storage.
+   */
+  async updatePPOM() {
+    if (this.#ppom) {
+      this.#ppom.free();
+      this.#ppom = undefined;
+    }
+
+    if (this.#isOutOfDate()) {
+      await this.#updateVersionInfo();
+    }
+
+    this.update((draftState) => {
+      draftState.lastChainId = this.state.newChainId;
+    });
+
+    const storageMetadata = await this.#storage.syncMetadata(
+      this.state.versionInfo,
+    );
+    const newFiles = await this.#getNewFiles(
+      this.state.newChainId,
+      storageMetadata,
+    );
+
+    for (const file of newFiles) {
+      await this.#storage.writeFile(file);
+    }
+  }
+
+  /**
+   * Use the PPOM.
+   * This function receives a callback that will be called with the PPOM.
+   * The callback will be called with the PPOM after it has been initialized.
+   *
+   * @param callback - Callback to be invoked with PPOM.
+   */
+  async usePPOM<T>(callback: (ppom: PPOM) => Promise<T>): Promise<T> {
+    return await this.#ppomMutex.use(async () => {
+      await this.#maybeUpdatePPOM();
+
+      if (!this.#ppom) {
+        this.#ppom = await this.#getPPOM();
+      }
+
+      return await callback(this.#ppom);
+    });
+  }
+
+  /**
+   * Constructor helper for registering this controller's messaging system
+   * actions.
+   */
+  #registerMessageHandlers(): void {
+    this.messagingSystem.registerActionHandler(
+      `${controllerName}:clear` as const,
+      this.clear.bind(this),
+    );
+
+    this.messagingSystem.registerActionHandler(
+      `${controllerName}:usePPOM` as const,
+      this.usePPOM.bind(this),
+    );
+
+    this.messagingSystem.registerActionHandler(
+      `${controllerName}:setRefreshInterval` as const,
+      this.setRefreshInterval.bind(this),
+    );
+
+    this.messagingSystem.registerActionHandler(
+      `${controllerName}:updatePPOM` as const,
+      this.updatePPOM.bind(this),
+    );
   }
 
   /**
@@ -213,36 +320,7 @@ export class PPOMController extends BaseController<
    * check if the ppom is out of date
    */
   #isOutOfDate(): boolean {
-    return Date.now() - this.state.lastFetched >= this.config.refreshInterval;
-  }
-
-  /**
-   * Update the PPOM configuration.
-   * This function will fetch the latest version info when needed, and update the PPOM storage.
-   */
-  async updatePPOM() {
-    if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
-    }
-
-    if (this.#isOutOfDate()) {
-      await this.#updateVersionInfo();
-    }
-
-    this.update({ lastChainId: this.state.newChainId });
-
-    const storageMetadata = await this.#storage.syncMetadata(
-      this.state.versionInfo,
-    );
-    const newFiles = await this.#getNewFiles(
-      this.state.newChainId,
-      storageMetadata,
-    );
-
-    for (const file of newFiles) {
-      await this.#storage.writeFile(file);
-    }
+    return Date.now() - this.state.lastFetched >= this.state.refreshInterval;
   }
 
   /**
@@ -276,9 +354,6 @@ export class PPOMController extends BaseController<
 
       const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
       const fileData = await this.#fetchBlob(fileUrl);
-      if (!fileData) {
-        throw new Error('Failed to fetch file data');
-      }
 
       newFiles.push({
         data: fileData,
@@ -295,13 +370,10 @@ export class PPOMController extends BaseController<
    */
   async #updateVersionInfo() {
     const versionInfo = await this.#fetchVersionInfo(PPOM_VERSION_PATH);
-    if (!versionInfo) {
-      throw new Error('Failed to fetch version info');
-    }
 
-    this.update({
-      versionInfo,
-      lastFetched: Date.now(),
+    this.update((draftState) => {
+      draftState.versionInfo = versionInfo;
+      draftState.lastFetched = Date.now();
     });
   }
 
@@ -315,16 +387,14 @@ export class PPOMController extends BaseController<
     if (await this.#shouldUpdate()) {
       await this.updatePPOM();
     }
-
-    this.update(this.state);
   }
 
   /*
    * Fetch the blob from the PPOM cdn.
    */
-  async #fetchBlob(input: string): Promise<ArrayBuffer | null> {
+  async #fetchBlob(fileUrl: string): Promise<ArrayBuffer> {
     const response = await safelyExecute(
-      async () => fetch(input, { cache: 'no-cache' }),
+      async () => fetch(fileUrl, { cache: 'no-cache' }),
       true,
     );
 
@@ -334,7 +404,7 @@ export class PPOMController extends BaseController<
       }
 
       default: {
-        return null;
+        throw new Error(`Failed to fetch file with url ${fileUrl}`);
       }
     }
   }
@@ -342,9 +412,9 @@ export class PPOMController extends BaseController<
   /*
    * Fetch the version info from the PPOM cdn.
    */
-  async #fetchVersionInfo(input: string): Promise<PPOMVersionResponse | null> {
+  async #fetchVersionInfo(url: string): Promise<PPOMVersionResponse> {
     const response = await safelyExecute(
-      async () => fetch(input, { cache: 'no-cache' }),
+      async () => fetch(url, { cache: 'no-cache' }),
       true,
     );
     switch (response?.status) {
@@ -353,7 +423,7 @@ export class PPOMController extends BaseController<
       }
 
       default: {
-        return null;
+        throw new Error(`Failed to fetch version info url: ${url}`);
       }
     }
   }
@@ -363,9 +433,13 @@ export class PPOMController extends BaseController<
    * This method is used by the PPOM to make requests to the provider.
    */
   async #jsonRpcRequest(req: any): Promise<any> {
-    return new Promise((resolve) => {
-      this.#provider.sendAsync(req, (_err: any, res: any) => {
-        resolve(res);
+    return new Promise((resolve, reject) => {
+      this.#provider.sendAsync(req, (error: any, res: any) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(res);
+        }
       });
     });
   }
@@ -384,24 +458,5 @@ export class PPOMController extends BaseController<
     );
 
     return new PPOM(this.#jsonRpcRequest.bind(this), new Uint8Array(data));
-  }
-
-  /**
-   * Use the PPOM.
-   * This function receives a callback that will be called with the PPOM.
-   * The callback will be called with the PPOM after it has been initialized.
-   *
-   * @param callback - Callback to be invoked with PPOM.
-   */
-  async use(callback: (ppom: PPOM) => Promise<any>): Promise<any> {
-    return await this.#ppomMutex.use(async () => {
-      await this.#maybeUpdatePPOM();
-
-      if (!this.#ppom) {
-        this.#ppom = await this.#getPPOM();
-      }
-
-      return await callback(this.#ppom);
-    });
   }
 }

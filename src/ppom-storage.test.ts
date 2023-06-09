@@ -32,7 +32,7 @@ describe('PPOMStorage', () => {
       expect(data).toStrictEqual(DUMMY_ARRAY_BUFFER_DATA);
     });
 
-    it('should throw error if filemetadata if not found', async () => {
+    it('should throw error if file metadata not found', async () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: storageBackendReturningData,
         readMetadata: () => [],
@@ -41,7 +41,7 @@ describe('PPOMStorage', () => {
       await expect(async () => {
         await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
       }).rejects.toThrow(
-        `File metadata not found for File (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
+        `File metadata (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
       );
     });
 
