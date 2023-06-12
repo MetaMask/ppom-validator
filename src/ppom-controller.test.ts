@@ -21,7 +21,11 @@ jest.mock('./ppom.ts', () => ({
 
     free = () => undefined;
 
-    testJsonRPCRequest = async () => await this.#jsonRpcRequest();
+    testJsonRPCRequest = async (args: any) =>
+      await this.#jsonRpcRequest({
+        method: 'eth_blockNumber',
+        ...args,
+      });
   },
   ppomInit: () => undefined,
 }));
@@ -123,7 +127,7 @@ describe('PPOMController', () => {
       });
 
       await ppomController.usePPOM(async (ppom: PPOM) => {
-        const result = await (ppom as any).testJsonRPCRequest({});
+        const result = await (ppom as any).testJsonRPCRequest();
         expect(result).toBe('DUMMY_VALUE');
       });
     });
@@ -138,10 +142,31 @@ describe('PPOMController', () => {
       });
       buildFetchSpy();
       await ppomController.usePPOM(async (ppom: PPOM) => {
-        (ppom as any).testJsonRPCRequest({}).catch((exp: any) => {
+        (ppom as any).testJsonRPCRequest().catch((exp: any) => {
           // eslint-disable-next-line jest/no-conditional-expect
           expect(exp).toBe('DUMMY_ERROR');
         });
+      });
+    });
+
+    it('should throw error if method call on provider is not allowed to PPOM', async () => {
+      ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2('DUMMY_ERROR');
+          },
+        },
+      });
+      buildFetchSpy();
+      await ppomController.usePPOM(async (ppom: PPOM) => {
+        (ppom as any)
+          .testJsonRPCRequest({ method: 'DUMMY_METHOD' })
+          .catch((exp: any) => {
+            // eslint-disable-next-line jest/no-conditional-expect
+            expect(exp.toString()).toBe(
+              'Error: Method not allowed on provider DUMMY_METHOD',
+            );
+          });
       });
     });
   });
