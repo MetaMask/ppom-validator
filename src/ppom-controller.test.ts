@@ -4,7 +4,7 @@ import {
   buildPPOMController,
 } from '../test/test-utils';
 import { PPOM } from './ppom';
-import { TWO_HOURS_IN_MILLISECONDS } from './ppom-controller';
+import { REFRESH_TIME_DURATION } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -200,9 +200,7 @@ describe('PPOMController', () => {
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(ppomController.state.refreshInterval).toBe(
-        TWO_HOURS_IN_MILLISECONDS,
-      );
+      expect(ppomController.state.refreshInterval).toBe(REFRESH_TIME_DURATION);
       expect(spy).toHaveBeenCalledTimes(4);
       ppomController.setRefreshInterval(0);
       await ppomController.usePPOM(async () => {

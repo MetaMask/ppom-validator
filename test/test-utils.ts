@@ -1,9 +1,6 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 
-import {
-  PPOMController,
-  TWO_HOURS_IN_MILLISECONDS,
-} from '../src/ppom-controller';
+import { PPOMController, REFRESH_TIME_DURATION } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildStorageBackend = (obj = {}) => {
@@ -98,7 +95,7 @@ export const buildPPOMController = (args?: any) => {
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
     }),
-    refreshInterval: TWO_HOURS_IN_MILLISECONDS,
+    refreshInterval: REFRESH_TIME_DURATION,
     ...args,
   });
   return ppomController;

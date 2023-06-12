@@ -13,7 +13,7 @@ import {
   FileInfo,
 } from './ppom-storage';
 
-export const TWO_HOURS_IN_MILLISECONDS = 1000 * 60 * 60 * 2;
+export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 24;
 
 /**
  * @type PPOMFileVersion
@@ -43,14 +43,12 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @type PPOMControllerState
  *
  * Controller state
- * @property lastFetched - Time when files were last updated.
  * @property lastChainId - ChainId for which files were last updated.
  * @property newChainId - ChainIf of currently selected network.
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
  */
 export type PPOMControllerState = {
-  lastFetched: number;
   lastChainId: string;
   newChainId: string;
   versionInfo: PPOMVersionResponse;
@@ -59,7 +57,6 @@ export type PPOMControllerState = {
 };
 
 const stateMetaData = {
-  lastFetched: { persist: false, anonymous: false },
   lastChainId: { persist: false, anonymous: false },
   newChainId: { persist: false, anonymous: false },
   versionInfo: { persist: false, anonymous: false },
@@ -167,12 +164,11 @@ export class PPOMController extends BaseControllerV2<
     storageBackend: StorageBackend;
   }) {
     const initState = {
-      lastFetched: 0,
       versionInfo: [],
       storageMetadata: [],
       lastChainId: '',
       newChainId: chainId,
-      refreshInterval: TWO_HOURS_IN_MILLISECONDS,
+      refreshInterval: REFRESH_TIME_DURATION,
       ...state,
     };
     super({
@@ -388,11 +384,11 @@ export class PPOMController extends BaseControllerV2<
    */
   async #updateVersionInfo() {
     const versionInfo = await this.#fetchVersionInfo(PPOM_VERSION_PATH);
-
-    this.update((draftState) => {
-      draftState.versionInfo = versionInfo;
-      draftState.lastFetched = Date.now();
-    });
+    if (versionInfo) {
+      this.update((draftState) => {
+        draftState.versionInfo = versionInfo;
+      });
+    }
   }
 
   /**
@@ -430,7 +426,9 @@ export class PPOMController extends BaseControllerV2<
   /*
    * Fetch the version info from the PPOM cdn.
    */
-  async #fetchVersionInfo(url: string): Promise<PPOMVersionResponse> {
+  async #fetchVersionInfo(
+    url: string,
+  ): Promise<PPOMVersionResponse | undefined> {
     const response = await safelyExecute(
       async () => fetch(url, { cache: 'no-cache' }),
       true,
