@@ -341,7 +341,7 @@ async function _PPOMController_jsonRpcRequest(req) {
  * It will load the PPOM data from storage and initialize the PPOM.
  */
 async function _PPOMController_getPPOM() {
-    await PPOMModule.ppomInit();
+    await PPOMModule.default();
     const chainId = this.state.lastChainId;
     const files = await Promise.all(this.state.versionInfo
         .filter((file) => !file.chainId || file.chainId === chainId)
