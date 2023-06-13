@@ -1,4 +1,27 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __classPrivateFieldSet = (this && this.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
     if (kind === "m") throw new TypeError("Private method is not writable");
     if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
@@ -10,17 +33,31 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
-var _PPOMController_instances, _PPOMController_ppom, _PPOMController_provider, _PPOMController_storage, _PPOMController_ppomMutex, _PPOMController_defaultState, _PPOMController_registerMessageHandlers, _PPOMController_shouldUpdate, _PPOMController_isOutOfDate, _PPOMController_getNewFiles, _PPOMController_updateVersionInfo, _PPOMController_maybeUpdatePPOM, _PPOMController_fetchBlob, _PPOMController_fetchVersionInfo, _PPOMController_jsonRpcRequest, _PPOMController_getPPOM;
+var _PPOMController_instances, _PPOMController_ppom, _PPOMController_provider, _PPOMController_storage, _PPOMController_refreshDataInterval, _PPOMController_ppomMutex, _PPOMController_initState, _PPOMController_registerMessageHandlers, _PPOMController_shouldUpdate, _PPOMController_updatePPOM, _PPOMController_getNewFiles, _PPOMController_updateVersionInfo, _PPOMController_maybeUpdatePPOM, _PPOMController_fetchBlob, _PPOMController_fetchVersionInfo, _PPOMController_jsonRpcRequest, _PPOMController_getPPOM, _PPOMController_startDataRefreshTask;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PPOMController = exports.DAY_IN_MILLISECONDS = void 0;
+exports.PPOMController = exports.REFRESH_TIME_DURATION = void 0;
+const PPOMModule = __importStar(require("@blockaid/ppom-mock"));
 const base_controller_1 = require("@metamask/base-controller");
 const controller_utils_1 = require("@metamask/controller-utils");
 const await_semaphore_1 = require("await-semaphore");
-const ppom_1 = require("./ppom");
 const ppom_storage_1 = require("./ppom-storage");
-exports.DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
+exports.REFRESH_TIME_DURATION = 1000 * 60 * 60 * 24;
+// The following methods on provider are allowed to PPOM
+const ALLOWED_PROVIDER_CALLS = [
+    'eth_call',
+    'eth_blockNumber',
+    'eth_getLogs',
+    'eth_getFilterLogs',
+    'eth_getTransactionByHash',
+    'eth_chainId',
+    'eth_getBlockByHash',
+    'eth_getBlockByNumber',
+    'eth_getCode',
+    'eth_getStorageAt',
+    'eth_getBalance',
+    'eth_getTransactionCount',
+];
 const stateMetaData = {
-    lastFetched: { persist: false, anonymous: false },
     lastChainId: { persist: false, anonymous: false },
     newChainId: { persist: false, anonymous: false },
     versionInfo: { persist: false, anonymous: false },
@@ -56,31 +93,32 @@ class PPOMController extends base_controller_1.BaseControllerV2 {
      * @returns The PPOMController instance.
      */
     constructor({ chainId, messenger, onNetworkChange, provider, state, storageBackend, }) {
-        const defaultState = {
-            lastFetched: 0,
+        const initState = {
             versionInfo: [],
             storageMetadata: [],
             lastChainId: '',
             newChainId: chainId,
-            refreshInterval: exports.DAY_IN_MILLISECONDS,
+            refreshInterval: exports.REFRESH_TIME_DURATION,
+            ...state,
         };
         super({
             name: controllerName,
             metadata: stateMetaData,
             messenger,
-            state: { ...defaultState, ...state },
+            state: initState,
         });
         _PPOMController_instances.add(this);
         _PPOMController_ppom.set(this, void 0);
         _PPOMController_provider.set(this, void 0);
         _PPOMController_storage.set(this, void 0);
+        _PPOMController_refreshDataInterval.set(this, void 0);
         /*
          * This mutex is used to prevent concurrent usage of the PPOM instance
          * and protect the PPOM instance from being used while it is being initialized/updated
          */
         _PPOMController_ppomMutex.set(this, void 0);
-        _PPOMController_defaultState.set(this, void 0);
-        __classPrivateFieldSet(this, _PPOMController_defaultState, defaultState, "f");
+        _PPOMController_initState.set(this, void 0);
+        __classPrivateFieldSet(this, _PPOMController_initState, initState, "f");
         __classPrivateFieldSet(this, _PPOMController_provider, provider, "f");
         __classPrivateFieldSet(this, _PPOMController_storage, new ppom_storage_1.PPOMStorage({
             storageBackend,
@@ -100,12 +138,14 @@ class PPOMController extends base_controller_1.BaseControllerV2 {
             });
         });
         __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_registerMessageHandlers).call(this);
+        __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_startDataRefreshTask).call(this);
     }
     /**
      * Clear the controller state.
      */
     clear() {
-        this.update(() => __classPrivateFieldGet(this, _PPOMController_defaultState, "f"));
+        this.update(() => __classPrivateFieldGet(this, _PPOMController_initState, "f"));
+        __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_startDataRefreshTask).call(this);
     }
     /**
      * Set the interval at which the ppom version info will be fetched.
@@ -118,27 +158,22 @@ class PPOMController extends base_controller_1.BaseControllerV2 {
         this.update((draftState) => {
             draftState.refreshInterval = interval;
         });
+        __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_startDataRefreshTask).call(this, interval);
     }
     /**
-     * Update the PPOM configuration.
-     * This function will fetch the latest version info when needed, and update the PPOM storage.
+     * Clears the periodic job to refresh file data.
+     */
+    clearRefreshInterval() {
+        clearInterval(__classPrivateFieldGet(this, _PPOMController_refreshDataInterval, "f"));
+    }
+    /**
+     * Update the PPOM.
+     * This function will acquire mutex lock and invoke internal method #updatePPOM.
      */
     async updatePPOM() {
-        if (__classPrivateFieldGet(this, _PPOMController_ppom, "f")) {
-            __classPrivateFieldGet(this, _PPOMController_ppom, "f").free();
-            __classPrivateFieldSet(this, _PPOMController_ppom, undefined, "f");
-        }
-        if (__classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_isOutOfDate).call(this)) {
-            await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_updateVersionInfo).call(this);
-        }
-        this.update((draftState) => {
-            draftState.lastChainId = this.state.newChainId;
+        await __classPrivateFieldGet(this, _PPOMController_ppomMutex, "f").use(async () => {
+            await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_updatePPOM).call(this);
         });
-        const storageMetadata = await __classPrivateFieldGet(this, _PPOMController_storage, "f").syncMetadata(this.state.versionInfo);
-        const newFiles = await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_getNewFiles).call(this, this.state.newChainId, storageMetadata);
-        for (const file of newFiles) {
-            await __classPrivateFieldGet(this, _PPOMController_storage, "f").writeFile(file);
-        }
     }
     /**
      * Use the PPOM.
@@ -158,7 +193,7 @@ class PPOMController extends base_controller_1.BaseControllerV2 {
     }
 }
 exports.PPOMController = PPOMController;
-_PPOMController_ppom = new WeakMap(), _PPOMController_provider = new WeakMap(), _PPOMController_storage = new WeakMap(), _PPOMController_ppomMutex = new WeakMap(), _PPOMController_defaultState = new WeakMap(), _PPOMController_instances = new WeakSet(), _PPOMController_registerMessageHandlers = function _PPOMController_registerMessageHandlers() {
+_PPOMController_ppom = new WeakMap(), _PPOMController_provider = new WeakMap(), _PPOMController_storage = new WeakMap(), _PPOMController_refreshDataInterval = new WeakMap(), _PPOMController_ppomMutex = new WeakMap(), _PPOMController_initState = new WeakMap(), _PPOMController_instances = new WeakSet(), _PPOMController_registerMessageHandlers = function _PPOMController_registerMessageHandlers() {
     this.messagingSystem.registerActionHandler(`${controllerName}:clear`, this.clear.bind(this));
     this.messagingSystem.registerActionHandler(`${controllerName}:usePPOM`, this.usePPOM.bind(this));
     this.messagingSystem.registerActionHandler(`${controllerName}:setRefreshInterval`, this.setRefreshInterval.bind(this));
@@ -174,13 +209,29 @@ _PPOMController_ppom = new WeakMap(), _PPOMController_provider = new WeakMap(), 
  * @returns True if PPOM data requires update.
  */
 async function _PPOMController_shouldUpdate() {
-    if (this.state.newChainId !== this.state.lastChainId ||
-        __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_isOutOfDate).call(this)) {
+    if (this.state.newChainId !== this.state.lastChainId) {
         return true;
     }
     return __classPrivateFieldGet(this, _PPOMController_ppom, "f") === undefined;
-}, _PPOMController_isOutOfDate = function _PPOMController_isOutOfDate() {
-    return Date.now() - this.state.lastFetched >= this.state.refreshInterval;
+}, _PPOMController_updatePPOM = 
+/**
+ * Update the PPOM configuration.
+ * This function will fetch the latest version info when needed, and update the PPOM storage.
+ */
+async function _PPOMController_updatePPOM() {
+    if (__classPrivateFieldGet(this, _PPOMController_ppom, "f")) {
+        __classPrivateFieldGet(this, _PPOMController_ppom, "f").free();
+        __classPrivateFieldSet(this, _PPOMController_ppom, undefined, "f");
+    }
+    await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_updateVersionInfo).call(this);
+    this.update((draftState) => {
+        draftState.lastChainId = this.state.newChainId;
+    });
+    const storageMetadata = await __classPrivateFieldGet(this, _PPOMController_storage, "f").syncMetadata(this.state.versionInfo);
+    const newFiles = await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_getNewFiles).call(this, this.state.newChainId, storageMetadata);
+    for (const file of newFiles) {
+        await __classPrivateFieldGet(this, _PPOMController_storage, "f").writeFile(file);
+    }
 }, _PPOMController_getNewFiles = 
 /**
  * Returns an array of new files that should be downloaded and saved to storage.
@@ -218,10 +269,11 @@ async function _PPOMController_getNewFiles(chainId, storageMetadata) {
  */
 async function _PPOMController_updateVersionInfo() {
     const versionInfo = await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_fetchVersionInfo).call(this, PPOM_VERSION_PATH);
-    this.update((draftState) => {
-        draftState.versionInfo = versionInfo;
-        draftState.lastFetched = Date.now();
-    });
+    if (versionInfo) {
+        this.update((draftState) => {
+            draftState.versionInfo = versionInfo;
+        });
+    }
 }, _PPOMController_maybeUpdatePPOM = 
 /**
  * Conditionally update the ppom configuration.
@@ -231,7 +283,7 @@ async function _PPOMController_updateVersionInfo() {
  */
 async function _PPOMController_maybeUpdatePPOM() {
     if (await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_shouldUpdate).call(this)) {
-        await this.updatePPOM();
+        await __classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_updatePPOM).call(this);
     }
 }, _PPOMController_fetchBlob = 
 /*
@@ -268,6 +320,10 @@ async function _PPOMController_fetchVersionInfo(url) {
  */
 async function _PPOMController_jsonRpcRequest(req) {
     return new Promise((resolve, reject) => {
+        if (!ALLOWED_PROVIDER_CALLS.includes(req.method)) {
+            reject(new Error(`Method not allowed on provider ${req.method}`));
+            return;
+        }
         __classPrivateFieldGet(this, _PPOMController_provider, "f").sendAsync(req, (error, res) => {
             if (error) {
                 reject(error);
@@ -285,7 +341,7 @@ async function _PPOMController_jsonRpcRequest(req) {
  * It will load the PPOM data from storage and initialize the PPOM.
  */
 async function _PPOMController_getPPOM() {
-    await (0, ppom_1.ppomInit)('/ppom.wasm');
+    await PPOMModule.ppomInit();
     const chainId = this.state.lastChainId;
     const files = await Promise.all(this.state.versionInfo
         .filter((file) => !file.chainId || file.chainId === chainId)
@@ -293,6 +349,18 @@ async function _PPOMController_getPPOM() {
         const data = await __classPrivateFieldGet(this, _PPOMController_storage, "f").readFile(file.name, file.chainId);
         return [file.name, new Uint8Array(data)];
     }));
-    return new ppom_1.PPOM(__classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_jsonRpcRequest).bind(this), files);
+    return new PPOMModule.PPOM(__classPrivateFieldGet(this, _PPOMController_instances, "m", _PPOMController_jsonRpcRequest).bind(this), files);
+}, _PPOMController_startDataRefreshTask = function _PPOMController_startDataRefreshTask(refreshInterval) {
+    if (__classPrivateFieldGet(this, _PPOMController_refreshDataInterval, "f")) {
+        clearInterval(__classPrivateFieldGet(this, _PPOMController_refreshDataInterval, "f"));
+    }
+    const updatePPOMfn = () => {
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.updatePPOM().catch(() => {
+            // do noting;
+        });
+    };
+    updatePPOMfn();
+    __classPrivateFieldSet(this, _PPOMController_refreshDataInterval, setInterval(updatePPOMfn, refreshInterval ?? __classPrivateFieldGet(this, _PPOMController_initState, "f").refreshInterval), "f");
 };
 //# sourceMappingURL=ppom-controller.js.map

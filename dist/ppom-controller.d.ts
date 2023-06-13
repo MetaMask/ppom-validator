@@ -1,7 +1,7 @@
+import * as PPOMModule from '@blockaid/ppom-mock';
 import { BaseControllerV2, RestrictedControllerMessenger } from '@metamask/base-controller';
-import { PPOM } from './ppom';
 import { StorageBackend, PPOMFileMetadata, FileInfo } from './ppom-storage';
-export declare const DAY_IN_MILLISECONDS: number;
+export declare const REFRESH_TIME_DURATION: number;
 /**
  * @type PPOMFileVersion
  * @augments FileInfo
@@ -18,14 +18,12 @@ declare type PPOMVersionResponse = PPOMFileVersion[];
  * @type PPOMControllerState
  *
  * Controller state
- * @property lastFetched - Time when files were last updated.
  * @property lastChainId - ChainId for which files were last updated.
  * @property newChainId - ChainIf of currently selected network.
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
  */
 export declare type PPOMControllerState = {
-    lastFetched: number;
     lastChainId: string;
     newChainId: string;
     versionInfo: PPOMVersionResponse;
@@ -39,7 +37,7 @@ export declare type Clear = {
 };
 export declare type UsePPOM = {
     type: `${typeof controllerName}:usePPOM`;
-    handler: (callback: (ppom: PPOM) => Promise<any>) => Promise<any>;
+    handler: (callback: (ppom: PPOMModule.PPOM) => Promise<any>) => Promise<any>;
 };
 export declare type SetRefreshInterval = {
     type: `${typeof controllerName}:setRefreshInterval`;
@@ -96,8 +94,12 @@ export declare class PPOMController extends BaseControllerV2<typeof controllerNa
      */
     setRefreshInterval(interval: number): void;
     /**
-     * Update the PPOM configuration.
-     * This function will fetch the latest version info when needed, and update the PPOM storage.
+     * Clears the periodic job to refresh file data.
+     */
+    clearRefreshInterval(): void;
+    /**
+     * Update the PPOM.
+     * This function will acquire mutex lock and invoke internal method #updatePPOM.
      */
     updatePPOM(): Promise<void>;
     /**
@@ -107,6 +109,6 @@ export declare class PPOMController extends BaseControllerV2<typeof controllerNa
      *
      * @param callback - Callback to be invoked with PPOM.
      */
-    usePPOM<T>(callback: (ppom: PPOM) => Promise<T>): Promise<T>;
+    usePPOM<T>(callback: (ppom: PPOMModule.PPOM) => Promise<T>): Promise<T>;
 }
 export {};
