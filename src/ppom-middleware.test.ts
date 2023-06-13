@@ -1,30 +1,18 @@
-import { buildPPOMController } from '../test/test-utils';
+import { buildFetchSpy, buildPPOMController } from '../test/test-utils';
 import { createPPOMMiddleware } from './ppom-middleware';
 
-jest.mock('./ppom.ts', () => ({
-  PPOM: class PPOMClass {
-    #jsonRpcRequest;
-
-    constructor(jsonRpcRequest: any) {
-      this.#jsonRpcRequest = jsonRpcRequest;
-    }
-
-    validateJsonRpc = async () => {
-      return Promise.resolve();
-    };
-
-    free = () => undefined;
-
-    testJsonRPCRequest = () => this.#jsonRpcRequest();
-  },
-  ppomInit: () => undefined,
-}));
+Object.defineProperty(globalThis, 'fetch', {
+  writable: true,
+  value: () => undefined,
+});
 
 describe('PPOMMiddleware', () => {
   it('should return PPOM Middleware when createPPOMMiddleware function called', () => {
+    buildFetchSpy();
     const ppomController = buildPPOMController();
     const middlewareFunction = createPPOMMiddleware(ppomController);
     expect(middlewareFunction).toBeDefined();
+    ppomController.clearRefreshInterval();
   });
 
   it('should call ppomController.usePPOM for requests of type confirmation', async () => {
