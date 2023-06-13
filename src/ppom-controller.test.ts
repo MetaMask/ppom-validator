@@ -32,7 +32,9 @@ jest.mock('@blockaid/ppom-mock', () => ({
         ...args,
       });
   },
-  ppomInit: () => undefined,
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  __esModule: true,
+  default: () => undefined,
 }));
 
 describe('PPOMController', () => {
