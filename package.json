@@ -31,12 +31,12 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@blockaid/ppom-mock": "^1.0.0",
     "@metamask/base-controller": "^3.0.0",
     "@metamask/controller-utils": "^4.0.0",
     "await-semaphore": "^0.1.3"
   },
   "devDependencies": {
-    "@blockaid/ppom-mock": "^1.0.0",
     "@lavamoat/allow-scripts": "^2.3.1",
     "@lavamoat/preinstall-always-fail": "^1.0.0",
     "@metamask/auto-changelog": "^3.1.0",

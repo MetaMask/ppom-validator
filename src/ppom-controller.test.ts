@@ -1,9 +1,10 @@
+import { PPOM } from '@blockaid/ppom-mock';
+
 import {
   VERSION_INFO,
   buildFetchSpy,
   buildPPOMController,
 } from '../test/test-utils';
-import { PPOM } from './ppom';
 import { REFRESH_TIME_DURATION } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
