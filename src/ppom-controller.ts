@@ -9,7 +9,7 @@ import { ppomInit, PPOM } from './ppom';
 import {
   StorageBackend,
   PPOMStorage,
-  PPOMFileMetadata,
+  FileInfoList,
   FileInfo,
 } from './ppom-storage';
 
