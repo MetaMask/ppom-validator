@@ -99,6 +99,7 @@ export class PPOMStorage {
         await this.readFile(fileMetadata.name, fileMetadata.chainId);
       } catch (exp: any) {
         console.error('Error: ', exp);
+        continue;
       }
 
       // check if the file exits and up to date in the storage
