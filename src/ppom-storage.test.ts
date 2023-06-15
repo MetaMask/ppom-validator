@@ -9,7 +9,6 @@ import { PPOMStorage, StorageKey } from './ppom-storage';
 const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
 const DUMMY_NAME = 'DUMMY_NAME';
 const DUMMY_CHAINID = '1';
-const ARRAY_BUFFER_DATA = new ArrayBuffer(123);
 
 const getFileData = (data = {}) => ({
   chainId: DUMMY_CHAINID,
