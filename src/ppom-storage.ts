@@ -1,8 +1,8 @@
 /**
- * FileInfo Type
+ * FileMetadata Type
  * Defined type for information about file saved in storage backend.
  */
-type FileInfo = {
+type FileMetadata = {
   name: string;
   chainId: string;
   version: string;
@@ -10,11 +10,11 @@ type FileInfo = {
 };
 
 /**
- * FileInfoList
+ * FileMetadataList
  * This is type of metadata about files saved in storage,
  * this information is saved in PPOMController state.
  */
-export type FileInfoList = FileInfo[];
+export type FileMetadataList = FileMetadata[];
 
 /**
  * StorageKey Type
@@ -53,9 +53,9 @@ export type StorageBackend = {
 export class PPOMStorage {
   readonly #storageBackend: StorageBackend;
 
-  readonly #readMetadata: () => FileInfoList;
+  readonly #readMetadata: () => FileMetadataList;
 
-  readonly #writeMetadata: (metadata: FileInfoList) => void;
+  readonly #writeMetadata: (metadata: FileMetadataList) => void;
 
   /**
    * Creates a PPOMStorage instance.
@@ -71,8 +71,8 @@ export class PPOMStorage {
     writeMetadata,
   }: {
     storageBackend: StorageBackend;
-    readMetadata: () => FileInfoList;
-    writeMetadata: (metadata: FileInfoList) => void;
+    readMetadata: () => FileMetadataList;
+    writeMetadata: (metadata: FileMetadataList) => void;
   }) {
     this.#storageBackend = storageBackend;
     this.#readMetadata = readMetadata;
@@ -89,7 +89,7 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  async syncMetadata(versionInfo: FileInfoList): Promise<FileInfoList> {
+  async syncMetadata(versionInfo: FileMetadataList): Promise<FileMetadataList> {
     const metadata = this.#readMetadata();
     const syncedMetadata = [];
 
