@@ -1,5 +1,6 @@
+import { PPOM } from '@blockaid/ppom-mock';
+
 import { VERSION_INFO, buildPPOMController } from '../test/test-utils';
-import { PPOM } from './ppom';
 import { DAY_IN_MILLISECONDS } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
@@ -7,7 +8,7 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
-jest.mock('./ppom.ts', () => ({
+jest.mock('@blockaid/ppom-mock', () => ({
   PPOM: class PPOMClass {
     #jsonRpcRequest;
 
@@ -23,7 +24,9 @@ jest.mock('./ppom.ts', () => ({
 
     testJsonRPCRequest = async () => await this.#jsonRpcRequest();
   },
-  ppomInit: () => undefined,
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  __esModule: true,
+  default: () => undefined,
 }));
 
 const PPOM_VERSION_PATH =

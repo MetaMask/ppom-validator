@@ -1,3 +1,4 @@
+import * as PPOMModule from '@blockaid/ppom-mock';
 import {
   BaseControllerV2,
   RestrictedControllerMessenger,
@@ -5,7 +6,6 @@ import {
 import { safelyExecute } from '@metamask/controller-utils';
 import { Mutex } from 'await-semaphore';
 
-import { ppomInit, PPOM } from './ppom';
 import {
   StorageBackend,
   PPOMStorage,
@@ -81,7 +81,7 @@ export type Clear = {
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
-  handler: (callback: (ppom: PPOM) => Promise<any>) => Promise<any>;
+  handler: (callback: (ppom: PPOMModule.PPOM) => Promise<any>) => Promise<any>;
 };
 
 export type SetRefreshInterval = {
@@ -123,7 +123,7 @@ export class PPOMController extends BaseControllerV2<
   PPOMControllerState,
   PPOMControllerMessenger
 > {
-  #ppom: PPOM | undefined;
+  #ppom: PPOMModule.PPOM | undefined;
 
   #provider: any;
 
@@ -262,7 +262,9 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(callback: (ppom: PPOM) => Promise<T>): Promise<T> {
+  async usePPOM<T>(
+    callback: (ppom: PPOMModule.PPOM) => Promise<T>,
+  ): Promise<T> {
     return await this.#ppomMutex.use(async () => {
       await this.#maybeUpdatePPOM();
 
@@ -457,8 +459,8 @@ export class PPOMController extends BaseControllerV2<
    * or when the PPOM is out of date.
    * It will load the PPOM data from storage and initialize the PPOM.
    */
-  async #getPPOM(): Promise<PPOM> {
-    await ppomInit('/ppom.wasm');
+  async #getPPOM(): Promise<PPOMModule.PPOM> {
+    await PPOMModule.default();
 
     const chainId = this.state.lastChainId;
 
@@ -471,6 +473,6 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
-    return new PPOM(this.#jsonRpcRequest.bind(this), files);
+    return new PPOMModule.PPOM(this.#jsonRpcRequest.bind(this), files);
   }
 }

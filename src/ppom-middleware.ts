@@ -1,4 +1,5 @@
-import { PPOM } from './ppom';
+import { PPOM } from '@blockaid/ppom-mock';
+
 import { PPOMController } from './ppom-controller';
 
 const ConfirmationMethods = [
