@@ -15,6 +15,9 @@ import {
 
 export const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
+const PROVIDER_REQUEST_LIMIT = 500;
+const MILLISECONDS_IN_FIVE_MINUTES = 300000;
+
 // The following methods on provider are allowed to PPOM
 const ALLOWED_PROVIDER_CALLS = [
   'eth_call',
@@ -29,6 +32,10 @@ const ALLOWED_PROVIDER_CALLS = [
   'eth_getStorageAt',
   'eth_getBalance',
   'eth_getTransactionCount',
+  'trace_call',
+  'trace_callMany',
+  'debug_traceCall',
+  'trace_filter',
 ];
 
 /**
@@ -78,6 +85,8 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @property newChainId - ChainIf of currently selected network.
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
+ * @property providerRequestLimit - Number of requests in last 5 minutes that PPOM can make.
+ * @property providerRequests - Array of timestamps in last 5 minutes when request was made from PPOM to provider.
  */
 export type PPOMControllerState = {
   lastFetched: number;
@@ -86,6 +95,8 @@ export type PPOMControllerState = {
   versionInfo: PPOMVersionResponse;
   storageMetadata: FileMetadataList;
   refreshInterval: number;
+  providerRequestLimit: number;
+  providerRequests: number[];
 };
 
 const stateMetaData = {
@@ -95,6 +106,8 @@ const stateMetaData = {
   versionInfo: { persist: false, anonymous: false },
   storageMetadata: { persist: false, anonymous: false },
   refreshInterval: { persist: false, anonymous: false },
+  providerRequestLimit: { persist: false, anonymous: false },
+  providerRequests: { persist: false, anonymous: false },
 };
 
 // TODO: replace with metamask cdn
@@ -201,6 +214,9 @@ export class PPOMController extends BaseControllerV2<
       lastChainId: '',
       newChainId: chainId,
       refreshInterval: DAY_IN_MILLISECONDS,
+      providerRequestLimit: PROVIDER_REQUEST_LIMIT,
+      providerRequests: [],
+      ...state,
     };
     super({
       name: controllerName,
@@ -471,6 +487,25 @@ export class PPOMController extends BaseControllerV2<
    */
   async #jsonRpcRequest(req: ProviderRequest): Promise<any> {
     return new Promise((resolve, reject) => {
+      const currentTimestamp = new Date().getTime();
+      const requests = this.state.providerRequests.filter(
+        (requestTime) =>
+          requestTime - currentTimestamp < MILLISECONDS_IN_FIVE_MINUTES,
+      );
+      if (requests.length >= 5) {
+        reject(
+          new Error(
+            'Number of request to provider from PPOM exceed rate limit',
+          ),
+        );
+        return;
+      }
+      this.update((draftState) => {
+        draftState.providerRequests = [
+          ...this.state.providerRequests,
+          currentTimestamp,
+        ];
+      });
       if (!ALLOWED_PROVIDER_CALLS.includes(req.method)) {
         reject(new Error(`Method not allowed on provider ${req.method}`));
         return;

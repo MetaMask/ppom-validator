@@ -169,6 +169,33 @@ describe('PPOMController', () => {
           });
       });
     });
+
+    it('should rate limit number of requests by PPOM on provider', async () => {
+      ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2(undefined, 'DUMMY_VALUE');
+          },
+        },
+      });
+      buildFetchSpy();
+      await ppomController.usePPOM(async (ppom: PPOM) => {
+        await (ppom as any).testJsonRPCRequest();
+        await (ppom as any).testJsonRPCRequest();
+        await (ppom as any).testJsonRPCRequest();
+        await (ppom as any).testJsonRPCRequest();
+        await (ppom as any).testJsonRPCRequest();
+        const result = await (ppom as any)
+          .testJsonRPCRequest()
+          .catch((exp: any) => {
+            // eslint-disable-next-line jest/no-conditional-expect
+            expect(exp.toString()).toBe(
+              'Error: Number of request to provider from PPOM exceed rate limit',
+            );
+          });
+        expect(result).toBeUndefined();
+      });
+    });
   });
 
   describe('updatePPOM', () => {
