@@ -25,7 +25,7 @@ describe('PPOMStorage', () => {
   describe('readFile', () => {
     it('should return data', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        storageBackend: storageBackendReturningData,
         readMetadata: () => [simpleFileData],
         writeMetadata: () => undefined,
       });
@@ -35,7 +35,7 @@ describe('PPOMStorage', () => {
 
     it('should throw error if file metadata not found', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        storageBackend: storageBackendReturningData,
         readMetadata: () => [],
         writeMetadata: () => undefined,
       });
@@ -108,7 +108,7 @@ describe('PPOMStorage', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
-        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        storageBackend: storageBackendReturningData,
         readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
