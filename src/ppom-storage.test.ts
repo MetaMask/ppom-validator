@@ -1,215 +1,209 @@
-/**
- * @type FileMetadata
- * Defined type for information about file saved in storage backend.
- * @property name - Name of the file.
- * @property chainId - ChainId for file.
- * @property version - File version.
- * @property checksum - Checksum of file data.
- */
-export type FileMetadata = {
-  name: string;
-  chainId: string;
-  version: string;
-  checksum: string;
-};
+import {
+  DUMMY_ARRAY_BUFFER_DATA,
+  buildStorageBackend,
+  simpleStorageBackend,
+  storageBackendReturningData,
+} from '../test/test-utils';
+import { PPOMStorage, StorageKey } from './ppom-storage';
 
-/**
- * @type FileMetadataList
- * This is type of metadata about files saved in storage,
- * this information is saved in PPOMController state.
- */
-export type FileMetadataList = FileMetadata[];
+const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
+const DUMMY_NAME = 'DUMMY_NAME';
+const DUMMY_CHAINID = '1';
+const ARRAY_BUFFER_DATA = new ArrayBuffer(123);
 
-/**
- * @type StorageKey
- * This defines type of key that is used for indexing file data saved in StorageBackend.
- * @property name - Name of the file.
- * @property chainId - ChainId for file.
- */
-export type StorageKey = {
-  name: string;
-  chainId: string;
-};
+const getFileData = (data = {}) => ({
+  chainId: DUMMY_CHAINID,
+  name: DUMMY_NAME,
+  checksum: DUMMY_CHECKSUM,
+  version: '0',
+  ...data,
+});
 
-/**
- * @type StorageBackend
- * This defines type for storage backend implementation.
- * There will be different storage implementations depending on platform:
- * 1. extension - indexDB
- * 2. mobile app - <TBD>
- * @property read - Read file from storage.
- * @property write - Write file to storage.
- * @property delete - Delete file from storage.
- * @property dir - Get list of all files in storage.
- */
-export type StorageBackend = {
-  read(key: StorageKey, checksum: string): Promise<ArrayBuffer>;
-  write(key: StorageKey, data: ArrayBuffer, checksum: string): Promise<void>;
-  delete(key: StorageKey): Promise<void>;
-  dir(): Promise<StorageKey[]>;
-};
+const simpleFileData = getFileData();
 
-/**
- * @class PPOMStorage
- * This class is responsible for managing the local storage
- * It provides the following functionalities:
- * 1. Sync the metadata with the version info from the cdn
- * 2. Read a file from the local storage
- * 3. Write a file to the local storage
- *
- * It also validates the checksum of the file when reading and writing in order to
- * detect corrupted files or files that are not up to date
- */
-export class PPOMStorage {
-  readonly #storageBackend: StorageBackend;
+describe('PPOMStorage', () => {
+  describe('readFile', () => {
+    it('should return data', async () => {
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: () => undefined,
+      });
+      const data = await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
+      expect(data).toStrictEqual(DUMMY_ARRAY_BUFFER_DATA);
+    });
 
-  readonly #readMetadata: () => FileMetadataList;
+    it('should throw error if file metadata not found', async () => {
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        readMetadata: () => [],
+        writeMetadata: () => undefined,
+      });
+      await expect(async () => {
+        await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
+      }).rejects.toThrow(
+        `File metadata (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
+      );
+    });
 
-  readonly #writeMetadata: (metadata: FileMetadataList) => void;
+    it('should throw error if file is not found in storage', async () => {
+      const ppomStorage = new PPOMStorage({
+        storageBackend: simpleStorageBackend,
+        readMetadata: () => [simpleFileData],
+        writeMetadata: () => undefined,
+      });
+      await expect(async () => {
+        await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
+      }).rejects.toThrow(
+        `Storage File (${DUMMY_NAME}, ${DUMMY_CHAINID}) not found`,
+      );
+    });
+  });
 
-  /**
-   * Creates a PPOMStorage instance.
-   *
-   * @param options - The options passed to the function.
-   * @param options.storageBackend - The storage backend to use for the local storage.
-   * @param options.readMetadata - A function to read the metadata from the local storage.
-   * @param options.writeMetadata - A function to write the metadata to the local storage.
-   */
-  constructor({
-    storageBackend,
-    readMetadata,
-    writeMetadata,
-  }: {
-    storageBackend: StorageBackend;
-    readMetadata: () => FileMetadataList;
-    writeMetadata: (metadata: FileMetadataList) => void;
-  }) {
-    this.#storageBackend = storageBackend;
-    this.#readMetadata = readMetadata;
-    this.#writeMetadata = writeMetadata;
-  }
+  describe('writeFile', () => {
+    it('should call storageBackend.write', async () => {
+      const mockWrite = jest.fn().mockResolvedValue('test');
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackend({ write: mockWrite }),
+        readMetadata: () => [],
+        writeMetadata: () => undefined,
+      });
+      await ppomStorage.writeFile({
+        data: DUMMY_ARRAY_BUFFER_DATA,
+        ...simpleFileData,
+      });
+      expect(mockWrite).toHaveBeenCalledTimes(1);
+    });
 
-  /**
-   * Sync the metadata with the version info from the cdn.
-   * 1. Remove the files that are not readable (e.g. corrupted or deleted).
-   * 2. Remove the files that are not in the cdn anymore.
-   * 3. Remove the files that are not up to date in the cdn.
-   * 4. Remove the files that are not in the local storage from the metadata.
-   * 5. Delete the files that are not in the metadata from the local storage.
-   *
-   * @param versionInfo - Version information of metadata files.
-   */
-  async syncMetadata(versionInfo: FileMetadataList): Promise<FileMetadataList> {
-    const metadata = this.#readMetadata();
-    const syncedMetadata: FileMetadataList = [];
+    it('should invoke writeMetadata if file metadata exists', async () => {
+      const mockWriteMetadata = jest.fn();
+      const ppomStorage = new PPOMStorage({
+        storageBackend: simpleStorageBackend,
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
+      await ppomStorage.writeFile({
+        data: DUMMY_ARRAY_BUFFER_DATA,
+        ...simpleFileData,
+      });
+      expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
+    });
 
-    for (const fileMetadata of metadata) {
-      // check if the file is readable (e.g. corrupted or deleted)
-      try {
-        await this.readFile(fileMetadata.name, fileMetadata.chainId);
-      } catch (exp: any) {
-        console.error('Error: ', exp);
-        continue;
-      }
+    it('should invoke writeMetadata with data passed', async () => {
+      const mockWriteMetadata = jest.fn();
+      const ppomStorage = new PPOMStorage({
+        storageBackend: simpleStorageBackend,
+        readMetadata: () => [],
+        writeMetadata: mockWriteMetadata,
+      });
+      await ppomStorage.writeFile({
+        data: DUMMY_ARRAY_BUFFER_DATA,
+        ...simpleFileData,
+      });
+      expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
+    });
+  });
 
-      // check if the file exits and up to date in the storage
-      if (
-        !versionInfo.find(
-          (file) =>
-            file.name === fileMetadata.name &&
-            file.chainId === fileMetadata.chainId &&
-            file.version === fileMetadata.version &&
-            file.checksum === fileMetadata.checksum,
-        )
-      ) {
-        continue;
-      }
+  describe('syncMetadata', () => {
+    it('should return metadata of file if updated file is found in storage', async () => {
+      const mockWriteMetadata = jest.fn();
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
 
-      syncedMetadata.push(fileMetadata);
-    }
+      const result = await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
+      expect(result).toStrictEqual([simpleFileData]);
+    });
 
-    const filesInDB = await this.#storageBackend.dir();
-    for (const { name, chainId } of filesInDB) {
-      if (
-        !syncedMetadata.find(
-          (file) => file.name === name && file.chainId === chainId,
-        )
-      ) {
-        await this.#storageBackend.delete({ name, chainId });
-      }
-    }
+    it('should not return data if file is not found in storage', async () => {
+      const mockWriteMetadata = jest.fn();
+      const ppomStorage = new PPOMStorage({
+        storageBackend: simpleStorageBackend,
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
 
-    this.#writeMetadata(syncedMetadata);
-    return syncedMetadata;
-  }
+      const result = await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockWriteMetadata).toHaveBeenCalledWith([]);
+      expect(result).toStrictEqual([]);
+    });
 
-  /**
-   * Read the file from the local storage.
-   * 1. Check if the file exists in the local storage.
-   * 2. Check if the file exists in the metadata.
-   *
-   * @param name - Name assigned to storage.
-   * @param chainId - ChainId for which file is queried.
-   */
-  async readFile(name: string, chainId: string): Promise<ArrayBuffer> {
-    const metadata = this.#readMetadata();
-    const fileMetadata = metadata.find(
-      (file) => file.name === name && file.chainId === chainId,
-    );
-    if (!fileMetadata) {
-      throw new Error(`File metadata (${name}, ${chainId}) not found`);
-    }
+    it('should not return metadata of file if file version in storage is outdated', async () => {
+      const storageFileData = { ...simpleFileData, version: '1' };
+      const mockWriteMetadata = jest.fn();
+      const mockDelete = jest.fn().mockResolvedValue('');
 
-    const data = await this.#storageBackend.read(
-      { name, chainId },
-      fileMetadata.checksum,
-    );
-    if (!data) {
-      throw new Error(`Storage File (${name}, ${chainId}) not found`);
-    }
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackend({
+          read: async (_key: StorageKey): Promise<any> =>
+            Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
+          dir: async () => Promise.resolve([storageFileData]),
+          delete: mockDelete,
+        }),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
 
-    return data;
-  }
+      const result = await ppomStorage.syncMetadata([storageFileData]);
+      expect(mockDelete).toHaveBeenCalledWith({
+        name: DUMMY_NAME,
+        chainId: DUMMY_CHAINID,
+      });
+      expect(mockWriteMetadata).toHaveBeenCalledWith([]);
+      expect(result).toStrictEqual([]);
+    });
 
-  /**
-   * Write the file to the local storage.
-   * 1. Write the file to the local storage.
-   * 2. Update the metadata.
-   *
-   * @param options - Object passed to write to storage.
-   * @param options.data - File data to be written.
-   * @param options.name - Name to be assigned to the storage.
-   * @param options.chainId - Current ChainId.
-   * @param options.version - Version of file.
-   * @param options.checksum - Checksum of file.
-   */
-  async writeFile({
-    data,
-    name,
-    chainId,
-    version,
-    checksum,
-  }: {
-    data: ArrayBuffer;
-    name: string;
-    chainId: string;
-    version: string;
-    checksum: string;
-  }): Promise<void> {
-    await this.#storageBackend.write({ name, chainId }, data, checksum);
+    it('should delete file from storage backend if its name is not found in file version info passed', async () => {
+      const fileDataInStorage = getFileData({
+        name: 'dummy_2',
+      });
+      const mockWriteMetadata = jest.fn();
+      const mockDelete = jest.fn().mockResolvedValue('');
 
-    const metadata = this.#readMetadata();
-    const fileMetadata = metadata.find(
-      (file) => file.name === name && file.chainId === chainId,
-    );
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackend({
+          read: async (_key: StorageKey): Promise<any> =>
+            Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
+          dir: async () => Promise.resolve([fileDataInStorage]),
+          delete: mockDelete,
+        }),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
 
-    if (fileMetadata) {
-      fileMetadata.version = version;
-      fileMetadata.checksum = checksum;
-    } else {
-      metadata.push({ name, chainId, version, checksum });
-    }
+      await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockDelete).toHaveBeenCalledWith({
+        name: 'dummy_2',
+        chainId: DUMMY_CHAINID,
+      });
+    });
 
-    this.#writeMetadata(metadata);
-  }
-}
+    it('should delete file from storage backend if its version info is not passed', async () => {
+      const fileDataInStorage = getFileData({
+        chainId: '5',
+      });
+      const mockWriteMetadata = jest.fn();
+      const mockDelete = jest.fn().mockResolvedValue('');
+
+      const ppomStorage = new PPOMStorage({
+        storageBackend: buildStorageBackend({
+          read: async (_key: StorageKey): Promise<any> =>
+            Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
+          dir: async () => Promise.resolve([fileDataInStorage]),
+          delete: mockDelete,
+        }),
+        readMetadata: () => [simpleFileData],
+        writeMetadata: mockWriteMetadata,
+      });
+
+      await ppomStorage.syncMetadata([simpleFileData]);
+      expect(mockDelete).toHaveBeenCalledWith({
+        name: DUMMY_NAME,
+        chainId: '5',
+      });
+    });
+  });
+});
