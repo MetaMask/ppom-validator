@@ -87,7 +87,7 @@ describe('PPOMStorage', () => {
       expect(mockWrite).toHaveBeenCalledTimes(1);
     });
 
-    it('should invoke writeMetadata if filemetadata exists', async () => {
+    it('should invoke writeMetadata if file metadata exists', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
         storageBackend: simpleStorageBackend,

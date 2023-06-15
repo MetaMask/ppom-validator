@@ -10,11 +10,11 @@ type FileInfo = {
 };
 
 /**
- * PPOMFileMetadata Type
+ * FileInfoList
  * This is type of metadata about files saved in storage,
  * this information is saved in PPOMController state.
  */
-export type PPOMFileMetadata = FileInfo[];
+export type FileInfoList = FileInfo[];
 
 /**
  * StorageKey Type
@@ -53,9 +53,9 @@ export type StorageBackend = {
 export class PPOMStorage {
   readonly #storageBackend: StorageBackend;
 
-  readonly #readMetadata: () => PPOMFileMetadata;
+  readonly #readMetadata: () => FileInfoList;
 
-  readonly #writeMetadata: (metadata: PPOMFileMetadata) => void;
+  readonly #writeMetadata: (metadata: FileInfoList) => void;
 
   /**
    * Creates a PPOMStorage instance.
@@ -71,8 +71,8 @@ export class PPOMStorage {
     writeMetadata,
   }: {
     storageBackend: StorageBackend;
-    readMetadata: () => PPOMFileMetadata;
-    writeMetadata: (metadata: PPOMFileMetadata) => void;
+    readMetadata: () => FileInfoList;
+    writeMetadata: (metadata: FileInfoList) => void;
   }) {
     this.#storageBackend = storageBackend;
     this.#readMetadata = readMetadata;
@@ -89,7 +89,7 @@ export class PPOMStorage {
    *
    * @param versionInfo - Version information of metadata files.
    */
-  async syncMetadata(versionInfo: PPOMFileMetadata): Promise<PPOMFileMetadata> {
+  async syncMetadata(versionInfo: FileInfoList): Promise<FileInfoList> {
     const metadata = this.#readMetadata();
     const syncedMetadata = [];
 
@@ -98,7 +98,7 @@ export class PPOMStorage {
       try {
         await this.readFile(fileMetadata.name, fileMetadata.chainId);
       } catch (exp: any) {
-        continue;
+        console.error('Error: ', exp);
       }
 
       // check if the file exits and up to date in the storage
@@ -136,7 +136,6 @@ export class PPOMStorage {
    * Read the file from the local storage.
    * 1. Check if the file exists in the local storage.
    * 2. Check if the file exists in the metadata.
-   * 3. Check if the checksum is valid.
    *
    * @param name - Name assigned to storage.
    * @param chainId - ChainId for which file is queried.
@@ -163,9 +162,8 @@ export class PPOMStorage {
 
   /**
    * Write the file to the local storage.
-   * 1. Check if the checksum is valid.
-   * 2. Write the file to the local storage.
-   * 3. Update the metadata.
+   * 1. Write the file to the local storage.
+   * 2. Update the metadata.
    *
    * @param options - Object passed to write to storage.
    * @param options.data - File data to be written.
