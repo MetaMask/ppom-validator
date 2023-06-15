@@ -1,27 +1,14 @@
+import {
+  DUMMY_ARRAY_BUFFER_DATA,
+  buildStorageBackend,
+  simpleStorageBackend,
+  storageBackendReturningData,
+} from '../test/test-utils';
 import { PPOMStorage, StorageKey } from './ppom-storage';
 
-const buildStorageBackend = (obj = {}) => {
-  return {
-    read: async (_key: StorageKey): Promise<any> => Promise.resolve(),
-    write: async (_key: StorageKey, _data: any): Promise<void> =>
-      Promise.resolve(),
-    delete: async (_key: StorageKey): Promise<void> => Promise.resolve(),
-    dir: async (): Promise<StorageKey[]> => Promise.resolve([]),
-    ...obj,
-  };
-};
-
-const simpleStorageBackend = buildStorageBackend();
-
-const buildStorageBackendReturningData = (data: ArrayBuffer) =>
-  buildStorageBackend({
-    read: async (_key: StorageKey): Promise<any> => Promise.resolve(data),
-  });
-
 const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
-const DUMMY_NAME = 'DUMMY';
+const DUMMY_NAME = 'DUMMY_NAME';
 const DUMMY_CHAINID = '1';
-const ARRAY_BUFFER_DATA = new ArrayBuffer(123);
 
 const getFileData = (data = {}) => ({
   chainId: DUMMY_CHAINID,
@@ -37,17 +24,17 @@ describe('PPOMStorage', () => {
   describe('readFile', () => {
     it('should return data', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        storageBackend: storageBackendReturningData,
         readMetadata: () => [simpleFileData],
         writeMetadata: () => undefined,
       });
       const data = await ppomStorage.readFile(DUMMY_NAME, DUMMY_CHAINID);
-      expect(data).toStrictEqual(ARRAY_BUFFER_DATA);
+      expect(data).toStrictEqual(DUMMY_ARRAY_BUFFER_DATA);
     });
 
     it('should throw error if file metadata not found', async () => {
       const ppomStorage = new PPOMStorage({
-        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        storageBackend: storageBackendReturningData,
         readMetadata: () => [],
         writeMetadata: () => undefined,
       });
@@ -81,7 +68,7 @@ describe('PPOMStorage', () => {
         writeMetadata: () => undefined,
       });
       await ppomStorage.writeFile({
-        data: ARRAY_BUFFER_DATA,
+        data: DUMMY_ARRAY_BUFFER_DATA,
         ...simpleFileData,
       });
       expect(mockWrite).toHaveBeenCalledTimes(1);
@@ -95,7 +82,7 @@ describe('PPOMStorage', () => {
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
-        data: ARRAY_BUFFER_DATA,
+        data: DUMMY_ARRAY_BUFFER_DATA,
         ...simpleFileData,
       });
       expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
@@ -109,7 +96,7 @@ describe('PPOMStorage', () => {
         writeMetadata: mockWriteMetadata,
       });
       await ppomStorage.writeFile({
-        data: ARRAY_BUFFER_DATA,
+        data: DUMMY_ARRAY_BUFFER_DATA,
         ...simpleFileData,
       });
       expect(mockWriteMetadata).toHaveBeenCalledWith([simpleFileData]);
@@ -120,7 +107,7 @@ describe('PPOMStorage', () => {
     it('should return metadata of file if updated file is found in storage', async () => {
       const mockWriteMetadata = jest.fn();
       const ppomStorage = new PPOMStorage({
-        storageBackend: buildStorageBackendReturningData(ARRAY_BUFFER_DATA),
+        storageBackend: storageBackendReturningData,
         readMetadata: () => [simpleFileData],
         writeMetadata: mockWriteMetadata,
       });
@@ -151,7 +138,7 @@ describe('PPOMStorage', () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({
           read: async (_key: StorageKey): Promise<any> =>
-            Promise.resolve(ARRAY_BUFFER_DATA),
+            Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
           dir: async () => Promise.resolve([storageFileData]),
           delete: mockDelete,
         }),
@@ -178,7 +165,7 @@ describe('PPOMStorage', () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({
           read: async (_key: StorageKey): Promise<any> =>
-            Promise.resolve(ARRAY_BUFFER_DATA),
+            Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
           dir: async () => Promise.resolve([fileDataInStorage]),
           delete: mockDelete,
         }),
@@ -203,7 +190,7 @@ describe('PPOMStorage', () => {
       const ppomStorage = new PPOMStorage({
         storageBackend: buildStorageBackend({
           read: async (_key: StorageKey): Promise<any> =>
-            Promise.resolve(ARRAY_BUFFER_DATA),
+            Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
           dir: async () => Promise.resolve([fileDataInStorage]),
           delete: mockDelete,
         }),

@@ -1,8 +1,12 @@
 /**
- * FileMetadata Type
+ * @type FileMetadata
  * Defined type for information about file saved in storage backend.
+ * @property name - Name of the file.
+ * @property chainId - ChainId for file.
+ * @property version - File version.
+ * @property checksum - Checksum of file data.
  */
-type FileMetadata = {
+export type FileMetadata = {
   name: string;
   chainId: string;
   version: string;
@@ -10,15 +14,17 @@ type FileMetadata = {
 };
 
 /**
- * FileMetadataList
+ * @type FileMetadataList
  * This is type of metadata about files saved in storage,
  * this information is saved in PPOMController state.
  */
 export type FileMetadataList = FileMetadata[];
 
 /**
- * StorageKey Type
+ * @type StorageKey
  * This defines type of key that is used for indexing file data saved in StorageBackend.
+ * @property name - Name of the file.
+ * @property chainId - ChainId for file.
  */
 export type StorageKey = {
   name: string;
@@ -26,11 +32,15 @@ export type StorageKey = {
 };
 
 /**
- * StorageBackend Type
+ * @type StorageBackend
  * This defines type for storage backend implementation.
  * There will be different storage implementations depending on platform:
  * 1. extension - indexDB
  * 2. mobile app - <TBD>
+ * @property read - Read file from storage.
+ * @property write - Write file to storage.
+ * @property delete - Delete file from storage.
+ * @property dir - Get list of all files in storage.
  */
 export type StorageBackend = {
   read(key: StorageKey, checksum: string): Promise<ArrayBuffer>;
@@ -40,7 +50,7 @@ export type StorageBackend = {
 };
 
 /**
- * PPOMStorage class
+ * @class PPOMStorage
  * This class is responsible for managing the local storage
  * It provides the following functionalities:
  * 1. Sync the metadata with the version info from the cdn
@@ -91,7 +101,7 @@ export class PPOMStorage {
    */
   async syncMetadata(versionInfo: FileMetadataList): Promise<FileMetadataList> {
     const metadata = this.#readMetadata();
-    const syncedMetadata = [];
+    const syncedMetadata: FileMetadataList = [];
 
     for (const fileMetadata of metadata) {
       // check if the file is readable (e.g. corrupted or deleted)
