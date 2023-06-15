@@ -1,12 +1,12 @@
 /**
- * @type FileInfo
+ * @type FileMetadata
  * Defined type for information about file saved in storage backend.
  * @property name - Name of the file.
  * @property chainId - ChainId for file.
  * @property version - File version.
  * @property checksum - Checksum of file data.
  */
-export type FileInfo = {
+export type FileMetadata = {
   name: string;
   chainId: string;
   version: string;
@@ -14,8 +14,7 @@ export type FileInfo = {
 };
 
 /**
- * @type PPOMFileMetadata
- * Array of objects of type FileInfo
+ * @type FileMetadataList
  * This is type of metadata about files saved in storage,
  * this information is saved in PPOMController state.
  */
@@ -102,7 +101,7 @@ export class PPOMStorage {
    */
   async syncMetadata(versionInfo: FileMetadataList): Promise<FileMetadataList> {
     const metadata = this.#readMetadata();
-    const syncedMetadata: PPOMFileMetadata = [];
+    const syncedMetadata: FileMetadataList = [];
 
     for (const fileMetadata of metadata) {
       // check if the file is readable (e.g. corrupted or deleted)
