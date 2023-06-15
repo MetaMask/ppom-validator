@@ -16,7 +16,7 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json",
+    "build": "tsc --project tsconfig.build.json && cp src/ppom.wasm dist/ppom.wasm",
     "build:clean": "rimraf dist && yarn build",
     "build:docs": "typedoc",
     "lint": "yarn lint:eslint && yarn lint:constraints && yarn lint:misc --check && yarn lint:dependencies --check && yarn lint:changelog",

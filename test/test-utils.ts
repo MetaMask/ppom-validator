@@ -1,3 +1,6 @@
+import { ControllerMessenger } from '@metamask/base-controller';
+
+import { PPOMController } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildStorageBackend = (obj = {}) => {
@@ -38,3 +41,41 @@ export const VERSION_INFO = [
     filePath: 'data',
   },
 ];
+
+const PPOM_VERSION_PATH =
+  'https://storage.googleapis.com/ppom-cdn/ppom_version.json';
+
+export const buildFetchDataSpy = (
+  versionData: any = {
+    status: 200,
+    json: () => VERSION_INFO,
+  },
+  blobData: any = {
+    status: 200,
+    arrayBuffer: () => new ArrayBuffer(123),
+  },
+) => {
+  return jest
+    .spyOn(globalThis, 'fetch' as any)
+    .mockImplementation((url: any) => {
+      if (url === PPOM_VERSION_PATH) {
+        return versionData;
+      }
+      return blobData;
+    });
+};
+
+export const buildPPOMController = (args?: any) => {
+  const controllerMessenger = new ControllerMessenger();
+  const ppomController = new PPOMController({
+    storageBackend: storageBackendReturningData,
+    provider: () => undefined,
+    chainId: '0x1',
+    onNetworkChange: () => undefined,
+    messenger: controllerMessenger.getRestricted({
+      name: 'PPOMController',
+    }),
+    ...args,
+  });
+  return ppomController;
+};
