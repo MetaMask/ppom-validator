@@ -9,27 +9,27 @@ import { ppomInit, PPOM } from './ppom';
 import {
   StorageBackend,
   PPOMStorage,
-  FileInfoList,
-  FileInfo,
+  FileMetadataList,
+  FileMetadata,
 } from './ppom-storage';
 
 export const DAY_IN_MILLISECONDS = 1000 * 60 * 60 * 24;
 
 /**
  * @type PPOMFileVersion
- * @augments FileInfo
+ * @augments FileMetadata
  * @property filePath - Path of the file in CDN.
  */
-type PPOMFileVersion = FileInfo & {
+type PPOMFileVersion = FileMetadata & {
   filePath: string;
 };
 
 /**
  * @type PPOMFileVersion
- * @augments FileInfo
+ * @augments FileMetadata
  * @property filePath - Path of the file in CDN.
  */
-type PPOMFile = FileInfo & {
+type PPOMFile = FileMetadata & {
   filePath: string;
   data: ArrayBuffer;
 };
@@ -54,7 +54,7 @@ export type PPOMControllerState = {
   lastChainId: string;
   newChainId: string;
   versionInfo: PPOMVersionResponse;
-  storageMetadata: PPOMFileMetadata;
+  storageMetadata: FileMetadataList;
   refreshInterval: number;
 };
 
@@ -336,7 +336,7 @@ export class PPOMController extends BaseControllerV2<
    */
   async #getNewFiles(
     chainId: string,
-    storageMetadata: PPOMFileMetadata,
+    storageMetadata: FileMetadataList,
   ): Promise<PPOMFile[]> {
     const newFiles: PPOMFile[] = [];
 
@@ -359,7 +359,9 @@ export class PPOMController extends BaseControllerV2<
         continue;
       }
 
-      const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
+      const fileUrl = `${PPOM_CDN_BASE_URL}${
+        fileVersionInfo.filePath as string
+      }`;
       const fileData = await this.#fetchBlob(fileUrl);
 
       newFiles.push({
