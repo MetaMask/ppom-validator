@@ -150,7 +150,7 @@ describe('PPOMController', () => {
     });
 
     it('should throw error if method call on provider is not allowed to PPOM', async () => {
-      ppomController = buildPPOMController({
+      const ppomController = buildPPOMController({
         provider: {
           sendAsync: (_arg1: any, arg2: any) => {
             arg2('DUMMY_ERROR');
@@ -171,7 +171,7 @@ describe('PPOMController', () => {
     });
 
     it('should rate limit number of requests by PPOM on provider', async () => {
-      ppomController = buildPPOMController({
+      const ppomController = buildPPOMController({
         provider: {
           sendAsync: (_arg1: any, arg2: any) => {
             arg2(undefined, 'DUMMY_VALUE');
