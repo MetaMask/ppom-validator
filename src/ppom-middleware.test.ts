@@ -1,25 +1,6 @@
 import { buildPPOMController } from '../test/test-utils';
 import { createPPOMMiddleware } from './ppom-middleware';
 
-jest.mock('./ppom.ts', () => ({
-  PPOM: class PPOMClass {
-    #jsonRpcRequest;
-
-    constructor(jsonRpcRequest: any) {
-      this.#jsonRpcRequest = jsonRpcRequest;
-    }
-
-    validateJsonRpc = async () => {
-      return Promise.resolve();
-    };
-
-    free = () => undefined;
-
-    testJsonRPCRequest = () => this.#jsonRpcRequest();
-  },
-  ppomInit: () => undefined,
-}));
-
 describe('PPOMMiddleware', () => {
   it('should return PPOM Middleware when createPPOMMiddleware function called', () => {
     const ppomController = buildPPOMController();
