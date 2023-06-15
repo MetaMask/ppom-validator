@@ -359,9 +359,7 @@ export class PPOMController extends BaseControllerV2<
         continue;
       }
 
-      const fileUrl = `${PPOM_CDN_BASE_URL}${
-        fileVersionInfo.filePath as string
-      }`;
+      const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
       const fileData = await this.#fetchBlob(fileUrl);
 
       newFiles.push({
