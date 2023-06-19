@@ -1,6 +1,10 @@
 import { PPOM } from '@blockaid/ppom-mock';
 
-import { VERSION_INFO, buildPPOMController } from '../test/test-utils';
+import {
+  VERSION_INFO,
+  buildFetchSpy,
+  buildPPOMController,
+} from '../test/test-utils';
 import { REFRESH_TIME_DURATION } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
@@ -134,7 +138,7 @@ describe('PPOMController', () => {
     });
 
     it('should throw error if method call on provider is not allowed to PPOM', async () => {
-      const ppomController = buildPPOMController({
+      buildPPOMController({
         provider: {
           sendAsync: (_arg1: any, arg2: any) => {
             arg2('DUMMY_ERROR');
@@ -155,7 +159,7 @@ describe('PPOMController', () => {
     });
 
     it('should rate limit number of requests by PPOM on provider', async () => {
-      const ppomController = buildPPOMController({
+      buildPPOMController({
         provider: {
           sendAsync: (_arg1: any, arg2: any) => {
             arg2(undefined, 'DUMMY_VALUE');
