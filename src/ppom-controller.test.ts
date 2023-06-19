@@ -42,6 +42,7 @@ describe('PPOMController', () => {
   afterEach(() => {
     ppomController.clearRefreshInterval();
   });
+
   describe('usePPOM', () => {
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
@@ -64,7 +65,7 @@ describe('PPOMController', () => {
       expect(result).toBe('DUMMY_VALUE');
     });
 
-    it('should refresh data if network is changed', async () => {
+    it('should refresh data if network is changed and data is not available for new network', async () => {
       const spy = buildFetchSpy({
         status: 200,
         json: () => [
@@ -100,7 +101,6 @@ describe('PPOMController', () => {
         return Promise.resolve();
       });
       expect(spy).toHaveBeenCalledTimes(6);
-      callBack('0x1');
     });
 
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
@@ -187,99 +187,161 @@ describe('PPOMController', () => {
   });
 
   describe('updatePPOM', () => {
-    it('should not fetch file if chainId of the file is different from current chainId', async () => {
-      const spy = buildFetchSpy({
-        status: 200,
-        json: () => [
-          ...VERSION_INFO,
-          {
-            name: 'data',
-            chainId: '0x2',
-            version: '1.0.3',
-            checksum:
-              '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-            filePath: 'data',
+    describe('when updating for only current chainId', () => {
+      // in these scenario argument "updateForAllChains" passed to function "updatePPOM" is false
+      it('should not fetch file if chainId of the file is different from current chainId in the state', async () => {
+        const spy = buildFetchSpy();
+        ppomController = buildPPOMController({ chainId: '0x2' });
+        await ppomController.updatePPOM(false);
+        // here only the version infor file is fetched, once when construction and once during updatePPOM
+        expect(spy).toHaveBeenCalledTimes(2);
+        ppomController.clearRefreshInterval();
+      });
+
+      it('should not fetch file if it already exists', async () => {
+        const spy = buildFetchSpy();
+
+        ppomController = buildPPOMController();
+        await ppomController.updatePPOM(false);
+        expect(spy).toHaveBeenCalledTimes(4);
+        await ppomController.updatePPOM(false);
+        expect(spy).toHaveBeenCalledTimes(5);
+      });
+
+      it('should throw error if fetch for version info return 500', async () => {
+        buildFetchSpy({
+          status: 500,
+        });
+
+        ppomController = buildPPOMController();
+        await expect(async () => {
+          await ppomController.updatePPOM(false);
+        }).rejects.toThrow('Failed to fetch version info');
+      });
+
+      it('should throw error if fetch for blob return 500', async () => {
+        buildFetchSpy(undefined, {
+          status: 500,
+        });
+
+        ppomController = buildPPOMController();
+        await expect(async () => {
+          await ppomController.updatePPOM(false);
+        }).rejects.toThrow(
+          'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
+        );
+      });
+
+      it('should add chainId to chainIdsDataUpdated list', async () => {
+        buildFetchSpy();
+        let callBack: any;
+        ppomController = buildPPOMController({
+          onNetworkChange: (func: any) => {
+            callBack = func;
           },
-        ],
-      });
+        });
 
-      ppomController = buildPPOMController();
-      await ppomController.updatePPOM();
-      expect(spy).toHaveBeenCalledTimes(4);
+        await ppomController.updatePPOM(false);
+        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
+        callBack('0x2');
+        await ppomController.updatePPOM(false);
+        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
+          '0x1',
+          '0x2',
+        ]);
+      });
     });
 
-    it('should not fetch file if it already exists', async () => {
-      const spy = buildFetchSpy();
+    describe('when updating all chainids in chainIdCache', () => {
+      // in these scenario argument "scheduleFileFetching" passed to function "updatePPOM" is true
+      it('should throw error if fetch for version info return 500', async () => {
+        buildFetchSpy({
+          status: 500,
+        });
 
-      ppomController = buildPPOMController();
-      await ppomController.updatePPOM();
-      expect(spy).toHaveBeenCalledTimes(4);
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(5);
-    });
-
-    it('should throw error if fetch for version info return 500', async () => {
-      buildFetchSpy({
-        status: 500,
+        ppomController = buildPPOMController();
+        await expect(async () => {
+          await ppomController.updatePPOM();
+        }).rejects.toThrow('Failed to fetch version info');
       });
 
-      ppomController = buildPPOMController();
-      await expect(async () => {
+      it('should not fetch data for network if network is present in chainIdsDataUpdated list', async () => {
+        const spy = buildFetchSpy();
+
+        ppomController = buildPPOMController({
+          chainId: '0x2',
+        });
         await ppomController.updatePPOM();
-      }).rejects.toThrow('Failed to fetch version info');
-    });
-
-    it('should throw error if fetch for blob return 500', async () => {
-      buildFetchSpy(undefined, {
-        status: 500,
+        expect(spy).toHaveBeenCalledTimes(2);
+        await ppomController.updatePPOM();
+        expect(spy).toHaveBeenCalledTimes(3);
       });
 
-      ppomController = buildPPOMController();
-      await expect(async () => {
+      it('should add chainId to chainIdsDataUpdated list', async () => {
+        buildFetchSpy();
+        let callBack: any;
+        ppomController = buildPPOMController({
+          onNetworkChange: (func: any) => {
+            callBack = func;
+          },
+        });
+
         await ppomController.updatePPOM();
-      }).rejects.toThrow(
-        'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
-      );
+        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
+        callBack('0x2');
+        await ppomController.updatePPOM();
+        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
+          '0x1',
+          '0x2',
+        ]);
+      });
+
+      it('should get files for all chains in chainIdCache', async () => {
+        const spy = buildFetchSpy({
+          status: 200,
+          json: () => [
+            ...VERSION_INFO,
+            {
+              name: 'data',
+              chainId: '0x2',
+              version: '1.0.3',
+              checksum:
+                '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+              filePath: 'data',
+            },
+          ],
+        });
+        let callBack: any;
+        ppomController = buildPPOMController({
+          onNetworkChange: (func: any) => {
+            callBack = func;
+          },
+        });
+        callBack('0x2');
+        expect(ppomController.state.chainIdCache).toHaveLength(2);
+        await ppomController.updatePPOM();
+        expect(spy).toHaveBeenCalledTimes(5);
+      });
     });
   });
 
   describe('setRefreshInterval', () => {
     it('should update refresh interval', async () => {
       ppomController = buildPPOMController();
-      const spy = buildFetchSpy();
-
-      // controller fetches new data files is difference from last updated time
-      // is greater than refresh interval.
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
       expect(ppomController.state.refreshInterval).toBe(REFRESH_TIME_DURATION);
-      expect(spy).toHaveBeenCalledTimes(4);
       ppomController.setRefreshInterval(0);
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
       expect(ppomController.state.refreshInterval).toBe(0);
-      expect(spy).toHaveBeenCalledTimes(6);
     });
   });
 
   describe('clear', () => {
     it('should clear controller state', async () => {
       ppomController = buildPPOMController();
-      const spy = buildFetchSpy();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(4);
+      buildFetchSpy();
+      await ppomController.updatePPOM(false);
       expect(ppomController.state.storageMetadata).toHaveLength(2);
       ppomController.clear();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(ppomController.state.storageMetadata).toHaveLength(0);
     });
   });
 });

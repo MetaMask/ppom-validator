@@ -26,7 +26,7 @@ export const storageBackendReturningData = buildStorageBackend({
 export const VERSION_INFO = [
   {
     name: 'blob',
-    chainId: '',
+    chainId: '0x1',
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
