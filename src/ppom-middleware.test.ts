@@ -1,6 +1,11 @@
 import { buildFetchSpy, buildPPOMController } from '../test/test-utils';
 import { createPPOMMiddleware } from './ppom-middleware';
 
+Object.defineProperty(globalThis, 'fetch', {
+  writable: true,
+  value: () => undefined,
+});
+
 describe('PPOMMiddleware', () => {
   it('should return PPOM Middleware when createPPOMMiddleware function called', () => {
     buildFetchSpy();
