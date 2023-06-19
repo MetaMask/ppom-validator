@@ -1,3 +1,4 @@
+import * as PPOMModule from '@blockaid/ppom-mock';
 import {
   BaseControllerV2,
   RestrictedControllerMessenger,
@@ -5,7 +6,6 @@ import {
 import { safelyExecute } from '@metamask/controller-utils';
 import { Mutex } from 'await-semaphore';
 
-import { ppomInit, PPOM } from './ppom';
 import {
   StorageBackend,
   PPOMStorage,
@@ -14,6 +14,43 @@ import {
 } from './ppom-storage';
 
 export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 24;
+
+const PROVIDER_REQUEST_LIMIT = 500;
+const MILLISECONDS_IN_FIVE_MINUTES = 300000;
+
+// The following methods on provider are allowed to PPOM
+const ALLOWED_PROVIDER_CALLS = [
+  'eth_call',
+  'eth_blockNumber',
+  'eth_getLogs',
+  'eth_getFilterLogs',
+  'eth_getTransactionByHash',
+  'eth_chainId',
+  'eth_getBlockByHash',
+  'eth_getBlockByNumber',
+  'eth_getCode',
+  'eth_getStorageAt',
+  'eth_getBalance',
+  'eth_getTransactionCount',
+  'trace_call',
+  'trace_callMany',
+  'debug_traceCall',
+  'trace_filter',
+];
+
+/**
+ * @type ProviderRequest - Type of JSON RPC request sent to provider.
+ * @property id - Request identifier.
+ * @property jsonrpc - JSON RPC version.
+ * @property method - Method to be invoked on the provider.
+ * @property params - Parameters to be passed to method call.
+ */
+type ProviderRequest = {
+  id: number;
+  jsonrpc: string;
+  method: string;
+  params: any[];
+};
 
 /**
  * @type PPOMFileVersion
@@ -47,6 +84,8 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @property newChainId - ChainIf of currently selected network.
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
+ * @property providerRequestLimit - Number of requests in last 5 minutes that PPOM can make.
+ * @property providerRequests - Array of timestamps in last 5 minutes when request was made from PPOM to provider.
  */
 export type PPOMControllerState = {
   lastChainId: string;
@@ -54,6 +93,8 @@ export type PPOMControllerState = {
   versionInfo: PPOMVersionResponse;
   storageMetadata: FileMetadataList;
   refreshInterval: number;
+  providerRequestLimit: number;
+  providerRequests: number[];
 };
 
 const stateMetaData = {
@@ -62,6 +103,8 @@ const stateMetaData = {
   versionInfo: { persist: false, anonymous: false },
   storageMetadata: { persist: false, anonymous: false },
   refreshInterval: { persist: false, anonymous: false },
+  providerRequestLimit: { persist: false, anonymous: false },
+  providerRequests: { persist: false, anonymous: false },
 };
 
 // TODO: replace with metamask cdn
@@ -78,7 +121,7 @@ export type Clear = {
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
-  handler: (callback: (ppom: PPOM) => Promise<any>) => Promise<any>;
+  handler: (callback: (ppom: PPOMModule.PPOM) => Promise<any>) => Promise<any>;
 };
 
 export type SetRefreshInterval = {
@@ -120,7 +163,7 @@ export class PPOMController extends BaseControllerV2<
   PPOMControllerState,
   PPOMControllerMessenger
 > {
-  #ppom: PPOM | undefined;
+  #ppom: PPOMModule.PPOM | undefined;
 
   #provider: any;
 
@@ -169,6 +212,8 @@ export class PPOMController extends BaseControllerV2<
       lastChainId: '',
       newChainId: chainId,
       refreshInterval: REFRESH_TIME_DURATION,
+      providerRequestLimit: PROVIDER_REQUEST_LIMIT,
+      providerRequests: [],
       ...state,
     };
     super({
@@ -250,7 +295,9 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(callback: (ppom: PPOM) => Promise<T>): Promise<T> {
+  async usePPOM<T>(
+    callback: (ppom: PPOMModule.PPOM) => Promise<T>,
+  ): Promise<T> {
     return await this.#ppomMutex.use(async () => {
       await this.#maybeUpdatePPOM();
 
@@ -448,9 +495,32 @@ export class PPOMController extends BaseControllerV2<
    * Send a JSON RPC request to the provider.
    * This method is used by the PPOM to make requests to the provider.
    */
-  async #jsonRpcRequest(req: any): Promise<any> {
+  async #jsonRpcRequest(req: ProviderRequest): Promise<any> {
     return new Promise((resolve, reject) => {
-      this.#provider.sendAsync(req, (error: any, res: any) => {
+      const currentTimestamp = new Date().getTime();
+      const requests = this.state.providerRequests.filter(
+        (requestTime) =>
+          requestTime - currentTimestamp < MILLISECONDS_IN_FIVE_MINUTES,
+      );
+      if (requests.length >= 5) {
+        reject(
+          new Error(
+            'Number of request to provider from PPOM exceed rate limit',
+          ),
+        );
+        return;
+      }
+      this.update((draftState) => {
+        draftState.providerRequests = [
+          ...this.state.providerRequests,
+          currentTimestamp,
+        ];
+      });
+      if (!ALLOWED_PROVIDER_CALLS.includes(req.method)) {
+        reject(new Error(`Method not allowed on provider ${req.method}`));
+        return;
+      }
+      this.#provider.sendAsync(req, (error: Error, res: any) => {
         if (error) {
           reject(error);
         } else {
@@ -466,8 +536,8 @@ export class PPOMController extends BaseControllerV2<
    * or when the PPOM is out of date.
    * It will load the PPOM data from storage and initialize the PPOM.
    */
-  async #getPPOM(): Promise<PPOM> {
-    await ppomInit('/ppom.wasm');
+  async #getPPOM(): Promise<PPOMModule.PPOM> {
+    await PPOMModule.default();
 
     const chainId = this.state.lastChainId;
 
@@ -480,7 +550,7 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
-    return new PPOM(this.#jsonRpcRequest.bind(this), files);
+    return new PPOMModule.PPOM(this.#jsonRpcRequest.bind(this), files);
   }
 
   /**
