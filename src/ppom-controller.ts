@@ -506,7 +506,7 @@ export class PPOMController extends BaseControllerV2<
     } = this.state;
 
     // create a map of chainId and files belonging to that chainId
-    const chainIdsFileInfoMap = chainIdCache.map(
+    const chainIdsFileInfoList = chainIdCache.map(
       (chain): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
         chainId: chain.chainId,
         versionInfo: stateVersionInfo.filter(
@@ -517,22 +517,18 @@ export class PPOMController extends BaseControllerV2<
       }),
     );
 
-    const chainIds = chainIdsFileInfoMap.map(({ chainId }) => chainId);
-
     this.#fileScheduleInterval = setInterval(() => {
-      const chainId = chainIds.pop();
-      if (!chainId) {
+      const chainIdFileInfo = chainIdsFileInfoList.pop();
+      if (!chainIdFileInfo) {
         return;
       }
-      const versionInfo = chainIdsFileInfoMap[chainId as any]?.versionInfo;
-      if (!versionInfo) {
-        return;
-      }
+      const { chainId, versionInfo } = chainIdFileInfo;
+
       versionInfo.forEach((fileVersionInfo, index) => {
         // get the file from CDN
         this.#getFile(fileVersionInfo)
           .then(() => {
-            if (index === chainIdsFileInfoMap.length - 1) {
+            if (index === versionInfo.length - 1) {
               // add chain id to list chainIdsDataUpdated in state
               this.#addChainIdToChainIdsDataUpdatedList(chainId);
             }
@@ -542,13 +538,13 @@ export class PPOMController extends BaseControllerV2<
               `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
             ),
           );
-        if (!chainIds.length) {
-          clearInterval(this.#fileScheduleInterval);
-        }
       });
       if (versionInfo.length === 0) {
         // add chain id to list chainIdsDataUpdated in state
         this.#addChainIdToChainIdsDataUpdatedList(chainId);
+      }
+      if (!chainIdsFileInfoList.length) {
+        clearInterval(this.#fileScheduleInterval);
       }
     }, this.state.fileScheduleInterval);
   }
@@ -674,8 +670,8 @@ export class PPOMController extends BaseControllerV2<
       draftState.chainIdCache = chainIdCache;
     });
     const updatePPOMfn = () => {
-      this.updatePPOM().catch((exp: Error) => {
-        console.error(`Error while trying to update PPOM: ${exp.message}`);
+      this.updatePPOM().catch(() => {
+        // console.error(`Error while trying to update PPOM: ${exp.message}`);
       });
     };
     updatePPOMfn();
