@@ -79,13 +79,21 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @property providerRequests - Array of timestamps in last 5 minutes when request was made from PPOM to provider.
  */
 export type PPOMControllerState = {
+  // chainId of currently selected network
   chainId: string;
+  // list of chainIds and time the network was last visited, list of all networks visited in last 1 week is maintained
   chainIdCache: { chainId: string; lastVisited: number }[];
+  // list of chainIds for which data is updated
   chainIdsDataUpdated: string[];
+  // version information obtained from version info file
   versionInfo: PPOMVersionResponse;
+  // storage metadat of files already present in the storage
   storageMetadata: FileMetadataList;
+  // interval at which data files are refreshed, default will be 2 hours
   refreshInterval: number;
+  // number of requests PPOM is allowed to make to provider per transaction
   providerRequestLimit: number;
+  // number of requests PPOM has already made to the provider in current transaction
   providerRequests: number[];
 };
 
@@ -271,6 +279,7 @@ export class PPOMController extends BaseControllerV2<
 
   /**
    * Clears the periodic job to refresh file data.
+   * This was required for unit test cases.
    */
   clearRefreshInterval() {
     clearInterval(this.#refreshDataInterval);
@@ -618,7 +627,7 @@ export class PPOMController extends BaseControllerV2<
 
     const files = await Promise.all(
       this.state.versionInfo
-        .filter((file) => !file.chainId || file.chainId === chainId)
+        .filter((file) => file.chainId === chainId)
         .map(async (file) => {
           const data = await this.#storage.readFile(file.name, file.chainId);
           return [file.name, new Uint8Array(data)];
