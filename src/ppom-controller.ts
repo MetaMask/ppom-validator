@@ -91,6 +91,8 @@ export type PPOMControllerState = {
   storageMetadata: FileMetadataList;
   // interval at which data files are refreshed, default will be 2 hours
   refreshInterval: number;
+  // interval at which files for a network are fetched
+  fileScheduleInterval: number;
   // number of requests PPOM is allowed to make to provider per transaction
   providerRequestLimit: number;
   // number of requests PPOM has already made to the provider in current transaction
@@ -104,6 +106,7 @@ const stateMetaData = {
   chainIdsDataUpdated: { persist: false, anonymous: false },
   storageMetadata: { persist: false, anonymous: false },
   refreshInterval: { persist: false, anonymous: false },
+  fileScheduleInterval: { persist: false, anonymous: false },
   providerRequestLimit: { persist: false, anonymous: false },
   providerRequests: { persist: false, anonymous: false },
 };
@@ -172,6 +175,8 @@ export class PPOMController extends BaseControllerV2<
 
   #refreshDataInterval: any;
 
+  #fileScheduleInterval: any;
+
   /*
    * This mutex is used to prevent concurrent usage of the PPOM instance
    * and protect the PPOM instance from being used while it is being initialized/updated
@@ -188,8 +193,9 @@ export class PPOMController extends BaseControllerV2<
    * @param options.messenger - Controller messenger.
    * @param options.onNetworkChange - Callback tobe invoked when network changes.
    * @param options.provider - The provider used to create the PPOM instance.
-   * @param options.state - The controller state.
    * @param options.storageBackend - The storage backend to use for storing PPOM data.
+   * @param options.refreshInterval - Interval at which data is refreshed.
+   * @param options.fileScheduleInterval - Interval at which fetching data files is scheduled.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -197,15 +203,17 @@ export class PPOMController extends BaseControllerV2<
     messenger,
     onNetworkChange,
     provider,
-    state,
     storageBackend,
+    refreshInterval,
+    fileScheduleInterval,
   }: {
     chainId: string;
     messenger: PPOMControllerMessenger;
     onNetworkChange: (callback: (chainId: string) => void) => void;
     provider: any;
-    state?: PPOMControllerState;
     storageBackend: StorageBackend;
+    refreshInterval: number;
+    fileScheduleInterval: number;
   }) {
     const initState = {
       versionInfo: [],
@@ -213,10 +221,11 @@ export class PPOMController extends BaseControllerV2<
       chainId,
       chainIdCache: [{ chainId, lastVisited: new Date().getTime() }],
       chainIdsDataUpdated: [],
-      refreshInterval: REFRESH_TIME_DURATION,
+      refreshInterval: refreshInterval || REFRESH_TIME_DURATION,
+      fileScheduleInterval:
+        fileScheduleInterval || MILLISECONDS_IN_FIVE_MINUTES,
       providerRequestLimit: PROVIDER_REQUEST_LIMIT,
       providerRequests: [],
-      ...state,
     };
     super({
       name: controllerName,
@@ -281,8 +290,9 @@ export class PPOMController extends BaseControllerV2<
    * Clears the periodic job to refresh file data.
    * This was required for unit test cases.
    */
-  clearRefreshInterval() {
+  clearIntervals() {
     clearInterval(this.#refreshDataInterval);
+    clearInterval(this.#fileScheduleInterval);
   }
 
   /**
@@ -500,19 +510,25 @@ export class PPOMController extends BaseControllerV2<
       (chain): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
         chainId: chain.chainId,
         versionInfo: stateVersionInfo.filter(
-          ({ chainId }) => chainId === chain.chainId,
+          (versionInfo) =>
+            versionInfo.chainId === chain.chainId &&
+            !this.#checkFilePresentInStorage(storageMetadata, versionInfo),
         ),
       }),
     );
 
-    // For each chain in chainIdsFileInfoMap get files
-    chainIdsFileInfoMap.forEach(({ chainId, versionInfo }) => {
-      versionInfo.forEach((fileVersionInfo, index) => {
-        // check if file is already in storage
-        if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
-          return;
-        }
+    const chainIds = chainIdsFileInfoMap.map(({ chainId }) => chainId);
 
+    this.#fileScheduleInterval = setInterval(() => {
+      const chainId = chainIds.pop();
+      if (!chainId) {
+        return;
+      }
+      const versionInfo = chainIdsFileInfoMap[chainId as any]?.versionInfo;
+      if (!versionInfo) {
+        return;
+      }
+      versionInfo.forEach((fileVersionInfo, index) => {
         // get the file from CDN
         this.#getFile(fileVersionInfo)
           .then(() => {
@@ -526,12 +542,15 @@ export class PPOMController extends BaseControllerV2<
               `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
             ),
           );
+        if (!chainIds.length) {
+          clearInterval(this.#fileScheduleInterval);
+        }
       });
       if (versionInfo.length === 0) {
         // add chain id to list chainIdsDataUpdated in state
         this.#addChainIdToChainIdsDataUpdatedList(chainId);
       }
-    });
+    }, this.state.fileScheduleInterval);
   }
 
   /*

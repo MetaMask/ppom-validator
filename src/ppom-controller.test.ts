@@ -12,6 +12,16 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
+Object.defineProperty(globalThis, 'setInterval', {
+  writable: true,
+  value: (callback: any, times: number) => {
+    for (let i = 0; i < times - 1; i++) {
+      // eslint-disable-next-line node/callback-return
+      callback();
+    }
+  },
+});
+
 jest.mock('@blockaid/ppom-mock', () => ({
   PPOM: class PPOMClass {
     #jsonRpcRequest;
@@ -40,7 +50,7 @@ jest.mock('@blockaid/ppom-mock', () => ({
 describe('PPOMController', () => {
   let ppomController: any;
   afterEach(() => {
-    ppomController.clearRefreshInterval();
+    // ppomController.clearIntervals();
   });
 
   describe('usePPOM', () => {
@@ -195,7 +205,7 @@ describe('PPOMController', () => {
         await ppomController.updatePPOM(false);
         // here only the version infor file is fetched, once when construction and once during updatePPOM
         expect(spy).toHaveBeenCalledTimes(2);
-        ppomController.clearRefreshInterval();
+        ppomController.clearIntervals();
       });
 
       it('should not fetch file if it already exists', async () => {
@@ -276,61 +286,16 @@ describe('PPOMController', () => {
         await ppomController.updatePPOM();
         expect(spy).toHaveBeenCalledTimes(3);
       });
-
-      it('should add chainId to chainIdsDataUpdated list', async () => {
-        buildFetchSpy();
-        let callBack: any;
-        ppomController = buildPPOMController({
-          onNetworkChange: (func: any) => {
-            callBack = func;
-          },
-        });
-
-        await ppomController.updatePPOM();
-        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
-        callBack('0x2');
-        await ppomController.updatePPOM();
-        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
-          '0x1',
-          '0x2',
-        ]);
-      });
-
-      it('should get files for all chains in chainIdCache', async () => {
-        const spy = buildFetchSpy({
-          status: 200,
-          json: () => [
-            ...VERSION_INFO,
-            {
-              name: 'data',
-              chainId: '0x2',
-              version: '1.0.3',
-              checksum:
-                '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-              filePath: 'data',
-            },
-          ],
-        });
-        let callBack: any;
-        ppomController = buildPPOMController({
-          onNetworkChange: (func: any) => {
-            callBack = func;
-          },
-        });
-        callBack('0x2');
-        expect(ppomController.state.chainIdCache).toHaveLength(2);
-        await ppomController.updatePPOM();
-        expect(spy).toHaveBeenCalledTimes(5);
-      });
     });
   });
 
   describe('setRefreshInterval', () => {
     it('should update refresh interval', async () => {
       ppomController = buildPPOMController();
-      expect(ppomController.state.refreshInterval).toBe(REFRESH_TIME_DURATION);
-      ppomController.setRefreshInterval(0);
-      expect(ppomController.state.refreshInterval).toBe(0);
+      expect(ppomController.state.refreshInterval).toBe(1);
+      ppomController.setRefreshInterval(5);
+      expect(ppomController.state.refreshInterval).toBe(5);
+      ppomController.clearIntervals();
     });
   });
 

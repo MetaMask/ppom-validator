@@ -12,7 +12,7 @@ describe('PPOMMiddleware', () => {
     const ppomController = buildPPOMController();
     const middlewareFunction = createPPOMMiddleware(ppomController);
     expect(middlewareFunction).toBeDefined();
-    ppomController.clearRefreshInterval();
+    ppomController.clearIntervals();
   });
 
   it('should call ppomController.usePPOM for requests of type confirmation', async () => {
