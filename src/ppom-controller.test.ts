@@ -5,7 +5,6 @@ import {
   buildFetchSpy,
   buildPPOMController,
 } from '../test/test-utils';
-import { REFRESH_TIME_DURATION } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
