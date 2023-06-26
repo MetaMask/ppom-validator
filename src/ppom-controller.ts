@@ -13,7 +13,7 @@ import {
   FileMetadata,
 } from './ppom-storage';
 
-export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 20;
+export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 24;
 
 const PROVIDER_REQUEST_LIMIT = 500;
 const MILLISECONDS_IN_FIVE_MINUTES = 300000;

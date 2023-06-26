@@ -52,7 +52,6 @@ jest.mock('@blockaid/ppom-mock', () => ({
 
 describe('PPOMController', () => {
   let ppomController: any;
-
   describe('usePPOM', () => {
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
