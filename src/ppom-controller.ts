@@ -13,7 +13,7 @@ import {
   FileMetadata,
 } from './ppom-storage';
 
-export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 24;
+export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 20;
 
 const PROVIDER_REQUEST_LIMIT = 500;
 const MILLISECONDS_IN_FIVE_MINUTES = 300000;
@@ -250,7 +250,8 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#ppomMutex = new Mutex();
 
-    onNetworkChange((id: string) => {
+    onNetworkChange((networkControllerState: any) => {
+      const id = networkControllerState.providerConfig.chainId;
       this.update((draftState) => {
         draftState.chainId = id;
         draftState.chainIdCache = [
@@ -283,16 +284,7 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.refreshInterval = interval;
     });
-    this.#startDataRefreshTask(interval);
-  }
-
-  /**
-   * Clears the periodic job to refresh file data.
-   * This was required for unit test cases.
-   */
-  clearIntervals() {
-    clearInterval(this.#refreshDataInterval);
-    clearInterval(this.#fileScheduleInterval);
+    this.#startDataRefreshTask();
   }
 
   /**
@@ -517,36 +509,66 @@ export class PPOMController extends BaseControllerV2<
       }),
     );
 
-    this.#fileScheduleInterval = setInterval(() => {
-      const chainIdFileInfo = chainIdsFileInfoList.pop();
-      if (!chainIdFileInfo) {
-        return;
-      }
-      const { chainId, versionInfo } = chainIdFileInfo;
+    // clear already scheduled fetch if any
+    if (this.#fileScheduleInterval) {
+      clearInterval(this.#fileScheduleInterval);
+    }
 
+    // build a list of files to be fetched for all networks
+    const fileToBeFetchedList: {
+      fileVersionInfo: PPOMFileVersion;
+      isLastFileOfNetwork: boolean;
+    }[] = [];
+    chainIdsFileInfoList.forEach((chainIdFileInfo) => {
+      const { chainId, versionInfo } = chainIdFileInfo;
       versionInfo.forEach((fileVersionInfo, index) => {
-        // get the file from CDN
-        this.#getFile(fileVersionInfo)
-          .then(() => {
-            if (index === versionInfo.length - 1) {
-              // add chain id to list chainIdsDataUpdated in state
-              this.#addChainIdToChainIdsDataUpdatedList(chainId);
-            }
-          })
-          .catch((exp: Error) =>
-            console.error(
-              `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-            ),
-          );
+        fileToBeFetchedList.push({
+          fileVersionInfo,
+          isLastFileOfNetwork: index === versionInfo.length - 1,
+        });
       });
       if (versionInfo.length === 0) {
         // add chain id to list chainIdsDataUpdated in state
         this.#addChainIdToChainIdsDataUpdatedList(chainId);
       }
-      if (!chainIdsFileInfoList.length) {
+    });
+
+    // if schedule interval is large so that not all files can be fetched in
+    // refreshInterval, reduce schedule interval
+    let scheduleInterval = this.state.fileScheduleInterval;
+    if (
+      this.state.refreshInterval / (fileToBeFetchedList.length + 1) <
+      scheduleInterval
+    ) {
+      scheduleInterval =
+        this.state.refreshInterval / (fileToBeFetchedList.length + 1);
+    }
+
+    // schedule files to be fetched in intervals
+    this.#fileScheduleInterval = setInterval(() => {
+      const fileToBeFetched = fileToBeFetchedList.pop();
+      if (!fileToBeFetched) {
+        return;
+      }
+      const { fileVersionInfo, isLastFileOfNetwork } = fileToBeFetched;
+      // get the file from CDN
+      this.#getFile(fileVersionInfo)
+        .then(() => {
+          if (isLastFileOfNetwork) {
+            // add chain id to list chainIdsDataUpdated in state
+            this.#addChainIdToChainIdsDataUpdatedList(fileVersionInfo.chainId);
+          }
+        })
+        .catch((exp: Error) =>
+          console.error(
+            `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+          ),
+        );
+      // clear interval if all files are fetched
+      if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
       }
-    }, this.state.fileScheduleInterval);
+    }, scheduleInterval);
   }
 
   /*
@@ -654,10 +676,8 @@ export class PPOMController extends BaseControllerV2<
 
   /**
    * Starts the periodic task to refresh data.
-   *
-   * @param refreshInterval - Time interval at which the refresh will be done.
    */
-  #startDataRefreshTask(refreshInterval?: number) {
+  #startDataRefreshTask() {
     if (this.#refreshDataInterval) {
       clearInterval(this.#refreshDataInterval);
     }
@@ -677,7 +697,7 @@ export class PPOMController extends BaseControllerV2<
     updatePPOMfn();
     this.#refreshDataInterval = setInterval(
       updatePPOMfn,
-      refreshInterval ?? this.#initState.refreshInterval,
+      this.state.refreshInterval,
     );
   }
 }

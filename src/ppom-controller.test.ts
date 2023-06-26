@@ -106,7 +106,7 @@ describe('PPOMController', () => {
       });
       expect(spy).toHaveBeenCalledTimes(4);
 
-      callBack('0x2');
+      callBack({ providerConfig: { chainId: '0x2' } });
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
@@ -252,7 +252,7 @@ describe('PPOMController', () => {
 
         await ppomController.updatePPOM(false);
         expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
-        callBack('0x2');
+        callBack({ providerConfig: { chainId: '0x2' } });
         await ppomController.updatePPOM(false);
         expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
           '0x1',
@@ -297,7 +297,7 @@ describe('PPOMController', () => {
 
         await ppomController.updatePPOM();
         expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
-        callBack('0x2');
+        callBack({ providerConfig: { chainId: '0x2' } });
         await ppomController.updatePPOM();
         expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
           '0x1',
@@ -326,7 +326,7 @@ describe('PPOMController', () => {
             callBack = func;
           },
         });
-        callBack('0x2');
+        callBack({ providerConfig: { chainId: '0x2' } });
         expect(ppomController.state.chainIdCache).toHaveLength(2);
         await ppomController.updatePPOM();
         expect(spy).toHaveBeenCalledTimes(5);
