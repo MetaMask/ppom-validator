@@ -34,7 +34,7 @@ Controller responsible for managing the PPOM</p>
 <ul class="tsd-hierarchy">
 <li><span class="target">PPOMController</span></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/6b2df23/src/ppom-controller.ts#L164">src/ppom-controller.ts:164</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L161">src/ppom-controller.ts:161</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -59,6 +59,7 @@ Controller responsible for managing the PPOM</p>
 <h3 class="tsd-index-heading">Methods</h3>
 <div class="tsd-index-list"><a href="PPOMController.html#applyPatches" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF4DB8" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-2048-path"></rect><path d="M9.162 16V7.24H10.578L11.514 10.072C11.602 10.328 11.674 10.584 11.73 10.84C11.794 11.088 11.842 11.28 11.874 11.416C11.906 11.28 11.954 11.088 12.018 10.84C12.082 10.584 12.154 10.324 12.234 10.06L13.122 7.24H14.538V16H13.482V12.82C13.482 12.468 13.49 12.068 13.506 11.62C13.53 11.172 13.558 10.716 13.59 10.252C13.622 9.78 13.654 9.332 13.686 8.908C13.726 8.476 13.762 8.1 13.794 7.78L12.366 12.16H11.334L9.894 7.78C9.934 8.092 9.97 8.456 10.002 8.872C10.042 9.28 10.078 9.716 10.11 10.18C10.142 10.636 10.166 11.092 10.182 11.548C10.206 12.004 10.218 12.428 10.218 12.82V16H9.162Z" fill="var(--color-text)" id="icon-2048-text"></path></svg><span>apply<wbr/>Patches</span></a>
 <a href="PPOMController.html#clear" class="tsd-index-link tsd-kind-method tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>clear</span></a>
+<a href="PPOMController.html#clearRefreshInterval" class="tsd-index-link tsd-kind-method tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>clear<wbr/>Refresh<wbr/>Interval</span></a>
 <a href="PPOMController.html#destroy" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>destroy</span></a>
 <a href="PPOMController.html#setRefreshInterval" class="tsd-index-link tsd-kind-method tsd-parent-kind-class"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>set<wbr/>Refresh<wbr/>Interval</span></a>
 <a href="PPOMController.html#update" class="tsd-index-link tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg><span>update</span></a>
@@ -137,7 +138,7 @@ Controller responsible for managing the PPOM</p>
   PPOMControllerMessenger
 &gt;.constructor</p>
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/6b2df23/src/ppom-controller.ts#L195">src/ppom-controller.ts:195</a></li></ul></aside></li></ul></section></section>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L194">src/ppom-controller.ts:194</a></li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="messagingSystem" class="tsd-anchor"></a>
@@ -228,7 +229,17 @@ or undo changes.</p>
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/6b2df23/src/ppom-controller.ts#L256">src/ppom-controller.ts:256</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L255">src/ppom-controller.ts:255</a></li></ul></aside></li></ul></section>
+<section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class"><a id="clearRefreshInterval" class="tsd-anchor"></a>
+<h3 class="tsd-anchor-link"><span>clear<wbr/>Refresh<wbr/>Interval</span><a href="#clearRefreshInterval" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
+<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
+<li class="tsd-signature tsd-anchor-link" id="clearRefreshInterval.clearRefreshInterval-1">clear<wbr/>Refresh<wbr/>Interval<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span><a href="#clearRefreshInterval.clearRefreshInterval-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
+<li class="tsd-description">
+<div class="tsd-comment tsd-typography"><p>Clears the periodic job to refresh file data.</p>
+</div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
+<ul>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L277">src/ppom-controller.ts:277</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="destroy" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagProtected">Protected</code> <span>destroy</span><a href="#destroy" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external">
@@ -263,7 +274,7 @@ For immediate update to the ppom lists, call updatePPOM directly.</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/6b2df23/src/ppom-controller.ts#L267">src/ppom-controller.ts:267</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L267">src/ppom-controller.ts:267</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="update" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagProtected">Protected</code> <span>update</span><a href="#update" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external">
@@ -312,12 +323,12 @@ object. Return a new state object or mutate the draft to update state.</p>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
 <li class="tsd-signature tsd-anchor-link" id="updatePPOM.updatePPOM-1">updatePPOM<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span><a href="#updatePPOM.updatePPOM-1" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></li>
 <li class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>Update the PPOM configuration.
-This function will fetch the latest version info when needed, and update the PPOM storage.</p>
+<div class="tsd-comment tsd-typography"><p>Update the PPOM.
+This function will acquire mutex lock and invoke internal method #updatePPOM.</p>
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/6b2df23/src/ppom-controller.ts#L277">src/ppom-controller.ts:277</a></li></ul></aside></li></ul></section>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L285">src/ppom-controller.ts:285</a></li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class"><a id="usePPOM" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>usePPOM</span><a href="#usePPOM" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -352,7 +363,7 @@ The callback will be called with the PPOM after it has been initialized.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span><span class="tsd-signature-symbol">&gt;</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type" data-tsd-kind="Type parameter">T</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/6b2df23/src/ppom-controller.ts#L311">src/ppom-controller.ts:311</a></li></ul></aside></li></ul></section></section></div>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1a610db/src/ppom-controller.ts#L298">src/ppom-controller.ts:298</a></li></ul></aside></li></ul></section></section></div>
 <div class="col-4 col-menu menu-sticky-wrap menu-highlight">
 <div class="tsd-navigation settings">
 <details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
@@ -385,6 +396,7 @@ The callback will be called with the PPOM after it has been initialized.</p>
 <li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="PPOMController.html#state" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-262144-path"></use><use href="#icon-262144-text"></use></svg>state</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a href="PPOMController.html#applyPatches" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>apply<wbr/>Patches</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class"><a href="PPOMController.html#clear" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>clear</a></li>
+<li class="tsd-kind-method tsd-parent-kind-class"><a href="PPOMController.html#clearRefreshInterval" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>clear<wbr/>Refresh<wbr/>Interval</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a href="PPOMController.html#destroy" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>destroy</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class"><a href="PPOMController.html#setRefreshInterval" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>set<wbr/>Refresh<wbr/>Interval</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a href="PPOMController.html#update" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>update</a></li>
