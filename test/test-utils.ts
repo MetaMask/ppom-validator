@@ -95,7 +95,6 @@ export const buildPPOMController = (args?: any) => {
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
     }),
-    refreshInterval: 1,
     fileScheduleInterval: 20,
     ...args,
   });

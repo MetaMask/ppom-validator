@@ -6,13 +6,21 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
+Object.defineProperty(globalThis, 'setInterval', {
+  writable: true,
+  value: (callback: any) => {
+    // eslint-disable-next-line node/callback-return
+    callback();
+    return 123;
+  },
+});
+
 describe('PPOMMiddleware', () => {
   it('should return PPOM Middleware when createPPOMMiddleware function called', () => {
     buildFetchSpy();
     const ppomController = buildPPOMController();
     const middlewareFunction = createPPOMMiddleware(ppomController);
     expect(middlewareFunction).toBeDefined();
-    ppomController.clearRefreshInterval();
   });
 
   it('should call ppomController.usePPOM for requests of type confirmation', async () => {
