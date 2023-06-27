@@ -39,9 +39,49 @@ jest.mock('@blockaid/ppom-mock', () => ({
 
 describe('PPOMController', () => {
   let ppomController: any;
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   afterEach(() => {
     ppomController.clearRefreshInterval();
+    jest.clearAllMocks();
   });
+
+  describe('constructor', () => {
+    function flushPromises() {
+      // Wait for promises running in the non-async timer callback to complete.
+      // From https://github.com/facebook/jest/issues/2157#issuecomment-897935688
+      return new Promise(jest.requireActual('timers').setImmediate);
+    }
+
+    it('should usePPOM immediately and periodically on creating instance of PPOMController', async () => {
+      jest.useFakeTimers();
+      const spy = buildFetchSpy();
+      ppomController = buildPPOMController();
+
+      expect(spy).toHaveBeenCalledTimes(0);
+      jest.runAllTicks();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(3);
+
+      jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(4);
+      jest.advanceTimersByTime(REFRESH_TIME_DURATION - 1);
+
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(4);
+
+      jest.advanceTimersByTime(1);
+
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(5);
+
+      jest.useRealTimers();
+    });
+  });
+
   describe('usePPOM', () => {
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
