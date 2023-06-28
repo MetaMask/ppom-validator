@@ -82,9 +82,11 @@ export type PPOMControllerState = {
   // chainId of currently selected network
   chainId: string;
   // list of chainIds and time the network was last visited, list of all networks visited in last 1 week is maintained
-  chainIdCache: { chainId: string; lastVisited: number }[];
-  // list of chainIds for which data is updated
-  chainIdsDataUpdated: string[];
+  chainIdCache: {
+    chainId: string;
+    lastVisited: number;
+    dataFetched: boolean;
+  }[];
   // version information obtained from version info file
   versionInfo: PPOMVersionResponse;
   // storage metadat of files already present in the storage
@@ -103,7 +105,6 @@ const stateMetaData = {
   versionInfo: { persist: false, anonymous: false },
   chainId: { persist: false, anonymous: false },
   chainIdCache: { persist: false, anonymous: false },
-  chainIdsDataUpdated: { persist: false, anonymous: false },
   storageMetadata: { persist: false, anonymous: false },
   refreshInterval: { persist: false, anonymous: false },
   fileScheduleInterval: { persist: false, anonymous: false },
@@ -219,8 +220,9 @@ export class PPOMController extends BaseControllerV2<
       versionInfo: [],
       storageMetadata: [],
       chainId,
-      chainIdCache: [{ chainId, lastVisited: new Date().getTime() }],
-      chainIdsDataUpdated: [],
+      chainIdCache: [
+        { chainId, lastVisited: new Date().getTime(), dataFetched: false },
+      ],
       refreshInterval: refreshInterval || REFRESH_TIME_DURATION,
       fileScheduleInterval:
         fileScheduleInterval || MILLISECONDS_IN_FIVE_MINUTES,
@@ -252,12 +254,28 @@ export class PPOMController extends BaseControllerV2<
 
     onNetworkChange((networkControllerState: any) => {
       const id = networkControllerState.providerConfig.chainId;
+      let { chainIdCache } = this.state;
+      const existingNetworkObject = chainIdCache.find(
+        ({ chainId: cid }) => cid === id,
+      );
+      if (existingNetworkObject) {
+        chainIdCache = [
+          { chainId: id, lastVisited: new Date().getTime(), dataFetched: true },
+          ...chainIdCache.filter(({ chainId: cid }) => cid !== id),
+        ];
+      } else {
+        chainIdCache = [
+          {
+            chainId: id,
+            lastVisited: new Date().getTime(),
+            dataFetched: false,
+          },
+          ...chainIdCache,
+        ];
+      }
       this.update((draftState) => {
         draftState.chainId = id;
-        draftState.chainIdCache = [
-          ...draftState.chainIdCache,
-          { chainId: id, lastVisited: new Date().getTime() },
-        ];
+        draftState.chainIdCache = chainIdCache;
       });
     });
 
@@ -368,9 +386,13 @@ export class PPOMController extends BaseControllerV2<
    * @returns True if PPOM data requires update.
    */
   async #shouldUpdate(): Promise<boolean> {
-    const { chainId, chainIdsDataUpdated } = this.state;
+    const { chainId, chainIdCache } = this.state;
 
-    if (chainIdsDataUpdated.includes(chainId)) {
+    if (
+      chainIdCache.find(
+        ({ chainId: cid, dataFetched }) => cid === chainId && dataFetched,
+      )
+    ) {
       return false;
     }
 
@@ -437,25 +459,34 @@ export class PPOMController extends BaseControllerV2<
    * @param fileVersionInfo - Information about the file to be retrieved.
    */
   async #getFile(fileVersionInfo: PPOMFileVersion) {
-    const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
-    const fileData = await this.#fetchBlob(fileUrl);
+    const { storageMetadata } = this.state;
+    if (!this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
+      const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
+      const fileData = await this.#fetchBlob(fileUrl);
 
-    await this.#storage.writeFile({
-      data: fileData,
-      ...fileVersionInfo,
-    });
+      await this.#storage.writeFile({
+        data: fileData,
+        ...fileVersionInfo,
+      });
+    }
   }
 
   /**
-   * As files for a chain are fetched this function adds that chain to chainIdsDataUpdated array in controller state.
+   * As files for a chain are fetched this function set dataFetched property in chainIdCache to true.
    *
-   * @param chainId - Id to be added to chainIdsDataUpdated array.
+   * @param chainId - ChainId for which dataFetched is set to true.
    */
-  #addChainIdToChainIdsDataUpdatedList(chainId: string) {
-    const { chainIdsDataUpdated } = this.state;
-    if (!chainIdsDataUpdated.includes(chainId)) {
+  #setChainIdDataFetched(chainId: string) {
+    const { chainIdCache } = this.state;
+    const chainIdObject = chainIdCache.find(
+      ({ chainId: cid }) => chainId === cid,
+    );
+    if (chainIdObject && !chainIdObject.dataFetched) {
       this.update((draftState) => {
-        draftState.chainIdsDataUpdated = [...chainIdsDataUpdated, chainId];
+        draftState.chainIdCache = [
+          { ...chainIdObject, dataFetched: true },
+          ...chainIdCache.filter(({ chainId: cid }) => chainId !== cid),
+        ];
       });
     }
   }
@@ -482,7 +513,7 @@ export class PPOMController extends BaseControllerV2<
 
       await this.#getFile(fileVersionInfo);
     }
-    this.#addChainIdToChainIdsDataUpdatedList(chainId);
+    this.#setChainIdDataFetched(chainId);
   }
 
   /**
@@ -528,8 +559,8 @@ export class PPOMController extends BaseControllerV2<
         });
       });
       if (versionInfo.length === 0) {
-        // add chain id to list chainIdsDataUpdated in state
-        this.#addChainIdToChainIdsDataUpdatedList(chainId);
+        // set dataFetched to true for chainId
+        this.#setChainIdDataFetched(chainId);
       }
     });
 
@@ -555,8 +586,8 @@ export class PPOMController extends BaseControllerV2<
       this.#getFile(fileVersionInfo)
         .then(() => {
           if (isLastFileOfNetwork) {
-            // add chain id to list chainIdsDataUpdated in state
-            this.#addChainIdToChainIdsDataUpdatedList(fileVersionInfo.chainId);
+            // set dataFetched for chainId to true
+            this.#setChainIdDataFetched(fileVersionInfo.chainId);
           }
         })
         .catch((exp: Error) =>

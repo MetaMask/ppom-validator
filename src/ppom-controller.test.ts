@@ -240,7 +240,7 @@ describe('PPOMController', () => {
         );
       });
 
-      it('should add chainId to chainIdsDataUpdated list', async () => {
+      it('should set dataFetched to true for chainId in chainIdCache', async () => {
         buildFetchSpy();
         let callBack: any;
         ppomController = buildPPOMController({
@@ -250,13 +250,20 @@ describe('PPOMController', () => {
         });
 
         await ppomController.updatePPOM(false);
-        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
+        let chainIdData1 = ppomController.state.chainIdCache.find(
+          ({ chainId }: any) => chainId === '0x1',
+        );
+        expect(chainIdData1.dataFetched).toBe(true);
         callBack({ providerConfig: { chainId: '0x2' } });
         await ppomController.updatePPOM(false);
-        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
-          '0x1',
-          '0x2',
-        ]);
+        chainIdData1 = ppomController.state.chainIdCache.find(
+          ({ chainId }: any) => chainId === '0x1',
+        );
+        const chainIdData2 = ppomController.state.chainIdCache.find(
+          ({ chainId }: any) => chainId === '0x2',
+        );
+        expect(chainIdData1.dataFetched).toBe(true);
+        expect(chainIdData2.dataFetched).toBe(true);
       });
     });
 
@@ -273,7 +280,7 @@ describe('PPOMController', () => {
         }).rejects.toThrow('Failed to fetch version info');
       });
 
-      it('should not fetch data for network if network is present in chainIdsDataUpdated list', async () => {
+      it('should not fetch data for network if network data is already fetched', async () => {
         const spy = buildFetchSpy();
 
         ppomController = buildPPOMController({
@@ -285,7 +292,7 @@ describe('PPOMController', () => {
         expect(spy).toHaveBeenCalledTimes(3);
       });
 
-      it('should add chainId to chainIdsDataUpdated list', async () => {
+      it('should set dataFetched to true for chainId in chainIdCache', async () => {
         buildFetchSpy();
         let callBack: any;
         ppomController = buildPPOMController({
@@ -294,14 +301,21 @@ describe('PPOMController', () => {
           },
         });
 
-        await ppomController.updatePPOM();
-        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual(['0x1']);
+        await ppomController.updatePPOM(false);
+        let chainIdData1 = ppomController.state.chainIdCache.find(
+          ({ chainId }: any) => chainId === '0x1',
+        );
+        expect(chainIdData1.dataFetched).toBe(true);
         callBack({ providerConfig: { chainId: '0x2' } });
-        await ppomController.updatePPOM();
-        expect(ppomController.state.chainIdsDataUpdated).toStrictEqual([
-          '0x1',
-          '0x2',
-        ]);
+        await ppomController.updatePPOM(false);
+        chainIdData1 = ppomController.state.chainIdCache.find(
+          ({ chainId }: any) => chainId === '0x1',
+        );
+        const chainIdData2 = ppomController.state.chainIdCache.find(
+          ({ chainId }: any) => chainId === '0x2',
+        );
+        expect(chainIdData1.dataFetched).toBe(true);
+        expect(chainIdData2.dataFetched).toBe(true);
       });
 
       it('should get files for all chains in chainIdCache', async () => {
