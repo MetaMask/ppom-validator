@@ -99,3 +99,10 @@ export const buildPPOMController = (args?: any) => {
   });
   return ppomController;
 };
+
+// eslint-disable-next-line jsdoc/require-jsdoc
+export async function flushPromises() {
+  // Wait for promises running in the non-async timer callback to complete.
+  // From https://github.com/facebook/jest/issues/2157#issuecomment-897935688
+  return new Promise(jest.requireActual('timers').setImmediate);
+}

@@ -13,6 +13,11 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
+Object.defineProperty(globalThis, 'performance', {
+  writable: true,
+  value: () => undefined,
+});
+
 const delay = async (delayInms = 1000) => {
   return new Promise((resolve) => setTimeout(resolve, delayInms));
 };
@@ -52,13 +57,16 @@ jest.mock('@blockaid/ppom-mock', () => ({
 describe('PPOMController', () => {
   let ppomController: any;
 
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
   afterEach(() => {
     jest.useRealTimers();
   });
 
   describe('constructor', () => {
     it('should usePPOM immediately and periodically on creating instance of PPOMController', async () => {
-      jest.useFakeTimers();
       const spy = buildFetchSpy();
       ppomController = buildPPOMController();
 
@@ -85,10 +93,6 @@ describe('PPOMController', () => {
   });
 
   describe('usePPOM', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
-
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController();
@@ -245,9 +249,6 @@ describe('PPOMController', () => {
   });
 
   describe('updatePPOM', () => {
-    beforeEach(() => {
-      jest.useFakeTimers();
-    });
     describe('when updating for only current chainId', () => {
       // in these scenario argument "updateForAllChains" passed to function "updatePPOM" is false
       it('should not fetch file if chainId of the file is different from current chainId in the state', async () => {
@@ -471,7 +472,6 @@ describe('PPOMController', () => {
 
   describe('clear', () => {
     it('should clear controller state', async () => {
-      jest.useFakeTimers();
       buildFetchSpy();
       ppomController = buildPPOMController();
 
@@ -486,7 +486,6 @@ describe('PPOMController', () => {
 
   describe('onNetworkChange', () => {
     it('should add network to chainIdCache if not already added', () => {
-      jest.useFakeTimers();
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -507,7 +506,6 @@ describe('PPOMController', () => {
     });
 
     it('should update lastVisited time in chainIdCache if network is already added', async () => {
-      jest.useFakeTimers();
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
