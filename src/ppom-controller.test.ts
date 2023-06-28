@@ -25,6 +25,10 @@ Object.defineProperty(globalThis, 'setInterval', {
   },
 });
 
+const delay = async (delayInms = 1000) => {
+  return new Promise((resolve) => setTimeout(resolve, delayInms));
+};
+
 jest.mock('@blockaid/ppom-mock', () => ({
   PPOM: class PPOMClass {
     #jsonRpcRequest;
@@ -374,5 +378,47 @@ describe('PPOMController', () => {
       ppomController.clear();
       expect(ppomController.state.storageMetadata).toHaveLength(0);
     });
+  });
+
+  describe('onNetworkChange', () => {
+    it('should add network to chainIdCache if not already added', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+      });
+
+      const chainIdData1 = ppomController.state.chainIdCache.find(
+        ({ chainId }: any) => chainId === '0x1',
+      );
+      expect(chainIdData1).toBeDefined();
+      callBack({ providerConfig: { chainId: '0x2' } });
+      const chainIdData2 = ppomController.state.chainIdCache.find(
+        ({ chainId }: any) => chainId === '0x2',
+      );
+      expect(chainIdData2).toBeDefined();
+    });
+  });
+
+  it('should update lastVisited time in chainIdCache if network is already added', async () => {
+    buildFetchSpy();
+    let callBack: any;
+    ppomController = buildPPOMController({
+      onNetworkChange: (func: any) => {
+        callBack = func;
+      },
+    });
+
+    const lastVisitedBefore = ppomController.state.chainIdCache.find(
+      ({ chainId }: any) => chainId === '0x1',
+    ).lastVisited;
+    await delay(1);
+    callBack({ providerConfig: { chainId: '0x1' } });
+    const lastVisitedAfter = ppomController.state.chainIdCache.find(
+      ({ chainId }: any) => chainId === '0x1',
+    ).lastVisited;
+    expect(lastVisitedBefore !== lastVisitedAfter).toBe(true);
   });
 });
