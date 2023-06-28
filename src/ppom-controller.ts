@@ -460,15 +460,16 @@ export class PPOMController extends BaseControllerV2<
    */
   async #getFile(fileVersionInfo: PPOMFileVersion) {
     const { storageMetadata } = this.state;
-    if (!this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
-      const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
-      const fileData = await this.#fetchBlob(fileUrl);
-
-      await this.#storage.writeFile({
-        data: fileData,
-        ...fileVersionInfo,
-      });
+    if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
+      return;
     }
+    const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
+    const fileData = await this.#fetchBlob(fileUrl);
+
+    await this.#storage.writeFile({
+      data: fileData,
+      ...fileVersionInfo,
+    });
   }
 
   /**
@@ -499,15 +500,10 @@ export class PPOMController extends BaseControllerV2<
    * @returns A promise that resolves to an array of new files to download and save to storage.
    */
   async #getNewFilesForCurrentChain(): Promise<void> {
-    const { chainId, storageMetadata, versionInfo } = this.state;
+    const { chainId, versionInfo } = this.state;
     for (const fileVersionInfo of versionInfo) {
       //  download all files for the current chain.
       if (fileVersionInfo.chainId !== chainId) {
-        continue;
-      }
-
-      // check if file is already in storage
-      if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
         continue;
       }
 
