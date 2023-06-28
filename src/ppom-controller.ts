@@ -129,21 +129,12 @@ export type UsePPOM = {
   handler: (callback: (ppom: PPOMModule.PPOM) => Promise<any>) => Promise<any>;
 };
 
-export type SetRefreshInterval = {
-  type: `${typeof controllerName}:setRefreshInterval`;
-  handler: (interval: number) => void;
-};
-
 export type UpdatePPOM = {
   type: `${typeof controllerName}:updatePPOM`;
   handler: () => void;
 };
 
-export type PPOMControllerActions =
-  | Clear
-  | UsePPOM
-  | SetRefreshInterval
-  | UpdatePPOM;
+export type PPOMControllerActions = Clear | UsePPOM | UpdatePPOM;
 
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
@@ -292,20 +283,6 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
-   * Set the interval at which the ppom version info will be fetched.
-   * Fetching will only occur on the next call to test/bypass.
-   * For immediate update to the ppom lists, call updatePPOM directly.
-   *
-   * @param interval - The new interval in ms.
-   */
-  setRefreshInterval(interval: number) {
-    this.update((draftState) => {
-      draftState.refreshInterval = interval;
-    });
-    this.#startDataRefreshTask();
-  }
-
-  /**
    * Update the PPOM.
    * This function will acquire mutex lock and invoke internal method #updatePPOM.
    *
@@ -351,11 +328,6 @@ export class PPOMController extends BaseControllerV2<
     this.messagingSystem.registerActionHandler(
       `${controllerName}:usePPOM` as const,
       this.usePPOM.bind(this),
-    );
-
-    this.messagingSystem.registerActionHandler(
-      `${controllerName}:setRefreshInterval` as const,
-      this.setRefreshInterval.bind(this),
     );
 
     this.messagingSystem.registerActionHandler(

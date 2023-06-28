@@ -6,14 +6,7 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
-Object.defineProperty(globalThis, 'setInterval', {
-  writable: true,
-  value: (callback: any) => {
-    // eslint-disable-next-line node/callback-return
-    callback();
-    return 123;
-  },
-});
+jest.useFakeTimers();
 
 describe('PPOMMiddleware', () => {
   it('should return PPOM Middleware when createPPOMMiddleware function called', () => {
