@@ -99,6 +99,8 @@ export type PPOMControllerState = {
   providerRequestLimit: number;
   // number of requests PPOM has already made to the provider in current transaction
   providerRequests: number[];
+  // true if user has enabled preference for blockaid secirity check
+  blockaidSecurityCheckEnabled: boolean;
 };
 
 const stateMetaData = {
@@ -110,6 +112,7 @@ const stateMetaData = {
   fileScheduleInterval: { persist: false, anonymous: false },
   providerRequestLimit: { persist: false, anonymous: false },
   providerRequests: { persist: false, anonymous: false },
+  blockaidSecurityCheckEnabled: { persist: false, anonymous: false },
 };
 
 // TODO: replace with metamask cdn
@@ -118,11 +121,6 @@ const PPOM_VERSION = 'ppom_version.json';
 const PPOM_VERSION_PATH = `${PPOM_CDN_BASE_URL}${PPOM_VERSION}`;
 
 const controllerName = 'PPOMController';
-
-export type Clear = {
-  type: `${typeof controllerName}:clear`;
-  handler: () => void;
-};
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
@@ -134,7 +132,7 @@ export type UpdatePPOM = {
   handler: () => void;
 };
 
-export type PPOMControllerActions = Clear | UsePPOM | UpdatePPOM;
+export type PPOMControllerActions = UsePPOM | UpdatePPOM;
 
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
@@ -188,6 +186,8 @@ export class PPOMController extends BaseControllerV2<
    * @param options.storageBackend - The storage backend to use for storing PPOM data.
    * @param options.refreshInterval - Interval at which data is refreshed.
    * @param options.fileScheduleInterval - Interval at which fetching data files is scheduled.
+   * @param options.blockaidSecurityCheckEnabled - True if user has enabled preference for blockaid security check.
+   * @param options.onPreferencesChange - Callback invoked when user changes preferences.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -198,14 +198,18 @@ export class PPOMController extends BaseControllerV2<
     storageBackend,
     refreshInterval,
     fileScheduleInterval,
+    blockaidSecurityCheckEnabled,
+    onPreferencesChange,
   }: {
     chainId: string;
     messenger: PPOMControllerMessenger;
-    onNetworkChange: (callback: (chainId: string) => void) => void;
+    onNetworkChange: (callback: (networkState: any) => void) => void;
     provider: any;
     storageBackend: StorageBackend;
     refreshInterval: number;
     fileScheduleInterval: number;
+    blockaidSecurityCheckEnabled: boolean;
+    onPreferencesChange: (callback: (perferenceState: any) => void) => void;
   }) {
     const initState = {
       versionInfo: [],
@@ -219,6 +223,7 @@ export class PPOMController extends BaseControllerV2<
         fileScheduleInterval || MILLISECONDS_IN_FIVE_MINUTES,
       providerRequestLimit: PROVIDER_REQUEST_LIMIT,
       providerRequests: [],
+      blockaidSecurityCheckEnabled,
     };
     super({
       name: controllerName,
@@ -273,16 +278,27 @@ export class PPOMController extends BaseControllerV2<
       });
     });
 
-    this.#registerMessageHandlers();
-    this.#startDataRefreshTask();
-  }
+    onPreferencesChange((preferenceControllerState: any) => {
+      const blockaidEnabled =
+        preferenceControllerState.blockaidSecurityCheckEnabled;
+      if (blockaidEnabled === this.state.blockaidSecurityCheckEnabled) {
+        return;
+      }
+      if (blockaidEnabled) {
+        this.#startDataRefreshTask();
+      } else {
+        clearInterval(this.#refreshDataInterval);
+        clearInterval(this.#fileScheduleInterval);
+      }
+      this.update((draftState) => {
+        draftState.blockaidSecurityCheckEnabled = blockaidEnabled;
+      });
+    });
 
-  /**
-   * Clear the controller state.
-   */
-  clear(): void {
-    this.update(() => this.#initState);
-    this.#startDataRefreshTask();
+    this.#registerMessageHandlers();
+    if (blockaidSecurityCheckEnabled) {
+      this.#startDataRefreshTask();
+    }
   }
 
   /**
@@ -292,6 +308,9 @@ export class PPOMController extends BaseControllerV2<
    * @param updateForAllChains - True is update if required to be done for all chains in cache.
    */
   async updatePPOM(updateForAllChains = true) {
+    if (!this.state.blockaidSecurityCheckEnabled) {
+      throw Error('User has not enabled blockaidSecurityCheck');
+    }
     await this.#ppomMutex.use(async () => {
       await this.#updatePPOM(updateForAllChains);
     });
@@ -307,6 +326,9 @@ export class PPOMController extends BaseControllerV2<
   async usePPOM<T>(
     callback: (ppom: PPOMModule.PPOM) => Promise<T>,
   ): Promise<T> {
+    if (!this.state.blockaidSecurityCheckEnabled) {
+      throw Error('User has not enabled blockaidSecurityCheck');
+    }
     return await this.#ppomMutex.use(async () => {
       await this.#maybeUpdatePPOM();
 
@@ -323,11 +345,6 @@ export class PPOMController extends BaseControllerV2<
    * actions.
    */
   #registerMessageHandlers(): void {
-    this.messagingSystem.registerActionHandler(
-      `${controllerName}:clear` as const,
-      this.clear.bind(this),
-    );
-
     this.messagingSystem.registerActionHandler(
       `${controllerName}:usePPOM` as const,
       this.usePPOM.bind(this),
@@ -680,9 +697,6 @@ export class PPOMController extends BaseControllerV2<
    * Starts the periodic task to refresh data.
    */
   #startDataRefreshTask() {
-    if (this.#refreshDataInterval) {
-      clearInterval(this.#refreshDataInterval);
-    }
     const currentTimestamp = new Date().getTime();
     const chainIdCache = this.state.chainIdCache.filter(
       (cache) =>

@@ -246,6 +246,19 @@ describe('PPOMController', () => {
         expect(result).toBeUndefined();
       });
     });
+
+    it('should throw error if the user has not enabled blockaid security check', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        blockaidSecurityCheckEnabled: false,
+      });
+      jest.runOnlyPendingTimers();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
+    });
   });
 
   describe('updatePPOM', () => {
@@ -327,6 +340,17 @@ describe('PPOMController', () => {
         );
         expect(chainIdData1.dataFetched).toBe(true);
         expect(chainIdData2.dataFetched).toBe(true);
+      });
+
+      it('should throw error if the user has not enabled blockaid security check', async () => {
+        buildFetchSpy();
+        ppomController = buildPPOMController({
+          blockaidSecurityCheckEnabled: false,
+        });
+        jest.runOnlyPendingTimers();
+        await expect(async () => {
+          await ppomController.updatePPOM(false);
+        }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
       });
     });
 
@@ -470,20 +494,6 @@ describe('PPOMController', () => {
     });
   });
 
-  describe('clear', () => {
-    it('should clear controller state', async () => {
-      buildFetchSpy();
-      ppomController = buildPPOMController();
-
-      jest.runOnlyPendingTimers();
-      await ppomController.updatePPOM(false);
-
-      expect(ppomController.state.storageMetadata).toHaveLength(2);
-      ppomController.clear();
-      expect(ppomController.state.storageMetadata).toHaveLength(0);
-    });
-  });
-
   describe('onNetworkChange', () => {
     it('should add network to chainIdCache if not already added', () => {
       buildFetchSpy();
@@ -546,6 +556,81 @@ describe('PPOMController', () => {
       callBack({ providerConfig: { chainId: '0x1' } });
       const chainIdCacheAfter = [...ppomController.state.chainIdCache];
       expect(chainIdCacheBefore).toStrictEqual(chainIdCacheAfter);
+    });
+  });
+
+  describe('onPreferencesChange', () => {
+    it('should start file fetching if blockaidSecurityCheckEnabled is set to true', async () => {
+      const spy = buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        blockaidSecurityCheckEnabled: false,
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(0);
+      callBack({ blockaidSecurityCheckEnabled: true });
+      jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should update blockaidSecurityCheckEnabled in state', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      const blockaidSecurityCheckEnabledBefore =
+        ppomController.state.blockaidSecurityCheckEnabled;
+      callBack({ blockaidSecurityCheckEnabled: false });
+      const blockaidSecurityCheckEnabledAfter =
+        ppomController.state.blockaidSecurityCheckEnabled;
+      expect(blockaidSecurityCheckEnabledBefore).not.toBe(
+        blockaidSecurityCheckEnabledAfter,
+      );
+    });
+
+    it('should stop file fetching if blockaidSecurityCheckEnabled is set to false', async () => {
+      const spy = buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(2);
+      callBack({ blockaidSecurityCheckEnabled: false });
+      jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should do nothing if new chainId is same as the current chainId', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      const blockaidSecurityCheckEnabledBefore =
+        ppomController.state.blockaidSecurityCheckEnabled;
+      callBack({ blockaidSecurityCheckEnabled: true });
+      const blockaidSecurityCheckEnabledAfter =
+        ppomController.state.blockaidSecurityCheckEnabled;
+      expect(blockaidSecurityCheckEnabledBefore).toBe(
+        blockaidSecurityCheckEnabledAfter,
+      );
     });
   });
 });
