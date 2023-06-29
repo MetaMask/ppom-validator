@@ -245,6 +245,9 @@ export class PPOMController extends BaseControllerV2<
 
     onNetworkChange((networkControllerState: any) => {
       const id = networkControllerState.providerConfig.chainId;
+      if (id === this.state.chainId) {
+        return;
+      }
       let { chainIdCache } = this.state;
       const existingNetworkObject = chainIdCache.find(
         ({ chainId: cid }) => cid === id,

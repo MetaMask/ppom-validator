@@ -521,11 +521,31 @@ describe('PPOMController', () => {
       jest.useRealTimers();
       await delay(10);
 
+      callBack({ providerConfig: { chainId: '0x2' } });
       callBack({ providerConfig: { chainId: '0x1' } });
       const lastVisitedAfter = ppomController.state.chainIdCache.find(
         ({ chainId }: any) => chainId === '0x1',
       ).lastVisited;
       expect(lastVisitedBefore !== lastVisitedAfter).toBe(true);
+    });
+
+    it('should do nothing if new chainId is same as the current chainId', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+      });
+
+      const chainIdCacheBefore = [...ppomController.state.chainIdCache];
+
+      jest.useRealTimers();
+      await delay(10);
+
+      callBack({ providerConfig: { chainId: '0x1' } });
+      const chainIdCacheAfter = [...ppomController.state.chainIdCache];
+      expect(chainIdCacheBefore).toStrictEqual(chainIdCacheAfter);
     });
   });
 });
