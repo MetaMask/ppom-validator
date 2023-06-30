@@ -100,7 +100,7 @@ export type PPOMControllerState = {
   // number of requests PPOM has already made to the provider in current transaction
   providerRequests: number[];
   // true if user has enabled preference for blockaid secirity check
-  blockaidSecurityCheckEnabled: boolean;
+  securityAlertsEnabled: boolean;
 };
 
 const stateMetaData = {
@@ -112,7 +112,7 @@ const stateMetaData = {
   fileScheduleInterval: { persist: false, anonymous: false },
   providerRequestLimit: { persist: false, anonymous: false },
   providerRequests: { persist: false, anonymous: false },
-  blockaidSecurityCheckEnabled: { persist: false, anonymous: false },
+  securityAlertsEnabled: { persist: false, anonymous: false },
 };
 
 // TODO: replace with metamask cdn
@@ -186,7 +186,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.storageBackend - The storage backend to use for storing PPOM data.
    * @param options.refreshInterval - Interval at which data is refreshed.
    * @param options.fileScheduleInterval - Interval at which fetching data files is scheduled.
-   * @param options.blockaidSecurityCheckEnabled - True if user has enabled preference for blockaid security check.
+   * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
    * @param options.onPreferencesChange - Callback invoked when user changes preferences.
    * @returns The PPOMController instance.
    */
@@ -198,7 +198,7 @@ export class PPOMController extends BaseControllerV2<
     storageBackend,
     refreshInterval,
     fileScheduleInterval,
-    blockaidSecurityCheckEnabled,
+    securityAlertsEnabled,
     onPreferencesChange,
   }: {
     chainId: string;
@@ -208,7 +208,7 @@ export class PPOMController extends BaseControllerV2<
     storageBackend: StorageBackend;
     refreshInterval: number;
     fileScheduleInterval: number;
-    blockaidSecurityCheckEnabled: boolean;
+    securityAlertsEnabled: boolean;
     onPreferencesChange: (callback: (perferenceState: any) => void) => void;
   }) {
     const initState = {
@@ -223,7 +223,7 @@ export class PPOMController extends BaseControllerV2<
         fileScheduleInterval || MILLISECONDS_IN_FIVE_MINUTES,
       providerRequestLimit: PROVIDER_REQUEST_LIMIT,
       providerRequests: [],
-      blockaidSecurityCheckEnabled,
+      securityAlertsEnabled,
     };
     super({
       name: controllerName,
@@ -279,9 +279,8 @@ export class PPOMController extends BaseControllerV2<
     });
 
     onPreferencesChange((preferenceControllerState: any) => {
-      const blockaidEnabled =
-        preferenceControllerState.blockaidSecurityCheckEnabled;
-      if (blockaidEnabled === this.state.blockaidSecurityCheckEnabled) {
+      const blockaidEnabled = preferenceControllerState.securityAlertsEnabled;
+      if (blockaidEnabled === this.state.securityAlertsEnabled) {
         return;
       }
       if (blockaidEnabled) {
@@ -291,12 +290,12 @@ export class PPOMController extends BaseControllerV2<
         clearInterval(this.#fileScheduleInterval);
       }
       this.update((draftState) => {
-        draftState.blockaidSecurityCheckEnabled = blockaidEnabled;
+        draftState.securityAlertsEnabled = blockaidEnabled;
       });
     });
 
     this.#registerMessageHandlers();
-    if (blockaidSecurityCheckEnabled) {
+    if (securityAlertsEnabled) {
       this.#startDataRefreshTask();
     }
   }
@@ -308,7 +307,7 @@ export class PPOMController extends BaseControllerV2<
    * @param updateForAllChains - True is update if required to be done for all chains in cache.
    */
   async updatePPOM(updateForAllChains = true) {
-    if (!this.state.blockaidSecurityCheckEnabled) {
+    if (!this.state.securityAlertsEnabled) {
       throw Error('User has not enabled blockaidSecurityCheck');
     }
     await this.#ppomMutex.use(async () => {
@@ -326,7 +325,7 @@ export class PPOMController extends BaseControllerV2<
   async usePPOM<T>(
     callback: (ppom: PPOMModule.PPOM) => Promise<T>,
   ): Promise<T> {
-    if (!this.state.blockaidSecurityCheckEnabled) {
+    if (!this.state.securityAlertsEnabled) {
       throw Error('User has not enabled blockaidSecurityCheck');
     }
     return await this.#ppomMutex.use(async () => {

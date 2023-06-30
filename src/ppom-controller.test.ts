@@ -250,7 +250,7 @@ describe('PPOMController', () => {
     it('should throw error if the user has not enabled blockaid security check', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
-        blockaidSecurityCheckEnabled: false,
+        securityAlertsEnabled: false,
       });
       jest.runOnlyPendingTimers();
       await expect(async () => {
@@ -345,7 +345,7 @@ describe('PPOMController', () => {
       it('should throw error if the user has not enabled blockaid security check', async () => {
         buildFetchSpy();
         ppomController = buildPPOMController({
-          blockaidSecurityCheckEnabled: false,
+          securityAlertsEnabled: false,
         });
         jest.runOnlyPendingTimers();
         await expect(async () => {
@@ -560,11 +560,11 @@ describe('PPOMController', () => {
   });
 
   describe('onPreferencesChange', () => {
-    it('should start file fetching if blockaidSecurityCheckEnabled is set to true', async () => {
+    it('should start file fetching if securityAlertsEnabled is set to true', async () => {
       const spy = buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
-        blockaidSecurityCheckEnabled: false,
+        securityAlertsEnabled: false,
         onPreferencesChange: (func: any) => {
           callBack = func;
         },
@@ -572,14 +572,14 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(0);
-      callBack({ blockaidSecurityCheckEnabled: true });
+      callBack({ securityAlertsEnabled: true });
       jest.advanceTimersByTime(REFRESH_TIME_DURATION);
       jest.runOnlyPendingTimers();
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(2);
     });
 
-    it('should update blockaidSecurityCheckEnabled in state', async () => {
+    it('should update securityAlertsEnabled in state', async () => {
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -587,17 +587,15 @@ describe('PPOMController', () => {
           callBack = func;
         },
       });
-      const blockaidSecurityCheckEnabledBefore =
-        ppomController.state.blockaidSecurityCheckEnabled;
-      callBack({ blockaidSecurityCheckEnabled: false });
-      const blockaidSecurityCheckEnabledAfter =
-        ppomController.state.blockaidSecurityCheckEnabled;
-      expect(blockaidSecurityCheckEnabledBefore).not.toBe(
-        blockaidSecurityCheckEnabledAfter,
-      );
+      const securityAlertsEnabledBefore =
+        ppomController.state.securityAlertsEnabled;
+      callBack({ securityAlertsEnabled: false });
+      const securityAlertsEnabledAfter =
+        ppomController.state.securityAlertsEnabled;
+      expect(securityAlertsEnabledBefore).not.toBe(securityAlertsEnabledAfter);
     });
 
-    it('should stop file fetching if blockaidSecurityCheckEnabled is set to false', async () => {
+    it('should stop file fetching if securityAlertsEnabled is set to false', async () => {
       const spy = buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -608,7 +606,7 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(2);
-      callBack({ blockaidSecurityCheckEnabled: false });
+      callBack({ securityAlertsEnabled: false });
       jest.advanceTimersByTime(REFRESH_TIME_DURATION);
       jest.runOnlyPendingTimers();
       await flushPromises();
@@ -623,14 +621,12 @@ describe('PPOMController', () => {
           callBack = func;
         },
       });
-      const blockaidSecurityCheckEnabledBefore =
-        ppomController.state.blockaidSecurityCheckEnabled;
-      callBack({ blockaidSecurityCheckEnabled: true });
-      const blockaidSecurityCheckEnabledAfter =
-        ppomController.state.blockaidSecurityCheckEnabled;
-      expect(blockaidSecurityCheckEnabledBefore).toBe(
-        blockaidSecurityCheckEnabledAfter,
-      );
+      const securityAlertsEnabledBefore =
+        ppomController.state.securityAlertsEnabled;
+      callBack({ securityAlertsEnabled: true });
+      const securityAlertsEnabledAfter =
+        ppomController.state.securityAlertsEnabled;
+      expect(securityAlertsEnabledBefore).toBe(securityAlertsEnabledAfter);
     });
   });
 });
