@@ -294,9 +294,10 @@ export class PPOMController extends BaseControllerV2<
    * Update the PPOM.
    * This function will acquire mutex lock and invoke internal method #updatePPOM.
    *
-   * @param updateForAllChains - True is update if required to be done for all chains in cache.
+   * @param options - Options.
+   * @param options.updateForAllChains - True is update if required to be done for all chains in cache.
    */
-  async updatePPOM(updateForAllChains = true) {
+  async updatePPOM({ updateForAllChains } = { updateForAllChains: true }) {
     await this.#ppomMutex.use(async () => {
       await this.#updatePPOM(updateForAllChains);
     });

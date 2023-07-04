@@ -265,11 +265,11 @@ describe('PPOMController', () => {
         ppomController = buildPPOMController();
         jest.runOnlyPendingTimers();
 
-        await ppomController.updatePPOM(false);
+        await ppomController.updatePPOM({ updateForAllChains: false });
         expect(spy).toHaveBeenCalledTimes(5);
         jest.runOnlyPendingTimers();
 
-        await ppomController.updatePPOM(false);
+        await ppomController.updatePPOM({ updateForAllChains: false });
         expect(spy).toHaveBeenCalledTimes(7);
       });
 
@@ -281,7 +281,7 @@ describe('PPOMController', () => {
         jest.runOnlyPendingTimers();
 
         await expect(async () => {
-          await ppomController.updatePPOM(false);
+          await ppomController.updatePPOM({ updateForAllChains: false });
         }).rejects.toThrow('Failed to fetch version info');
       });
 
@@ -293,7 +293,7 @@ describe('PPOMController', () => {
         jest.runOnlyPendingTimers();
 
         await expect(async () => {
-          await ppomController.updatePPOM(false);
+          await ppomController.updatePPOM({ updateForAllChains: false });
         }).rejects.toThrow(
           'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
         );
@@ -309,13 +309,13 @@ describe('PPOMController', () => {
         });
         jest.runOnlyPendingTimers();
 
-        await ppomController.updatePPOM(false);
+        await ppomController.updatePPOM({ updateForAllChains: false });
         jest.runOnlyPendingTimers();
         let chainIdData1 = ppomController.state.chainStatus['0x1'];
         expect(chainIdData1.dataFetched).toBe(true);
         callBack({ providerConfig: { chainId: '0x2' } });
 
-        await ppomController.updatePPOM(false);
+        await ppomController.updatePPOM({ updateForAllChains: false });
         jest.runOnlyPendingTimers();
         chainIdData1 = ppomController.state.chainStatus['0x1'];
         const chainIdData2 = ppomController.state.chainStatus['0x2'];
@@ -380,13 +380,13 @@ describe('PPOMController', () => {
         });
         jest.runOnlyPendingTimers();
 
-        await ppomController.updatePPOM(false);
+        await ppomController.updatePPOM({ updateForAllChains: false });
         jest.runOnlyPendingTimers();
         let chainIdData1 = ppomController.state.chainStatus['0x1'];
         expect(chainIdData1.dataFetched).toBe(true);
 
         callBack({ providerConfig: { chainId: '0x2' } });
-        await ppomController.updatePPOM(false);
+        await ppomController.updatePPOM({ updateForAllChains: false });
         jest.runOnlyPendingTimers();
         chainIdData1 = ppomController.state.chainStatus['0x1'];
         const chainIdData2 = ppomController.state.chainStatus['0x2'];
@@ -464,7 +464,7 @@ describe('PPOMController', () => {
       ppomController = buildPPOMController();
 
       jest.runOnlyPendingTimers();
-      await ppomController.updatePPOM(false);
+      await ppomController.updatePPOM({ updateForAllChains: false });
 
       expect(ppomController.state.storageMetadata).toHaveLength(2);
       ppomController.clear();
