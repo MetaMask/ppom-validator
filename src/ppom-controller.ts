@@ -279,7 +279,7 @@ export class PPOMController extends BaseControllerV2<
     });
 
     this.#registerMessageHandlers();
-    this.#startDataRefreshTask();
+    this.#scheduleFileDownloadForAllChains();
   }
 
   /**
@@ -287,7 +287,7 @@ export class PPOMController extends BaseControllerV2<
    */
   clear(): void {
     this.update(() => this.#initState);
-    this.#startDataRefreshTask();
+    this.#scheduleFileDownloadForAllChains();
   }
 
   /**
@@ -674,9 +674,18 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
+   * Functioned scheduled to be called to update PPOM.
+   */
+  #onFileScheduledInterval() {
+    this.updatePPOM().catch(() => {
+      // console.error(`Error while trying to update PPOM: ${exp.message}`);
+    });
+  }
+
+  /**
    * Starts the periodic task to refresh data.
    */
-  #startDataRefreshTask() {
+  #scheduleFileDownloadForAllChains() {
     if (this.#refreshDataInterval) {
       clearInterval(this.#refreshDataInterval);
     }
@@ -693,14 +702,9 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.chainStatus = chainStatus;
     });
-    const updatePPOMfn = () => {
-      this.updatePPOM().catch(() => {
-        // console.error(`Error while trying to update PPOM: ${exp.message}`);
-      });
-    };
-    updatePPOMfn();
+    this.#onFileScheduledInterval();
     this.#refreshDataInterval = setInterval(
-      updatePPOMfn,
+      this.#onFileScheduledInterval.bind(this),
       this.state.refreshInterval,
     );
   }
