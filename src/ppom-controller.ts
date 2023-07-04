@@ -17,7 +17,7 @@ export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 24;
 
 const PROVIDER_REQUEST_LIMIT = 500;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
-const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
+export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
 // The following methods on provider are allowed to PPOM
 const ALLOWED_PROVIDER_CALLS = [
@@ -527,12 +527,33 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
+   * Delete from chainStatus chainIds of networks visited more than one week ago.
+   */
+  #deleteOldChainIds() {
+    const currentTimestamp = new Date().getTime();
+
+    const oldChaninIds = Object.keys(this.state.chainStatus).filter(
+      (chainId) =>
+        (this.state.chainStatus[chainId] as any).lastVisited <
+        currentTimestamp - NETWORK_CACHE_DURATION,
+    );
+    const chainStatus = { ...this.state.chainStatus };
+    oldChaninIds.forEach((chainId) => {
+      delete chainStatus[chainId];
+    });
+    this.update((draftState) => {
+      draftState.chainStatus = chainStatus;
+    });
+  }
+
+  /**
    * Function that fetched and saves to storage files for all networks.
    * Files are not fetched parallely but at an interval.
    *
    * @returns A promise that resolves to return void.
    */
   async #getNewFilesForAllChains(): Promise<void> {
+    this.#deleteOldChainIds();
     // clear already scheduled fetch if any
     if (this.#fileScheduleInterval) {
       clearInterval(this.#fileScheduleInterval);
@@ -698,19 +719,6 @@ export class PPOMController extends BaseControllerV2<
     if (this.#refreshDataInterval) {
       clearInterval(this.#refreshDataInterval);
     }
-    const currentTimestamp = new Date().getTime();
-    const chainStatus = { ...this.state.chainStatus };
-    for (const chainId in this.state.chainStatus) {
-      if (
-        (chainStatus[chainId]?.lastVisited || 0) <
-        currentTimestamp - NETWORK_CACHE_DURATION
-      ) {
-        delete chainStatus[chainId];
-      }
-    }
-    this.update((draftState) => {
-      draftState.chainStatus = chainStatus;
-    });
     this.#onFileScheduledInterval();
     this.#refreshDataInterval = setInterval(
       this.#onFileScheduledInterval.bind(this),

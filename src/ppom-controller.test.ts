@@ -6,7 +6,10 @@ import {
   buildPPOMController,
   buildStorageBackend,
 } from '../test/test-utils';
-import { REFRESH_TIME_INTERVAL } from './ppom-controller';
+import {
+  NETWORK_CACHE_DURATION,
+  REFRESH_TIME_INTERVAL,
+} from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -17,10 +20,6 @@ Object.defineProperty(globalThis, 'performance', {
   writable: true,
   value: () => undefined,
 });
-
-const delay = async (delayInms = 1000) => {
-  return new Promise((resolve) => setTimeout(resolve, delayInms));
-};
 
 // eslint-disable-next-line jsdoc/require-jsdoc
 async function flushPromises() {
@@ -87,8 +86,6 @@ describe('PPOMController', () => {
 
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(7);
-
-      jest.useRealTimers();
     });
   });
 
@@ -454,6 +451,22 @@ describe('PPOMController', () => {
         jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
         await flushPromises();
         expect(spy).toHaveBeenCalledTimes(5);
+      });
+
+      it('should delete network more than a week old from chainStatus', async () => {
+        buildFetchSpy();
+        ppomController = buildPPOMController();
+        jest.runOnlyPendingTimers();
+        await flushPromises();
+        const chainIdData1 = ppomController.state.chainStatus['0x1'];
+        expect(chainIdData1).toBeDefined();
+
+        jest.advanceTimersByTime(NETWORK_CACHE_DURATION);
+        jest.runOnlyPendingTimers();
+        await flushPromises();
+
+        const chainIdData2 = ppomController.state.chainStatus['0x1'];
+        expect(chainIdData2).toBeUndefined();
       });
     });
   });
