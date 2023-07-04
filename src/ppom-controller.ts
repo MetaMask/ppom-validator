@@ -363,15 +363,9 @@ export class PPOMController extends BaseControllerV2<
   async #shouldUpdate(): Promise<boolean> {
     const { chainId, chainIdCache } = this.state;
 
-    if (
-      chainIdCache.find(
-        ({ chainId: cid, dataFetched }) => cid === chainId && dataFetched,
-      )
-    ) {
-      return false;
-    }
-
-    return true;
+    return !chainIdCache.find(
+      ({ chainId: cid, dataFetched }) => cid === chainId && dataFetched,
+    );
   }
 
   /**
@@ -482,7 +476,12 @@ export class PPOMController extends BaseControllerV2<
         continue;
       }
 
-      await this.#getFile(fileVersionInfo);
+      await this.#getFile(fileVersionInfo).catch((exp: Error) => {
+        console.error(
+          `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+        );
+        throw exp;
+      });
     }
     this.#setChainIdDataFetched(chainId);
   }

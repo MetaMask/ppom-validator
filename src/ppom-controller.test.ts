@@ -514,13 +514,12 @@ describe('PPOMController', () => {
         },
       });
 
+      jest.setSystemTime(new Date('2023-01-01'));
       const lastVisitedBefore = ppomController.state.chainIdCache.find(
         ({ chainId }: any) => chainId === '0x1',
       ).lastVisited;
 
-      jest.useRealTimers();
-      await delay(10);
-
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
       callBack({ providerConfig: { chainId: '0x2' } });
       callBack({ providerConfig: { chainId: '0x1' } });
       const lastVisitedAfter = ppomController.state.chainIdCache.find(
