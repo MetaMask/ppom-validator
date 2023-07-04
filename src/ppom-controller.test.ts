@@ -299,7 +299,7 @@ describe('PPOMController', () => {
         );
       });
 
-      it('should set dataFetched to true for chainId in chainIdCache', async () => {
+      it('should set dataFetched to true for chainId in chainStatus', async () => {
         buildFetchSpy();
         let callBack: any;
         ppomController = buildPPOMController({
@@ -311,26 +311,20 @@ describe('PPOMController', () => {
 
         await ppomController.updatePPOM(false);
         jest.runOnlyPendingTimers();
-        let chainIdData1 = ppomController.state.chainIdCache.find(
-          ({ chainId }: any) => chainId === '0x1',
-        );
+        let chainIdData1 = ppomController.state.chainStatus['0x1'];
         expect(chainIdData1.dataFetched).toBe(true);
         callBack({ providerConfig: { chainId: '0x2' } });
 
         await ppomController.updatePPOM(false);
         jest.runOnlyPendingTimers();
-        chainIdData1 = ppomController.state.chainIdCache.find(
-          ({ chainId }: any) => chainId === '0x1',
-        );
-        const chainIdData2 = ppomController.state.chainIdCache.find(
-          ({ chainId }: any) => chainId === '0x2',
-        );
+        chainIdData1 = ppomController.state.chainStatus['0x1'];
+        const chainIdData2 = ppomController.state.chainStatus['0x2'];
         expect(chainIdData1.dataFetched).toBe(true);
         expect(chainIdData2.dataFetched).toBe(true);
       });
     });
 
-    describe('when updating all chainids in chainIdCache', () => {
+    describe('when updating all chainids in chainStatus', () => {
       // in these scenario argument "scheduleFileFetching" passed to function "updatePPOM" is true
       it('should throw error if fetch for version info return 500', async () => {
         buildFetchSpy({
@@ -376,7 +370,7 @@ describe('PPOMController', () => {
         expect(spy).toHaveBeenCalledTimes(5);
       });
 
-      it('should set dataFetched to true for chainId in chainIdCache', async () => {
+      it('should set dataFetched to true for chainId in chainStatus', async () => {
         buildFetchSpy();
         let callBack: any;
         ppomController = buildPPOMController({
@@ -388,25 +382,19 @@ describe('PPOMController', () => {
 
         await ppomController.updatePPOM(false);
         jest.runOnlyPendingTimers();
-        let chainIdData1 = ppomController.state.chainIdCache.find(
-          ({ chainId }: any) => chainId === '0x1',
-        );
+        let chainIdData1 = ppomController.state.chainStatus['0x1'];
         expect(chainIdData1.dataFetched).toBe(true);
 
         callBack({ providerConfig: { chainId: '0x2' } });
         await ppomController.updatePPOM(false);
         jest.runOnlyPendingTimers();
-        chainIdData1 = ppomController.state.chainIdCache.find(
-          ({ chainId }: any) => chainId === '0x1',
-        );
-        const chainIdData2 = ppomController.state.chainIdCache.find(
-          ({ chainId }: any) => chainId === '0x2',
-        );
+        chainIdData1 = ppomController.state.chainStatus['0x1'];
+        const chainIdData2 = ppomController.state.chainStatus['0x2'];
         expect(chainIdData1.dataFetched).toBe(true);
         expect(chainIdData2.dataFetched).toBe(true);
       });
 
-      it('should get files for all chains in chainIdCache', async () => {
+      it('should get files for all chains in chainStatus', async () => {
         const spy = buildFetchSpy({
           status: 200,
           json: () => [
@@ -429,7 +417,7 @@ describe('PPOMController', () => {
         });
         jest.runOnlyPendingTimers();
         callBack({ providerConfig: { chainId: '0x2' } });
-        expect(ppomController.state.chainIdCache).toHaveLength(2);
+        expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(2);
         await ppomController.updatePPOM();
         jest.runOnlyPendingTimers();
         expect(spy).toHaveBeenCalledTimes(6);
@@ -445,7 +433,7 @@ describe('PPOMController', () => {
           storageBackend,
         });
         jest.runOnlyPendingTimers();
-        expect(ppomController.state.chainIdCache).toHaveLength(1);
+        expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(1);
         await ppomController.updatePPOM();
         jest.runOnlyPendingTimers();
         expect(spy).toHaveBeenCalledTimes(5);
@@ -485,7 +473,7 @@ describe('PPOMController', () => {
   });
 
   describe('onNetworkChange', () => {
-    it('should add network to chainIdCache if not already added', () => {
+    it('should add network to chainStatus if not already added', () => {
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -494,18 +482,14 @@ describe('PPOMController', () => {
         },
       });
 
-      const chainIdData1 = ppomController.state.chainIdCache.find(
-        ({ chainId }: any) => chainId === '0x1',
-      );
+      const chainIdData1 = ppomController.state.chainStatus['0x1'];
       expect(chainIdData1).toBeDefined();
       callBack({ providerConfig: { chainId: '0x2' } });
-      const chainIdData2 = ppomController.state.chainIdCache.find(
-        ({ chainId }: any) => chainId === '0x2',
-      );
+      const chainIdData2 = ppomController.state.chainStatus['0x2'];
       expect(chainIdData2).toBeDefined();
     });
 
-    it('should update lastVisited time in chainIdCache if network is already added', async () => {
+    it('should update lastVisited time in chainStatus if network is already added', async () => {
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -515,17 +499,15 @@ describe('PPOMController', () => {
       });
 
       jest.setSystemTime(new Date('2023-01-01'));
-      const lastVisitedBefore = ppomController.state.chainIdCache.find(
-        ({ chainId }: any) => chainId === '0x1',
-      ).lastVisited;
+      const lastVisitedBefore =
+        ppomController.state.chainStatus['0x1'].lastVisited;
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
 
       callBack({ providerConfig: { chainId: '0x2' } });
       callBack({ providerConfig: { chainId: '0x1' } });
-      const lastVisitedAfter = ppomController.state.chainIdCache.find(
-        ({ chainId }: any) => chainId === '0x1',
-      ).lastVisited;
+      const lastVisitedAfter =
+        ppomController.state.chainStatus['0x1'].lastVisited;
       expect(lastVisitedBefore !== lastVisitedAfter).toBe(true);
     });
 
@@ -538,14 +520,19 @@ describe('PPOMController', () => {
         },
       });
 
-      const chainIdCacheBefore = [...ppomController.state.chainIdCache];
+      const chainIdCacheBefore = { ...ppomController.state.chainStatus };
+      const lastVisitedBefore =
+        ppomController.state.chainStatus['0x1'].lastVisited;
 
       jest.useRealTimers();
       await delay(10);
 
       callBack({ providerConfig: { chainId: '0x1' } });
-      const chainIdCacheAfter = [...ppomController.state.chainIdCache];
+      const chainIdCacheAfter = { ...ppomController.state.chainStatus };
+      const lastVisitedAfter =
+        ppomController.state.chainStatus['0x1'].lastVisited;
       expect(chainIdCacheBefore).toStrictEqual(chainIdCacheAfter);
+      expect(lastVisitedBefore).toBe(lastVisitedAfter);
     });
   });
 });

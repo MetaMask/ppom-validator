@@ -72,7 +72,7 @@ type PPOMVersionResponse = PPOMFileVersion[];
  *
  * Controller state
  * @property chainId - ID of current chain.
- * @property chainIdCache - Array of chainId and time it was last visited.
+ * @property chainStatus - Array of chainId and time it was last visited.
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
  * @property providerRequestLimit - Number of requests in last 5 minutes that PPOM can make.
@@ -82,11 +82,14 @@ export type PPOMControllerState = {
   // chainId of currently selected network
   chainId: string;
   // list of chainIds and time the network was last visited, list of all networks visited in last 1 week is maintained
-  chainIdCache: {
-    chainId: string;
-    lastVisited: number;
-    dataFetched: boolean;
-  }[];
+  chainStatus: Record<
+    string,
+    {
+      chainId: string;
+      lastVisited: number;
+      dataFetched: boolean;
+    }
+  >;
   // version information obtained from version info file
   versionInfo: PPOMVersionResponse;
   // storage metadat of files already present in the storage
@@ -104,7 +107,7 @@ export type PPOMControllerState = {
 const stateMetaData = {
   versionInfo: { persist: false, anonymous: false },
   chainId: { persist: false, anonymous: false },
-  chainIdCache: { persist: false, anonymous: false },
+  chainStatus: { persist: false, anonymous: false },
   storageMetadata: { persist: false, anonymous: false },
   refreshInterval: { persist: false, anonymous: false },
   fileScheduleInterval: { persist: false, anonymous: false },
@@ -211,9 +214,13 @@ export class PPOMController extends BaseControllerV2<
       versionInfo: [],
       storageMetadata: [],
       chainId,
-      chainIdCache: [
-        { chainId, lastVisited: new Date().getTime(), dataFetched: false },
-      ],
+      chainStatus: {
+        [chainId]: {
+          chainId,
+          lastVisited: new Date().getTime(),
+          dataFetched: false,
+        },
+      },
       refreshInterval: refreshInterval || REFRESH_TIME_INTERVAL,
       fileScheduleInterval:
         fileScheduleInterval || FILE_FETCH_SCHEDULE_INTERVAL,
@@ -248,28 +255,26 @@ export class PPOMController extends BaseControllerV2<
       if (id === this.state.chainId) {
         return;
       }
-      let { chainIdCache } = this.state;
-      const existingNetworkObject = chainIdCache.find(
-        ({ chainId: cid }) => cid === id,
-      );
+      let { chainStatus } = this.state;
+      const existingNetworkObject = chainStatus[id];
       if (existingNetworkObject) {
-        chainIdCache = [
-          { chainId: id, lastVisited: new Date().getTime(), dataFetched: true },
-          ...chainIdCache.filter(({ chainId: cid }) => cid !== id),
-        ];
+        chainStatus = {
+          ...chainStatus,
+          [id]: { ...existingNetworkObject, lastVisited: new Date().getTime() },
+        };
       } else {
-        chainIdCache = [
-          {
+        chainStatus = {
+          ...chainStatus,
+          [id]: {
             chainId: id,
             lastVisited: new Date().getTime(),
             dataFetched: false,
           },
-          ...chainIdCache,
-        ];
+        };
       }
       this.update((draftState) => {
         draftState.chainId = id;
-        draftState.chainIdCache = chainIdCache;
+        draftState.chainStatus = chainStatus;
       });
     });
 
@@ -353,26 +358,20 @@ export class PPOMController extends BaseControllerV2<
 
   /**
    * Determine if an update to the ppom configuration is needed.
-   * The function will return true if
-   * - the chainId has changed
-   * - the ppom is out of date
-   * - the ppom is not initialized.
+   * The function will return true if data is not already fetched for the chain.
    *
    * @returns True if PPOM data requires update.
    */
   async #shouldUpdate(): Promise<boolean> {
-    const { chainId, chainIdCache } = this.state;
-
-    return !chainIdCache.find(
-      ({ chainId: cid, dataFetched }) => cid === chainId && dataFetched,
-    );
+    const { chainId, chainStatus } = this.state;
+    return !chainStatus[chainId]?.dataFetched;
   }
 
   /**
    * Update the PPOM configuration.
    * This function will fetch the latest version info when needed, and update the PPOM storage.
    *
-   * @param updateForAllChains - True is update if required to be done for all chains in chainIdCache.
+   * @param updateForAllChains - True is update if required to be done for all chains in chainStatus.
    */
   async #updatePPOM(updateForAllChains: boolean) {
     if (this.#ppom) {
@@ -442,21 +441,19 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
-   * As files for a chain are fetched this function set dataFetched property in chainIdCache to true.
+   * As files for a chain are fetched this function set dataFetched property in chainStatus to true.
    *
    * @param chainId - ChainId for which dataFetched is set to true.
    */
   #setChainIdDataFetched(chainId: string) {
-    const { chainIdCache } = this.state;
-    const chainIdObject = chainIdCache.find(
-      ({ chainId: cid }) => chainId === cid,
-    );
+    const { chainStatus } = this.state;
+    const chainIdObject = chainStatus[chainId];
     if (chainIdObject && !chainIdObject.dataFetched) {
       this.update((draftState) => {
-        draftState.chainIdCache = [
-          { ...chainIdObject, dataFetched: true },
-          ...chainIdCache.filter(({ chainId: cid }) => chainId !== cid),
-        ];
+        draftState.chainStatus = {
+          ...chainStatus,
+          [chainId]: { ...chainIdObject, dataFetched: true },
+        };
       });
     }
   }
@@ -493,18 +490,18 @@ export class PPOMController extends BaseControllerV2<
    */
   async #getNewFilesForAllChains(): Promise<void> {
     const {
-      chainIdCache,
+      chainStatus,
       storageMetadata,
       versionInfo: stateVersionInfo,
     } = this.state;
 
     // create a map of chainId and files belonging to that chainId
-    const chainIdsFileInfoList = chainIdCache.map(
-      (chain): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
-        chainId: chain.chainId,
+    const chainIdsFileInfoList = Object.keys(chainStatus).map(
+      (chainId): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
+        chainId,
         versionInfo: stateVersionInfo.filter(
           (versionInfo) =>
-            versionInfo.chainId === chain.chainId &&
+            versionInfo.chainId === chainId &&
             !this.#checkFilePresentInStorage(storageMetadata, versionInfo),
         ),
       }),
@@ -683,11 +680,17 @@ export class PPOMController extends BaseControllerV2<
       clearInterval(this.#refreshDataInterval);
     }
     const currentTimestamp = new Date().getTime();
-    const chainIdCache = this.state.chainIdCache.filter(
-      (cache) => cache.lastVisited > currentTimestamp - NETWORK_CACHE_DURATION,
-    );
+    const chainStatus = { ...this.state.chainStatus };
+    for (const chainId in this.state.chainStatus) {
+      if (
+        (chainStatus[chainId]?.lastVisited || 0) <
+        currentTimestamp - NETWORK_CACHE_DURATION
+      ) {
+        delete chainStatus[chainId];
+      }
+    }
     this.update((draftState) => {
-      draftState.chainIdCache = chainIdCache;
+      draftState.chainStatus = chainStatus;
     });
     const updatePPOMfn = () => {
       this.updatePPOM().catch(() => {
