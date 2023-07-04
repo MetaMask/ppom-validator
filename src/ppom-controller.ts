@@ -257,21 +257,14 @@ export class PPOMController extends BaseControllerV2<
       }
       let { chainStatus } = this.state;
       const existingNetworkObject = chainStatus[id];
-      if (existingNetworkObject) {
-        chainStatus = {
-          ...chainStatus,
-          [id]: { ...existingNetworkObject, lastVisited: new Date().getTime() },
-        };
-      } else {
-        chainStatus = {
-          ...chainStatus,
-          [id]: {
-            chainId: id,
-            lastVisited: new Date().getTime(),
-            dataFetched: false,
-          },
-        };
-      }
+      chainStatus = {
+        ...chainStatus,
+        [id]: {
+          chainId: id,
+          lastVisited: new Date().getTime(),
+          dataFetched: existingNetworkObject?.dataFetched ?? false,
+        },
+      };
       this.update((draftState) => {
         draftState.chainId = id;
         draftState.chainStatus = chainStatus;
@@ -372,7 +365,7 @@ export class PPOMController extends BaseControllerV2<
    * Update the PPOM configuration.
    * This function will fetch the latest version info when needed, and update the PPOM storage.
    *
-   * @param updateForAllChains - True is update if required to be done for all chains in chainStatus.
+   * @param updateForAllChains - True if update is required to be done for all chains in chainStatus.
    */
   async #updatePPOM(updateForAllChains: boolean) {
     if (this.#ppom) {
@@ -460,11 +453,11 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
-   * Returns an array of new files that should be downloaded and saved to storage.
+   * Fetches new files and save them to storage.
    * The function is invoked if user if attempting transaction for a network,
    * for which data is not previously fetched.
    *
-   * @returns A promise that resolves to an array of new files to download and save to storage.
+   * @returns A promise that resolves to return void.
    */
   async #getNewFilesForCurrentChain(): Promise<void> {
     const { chainId, versionInfo } = this.state;
@@ -485,11 +478,14 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
-   * Returns an array of new files that should be downloaded and saved to storage.
+   * Function creates list of all files to be fetched for all chainIds in chainStatus.
    *
-   * @returns A promise that resolves to an array of new files to download and save to storage.
+   * @returns List of files to be fetched.
    */
-  async #getNewFilesForAllChains(): Promise<void> {
+  #getListOfFilesToBeFetched(): {
+    fileVersionInfo: PPOMFileVersion;
+    isLastFileOfNetwork: boolean;
+  }[] {
     const {
       chainStatus,
       storageMetadata,
@@ -507,11 +503,6 @@ export class PPOMController extends BaseControllerV2<
         ),
       }),
     );
-
-    // clear already scheduled fetch if any
-    if (this.#fileScheduleInterval) {
-      clearInterval(this.#fileScheduleInterval);
-    }
 
     // build a list of files to be fetched for all networks
     const fileToBeFetchedList: {
@@ -531,6 +522,24 @@ export class PPOMController extends BaseControllerV2<
         this.#setChainIdDataFetched(chainId);
       }
     });
+
+    return fileToBeFetchedList;
+  }
+
+  /**
+   * Function that fetched and saves to storage files for all networks.
+   * Files are not fetched parallely but at an interval.
+   *
+   * @returns A promise that resolves to return void.
+   */
+  async #getNewFilesForAllChains(): Promise<void> {
+    // clear already scheduled fetch if any
+    if (this.#fileScheduleInterval) {
+      clearInterval(this.#fileScheduleInterval);
+    }
+
+    // build a list of files to be fetched for all networks
+    const fileToBeFetchedList = this.#getListOfFilesToBeFetched();
 
     // if schedule interval is large so that not all files can be fetched in
     // refreshInterval, reduce schedule interval
@@ -683,7 +692,7 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
-   * Starts the periodic task to refresh data.
+   * Starts the scheduled periodic task to refresh data.
    */
   #scheduleFileDownloadForAllChains() {
     if (this.#refreshDataInterval) {
