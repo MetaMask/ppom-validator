@@ -13,11 +13,11 @@ import {
   FileMetadata,
 } from './ppom-storage';
 
-export const REFRESH_TIME_DURATION = 1000 * 60 * 60 * 24;
+export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 24;
 
 const PROVIDER_REQUEST_LIMIT = 500;
-const MILLISECONDS_IN_FIVE_MINUTES = 300000;
-const MILLISECONDS_IN_ONE_WEEK = 604800000;
+const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
+const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
 // The following methods on provider are allowed to PPOM
 const ALLOWED_PROVIDER_CALLS = [
@@ -214,9 +214,9 @@ export class PPOMController extends BaseControllerV2<
       chainIdCache: [
         { chainId, lastVisited: new Date().getTime(), dataFetched: false },
       ],
-      refreshInterval: refreshInterval || REFRESH_TIME_DURATION,
+      refreshInterval: refreshInterval || REFRESH_TIME_INTERVAL,
       fileScheduleInterval:
-        fileScheduleInterval || MILLISECONDS_IN_FIVE_MINUTES,
+        fileScheduleInterval || FILE_FETCH_SCHEDULE_INTERVAL,
       providerRequestLimit: PROVIDER_REQUEST_LIMIT,
       providerRequests: [],
     };
@@ -622,7 +622,7 @@ export class PPOMController extends BaseControllerV2<
       const currentTimestamp = new Date().getTime();
       const requests = this.state.providerRequests.filter(
         (requestTime) =>
-          requestTime - currentTimestamp < MILLISECONDS_IN_FIVE_MINUTES,
+          requestTime - currentTimestamp < FILE_FETCH_SCHEDULE_INTERVAL,
       );
       if (requests.length >= 5) {
         reject(
@@ -684,8 +684,7 @@ export class PPOMController extends BaseControllerV2<
     }
     const currentTimestamp = new Date().getTime();
     const chainIdCache = this.state.chainIdCache.filter(
-      (cache) =>
-        cache.lastVisited > currentTimestamp - MILLISECONDS_IN_ONE_WEEK,
+      (cache) => cache.lastVisited > currentTimestamp - NETWORK_CACHE_DURATION,
     );
     this.update((draftState) => {
       draftState.chainIdCache = chainIdCache;

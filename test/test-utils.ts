@@ -95,6 +95,8 @@ export const buildPPOMController = (args?: any) => {
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
     }),
+    securityAlertsEnabled: true,
+    onPreferencesChange: () => undefined,
     ...args,
   });
   return ppomController;

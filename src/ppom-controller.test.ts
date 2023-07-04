@@ -6,7 +6,7 @@ import {
   buildPPOMController,
   buildStorageBackend,
 } from '../test/test-utils';
-import { REFRESH_TIME_DURATION } from './ppom-controller';
+import { REFRESH_TIME_INTERVAL } from './ppom-controller';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -75,10 +75,10 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(1);
 
-      jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(4);
-      jest.advanceTimersByTime(REFRESH_TIME_DURATION - 1);
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL - 1);
 
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(6);
@@ -452,18 +452,18 @@ describe('PPOMController', () => {
       });
 
       it('should decrease scheduleInterval is its set very high', async () => {
-        // here fileScheduleInterval is set very high but advance it by just REFRESH_TIME_DURATION
+        // here fileScheduleInterval is set very high but advance it by just REFRESH_TIME_INTERVAL
         // is helping fetch new files as value of fileScheduleInterval is adjusted to be able to fetch all data files
         const spy = buildFetchSpy();
         ppomController = buildPPOMController({
-          fileScheduleInterval: REFRESH_TIME_DURATION * 100,
+          fileScheduleInterval: REFRESH_TIME_INTERVAL * 100,
         });
         expect(spy).toHaveBeenCalledTimes(0);
-        jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+        jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
         await flushPromises();
         expect(spy).toHaveBeenCalledTimes(2);
 
-        jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+        jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
         await flushPromises();
         expect(spy).toHaveBeenCalledTimes(5);
       });
@@ -520,6 +520,7 @@ describe('PPOMController', () => {
       ).lastVisited;
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
+
       callBack({ providerConfig: { chainId: '0x2' } });
       callBack({ providerConfig: { chainId: '0x1' } });
       const lastVisitedAfter = ppomController.state.chainIdCache.find(
