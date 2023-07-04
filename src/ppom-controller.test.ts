@@ -512,6 +512,7 @@ describe('PPOMController', () => {
     });
 
     it('should do nothing if new chainId is same as the current chainId', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-01'));
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -524,9 +525,7 @@ describe('PPOMController', () => {
       const lastVisitedBefore =
         ppomController.state.chainStatus['0x1'].lastVisited;
 
-      jest.useRealTimers();
-      await delay(10);
-
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
       callBack({ providerConfig: { chainId: '0x1' } });
       const chainIdCacheAfter = { ...ppomController.state.chainStatus };
       const lastVisitedAfter =
