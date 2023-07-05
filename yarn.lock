@@ -405,13 +405,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@blockaid/ppom-mock@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "@blockaid/ppom-mock@npm:1.0.0"
-  checksum: 297efc29210aae5fb258bbecefcd742645966041bd9af6f256aa80c671920d5e7d9e669c4d1e34795f8556997663abc42422bfafc511ab8379134ce1c8ac324e
-  languageName: node
-  linkType: hard
-
 "@chainsafe/as-sha256@npm:^0.4.1":
   version: 0.4.1
   resolution: "@chainsafe/as-sha256@npm:0.4.1"
@@ -1020,7 +1013,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@metamask/ppom-validator@workspace:."
   dependencies:
-    "@blockaid/ppom-mock": ^1.0.0
     "@lavamoat/allow-scripts": ^2.3.1
     "@lavamoat/preinstall-always-fail": ^1.0.0
     "@metamask/auto-changelog": ^3.1.0

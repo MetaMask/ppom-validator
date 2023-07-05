@@ -1,4 +1,3 @@
-import * as PPOMModule from '@blockaid/ppom-mock';
 import {
   BaseControllerV2,
   RestrictedControllerMessenger,
@@ -68,7 +67,7 @@ type PPOMFileVersion = FileMetadata & {
 type PPOMVersionResponse = PPOMFileVersion[];
 
 /**
- * @type PPOMControllerState
+ * @type PPOMState
  *
  * Controller state
  * @property chainId - ID of current chain.
@@ -78,7 +77,7 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @property providerRequestLimit - Number of requests in last 5 minutes that PPOM can make.
  * @property providerRequests - Array of timestamps in last 5 minutes when request was made from PPOM to provider.
  */
-export type PPOMControllerState = {
+export type PPOMState = {
   // chainId of currently selected network
   chainId: string;
   // list of chainIds and time the network was last visited, list of all networks visited in last 1 week is maintained
@@ -127,7 +126,7 @@ const controllerName = 'PPOMController';
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
-  handler: (callback: (ppom: PPOMModule.PPOM) => Promise<any>) => Promise<any>;
+  handler: (callback: (ppom: any) => Promise<any>) => Promise<any>;
 };
 
 export type UpdatePPOM = {
@@ -145,6 +144,9 @@ export type PPOMControllerMessenger = RestrictedControllerMessenger<
   never
 >;
 
+// eslint-disable-next-line  @typescript-eslint/naming-convention
+type PPOMProvider = { ppomInit: () => Promise<void>; PPOM: any };
+
 /**
  * PPOMController
  * Controller responsible for managing the PPOM
@@ -157,10 +159,10 @@ export type PPOMControllerMessenger = RestrictedControllerMessenger<
  */
 export class PPOMController extends BaseControllerV2<
   typeof controllerName,
-  PPOMControllerState,
+  PPOMState,
   PPOMControllerMessenger
 > {
-  #ppom: PPOMModule.PPOM | undefined;
+  #ppom: any;
 
   #provider: any;
 
@@ -176,21 +178,23 @@ export class PPOMController extends BaseControllerV2<
    */
   #ppomMutex: Mutex;
 
-  #initState: PPOMControllerState;
+  #initState: PPOMState;
+
+  #ppomProvider: PPOMProvider;
 
   /**
    * Creates a PPOMController instance.
    *
    * @param options - Constructor options.
-   * @param options.chainId - Id of current chain.
+   * @param options.chainId - ChainId of the selected network.
    * @param options.messenger - Controller messenger.
    * @param options.onNetworkChange - Callback tobe invoked when network changes.
    * @param options.provider - The provider used to create the PPOM instance.
    * @param options.storageBackend - The storage backend to use for storing PPOM data.
-   * @param options.refreshInterval - Interval at which data is refreshed.
-   * @param options.fileScheduleInterval - Interval at which fetching data files is scheduled.
    * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
    * @param options.onPreferencesChange - Callback invoked when user changes preferences.
+   * @param options.ppomProvider - Object wrapping PPOM.
+   * @param options.state - Initial state of the controller.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -199,49 +203,51 @@ export class PPOMController extends BaseControllerV2<
     onNetworkChange,
     provider,
     storageBackend,
-    refreshInterval,
-    fileScheduleInterval,
     securityAlertsEnabled,
     onPreferencesChange,
+    ppomProvider,
+    state,
   }: {
     chainId: string;
-    messenger: PPOMControllerMessenger;
     onNetworkChange: (callback: (networkState: any) => void) => void;
+    messenger: PPOMControllerMessenger;
     provider: any;
     storageBackend: StorageBackend;
-    refreshInterval: number;
-    fileScheduleInterval: number;
     securityAlertsEnabled: boolean;
     onPreferencesChange: (callback: (perferenceState: any) => void) => void;
+    ppomProvider: PPOMProvider;
+    state?: PPOMState;
   }) {
-    const initState = {
-      versionInfo: [],
-      storageMetadata: [],
+    const initialState = {
+      versionInfo: state?.versionInfo ?? [],
+      storageMetadata: state?.storageMetadata ?? [],
       chainId,
-      chainStatus: {
+      chainStatus: state?.chainStatus ?? {
         [chainId]: {
           chainId,
           lastVisited: new Date().getTime(),
           dataFetched: false,
         },
       },
-      refreshInterval: refreshInterval || REFRESH_TIME_INTERVAL,
+      refreshInterval: state?.refreshInterval ?? REFRESH_TIME_INTERVAL,
       fileScheduleInterval:
-        fileScheduleInterval || FILE_FETCH_SCHEDULE_INTERVAL,
-      providerRequestLimit: PROVIDER_REQUEST_LIMIT,
-      providerRequests: [],
+        state?.fileScheduleInterval ?? FILE_FETCH_SCHEDULE_INTERVAL,
+      providerRequestLimit:
+        state?.providerRequestLimit ?? PROVIDER_REQUEST_LIMIT,
+      providerRequests: state?.providerRequests ?? [],
       securityAlertsEnabled,
     };
     super({
       name: controllerName,
       metadata: stateMetaData,
       messenger,
-      state: initState,
+      state: initialState,
     });
 
-    this.#initState = initState;
+    this.#initState = initialState;
 
     this.#provider = provider;
+    this.#ppomProvider = ppomProvider;
     this.#storage = new PPOMStorage({
       storageBackend,
       readMetadata: () => {
@@ -321,9 +327,7 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(
-    callback: (ppom: PPOMModule.PPOM) => Promise<T>,
-  ): Promise<T> {
+  async usePPOM<T>(callback: (ppom: any) => Promise<T>): Promise<T> {
     if (!this.state.securityAlertsEnabled) {
       throw Error('User has not enabled blockaidSecurityCheck');
     }
@@ -702,8 +706,9 @@ export class PPOMController extends BaseControllerV2<
    * or when the PPOM is out of date.
    * It will load the PPOM data from storage and initialize the PPOM.
    */
-  async #getPPOM(): Promise<PPOMModule.PPOM> {
-    await PPOMModule.default();
+  async #getPPOM(): Promise<any> {
+    const { ppomInit, PPOM } = this.#ppomProvider;
+    await ppomInit();
 
     const { chainId } = this.state;
 
@@ -716,7 +721,7 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
-    return new PPOMModule.PPOM(this.#jsonRpcRequest.bind(this), files);
+    return new PPOM(this.#jsonRpcRequest.bind(this), files);
   }
 
   /**

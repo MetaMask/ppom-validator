@@ -1,5 +1,3 @@
-import { PPOM } from '@blockaid/ppom-mock';
-
 import {
   VERSION_INFO,
   buildFetchSpy,
@@ -27,31 +25,6 @@ async function flushPromises() {
   // From https://github.com/facebook/jest/issues/2157#issuecomment-897935688
   return new Promise(jest.requireActual('timers').setImmediate);
 }
-
-jest.mock('@blockaid/ppom-mock', () => ({
-  PPOM: class PPOMClass {
-    #jsonRpcRequest;
-
-    constructor(jsonRpcRequest: any) {
-      this.#jsonRpcRequest = jsonRpcRequest;
-    }
-
-    validateJsonRpc = async () => {
-      return Promise.resolve();
-    };
-
-    free = () => undefined;
-
-    testJsonRPCRequest = async (args: any) =>
-      await this.#jsonRpcRequest({
-        method: 'eth_blockNumber',
-        ...args,
-      });
-  },
-  // eslint-disable-next-line @typescript-eslint/naming-convention
-  __esModule: true,
-  default: () => undefined,
-}));
 
 describe('PPOMController', () => {
   let ppomController: any;
@@ -95,7 +68,7 @@ describe('PPOMController', () => {
       ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
 
-      await ppomController.usePPOM(async (ppom: PPOM) => {
+      await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
@@ -106,7 +79,7 @@ describe('PPOMController', () => {
       ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
 
-      const result = await ppomController.usePPOM(async (ppom: PPOM) => {
+      const result = await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
         return Promise.resolve('DUMMY_VALUE');
       });
@@ -169,8 +142,8 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
 
-      await ppomController.usePPOM(async (ppom: PPOM) => {
-        const result = await (ppom as any).testJsonRPCRequest();
+      await ppomController.usePPOM(async (ppom: any) => {
+        const result = await ppom.testJsonRPCRequest();
         expect(result).toBe('DUMMY_VALUE');
       });
     });
@@ -185,8 +158,8 @@ describe('PPOMController', () => {
         },
       });
       jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async (ppom: PPOM) => {
-        (ppom as any).testJsonRPCRequest().catch((exp: any) => {
+      await ppomController.usePPOM(async (ppom: any) => {
+        ppom.testJsonRPCRequest().catch((exp: any) => {
           // eslint-disable-next-line jest/no-conditional-expect
           expect(exp).toBe('DUMMY_ERROR');
         });
@@ -203,8 +176,8 @@ describe('PPOMController', () => {
         },
       });
       jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async (ppom: PPOM) => {
-        (ppom as any)
+      await ppomController.usePPOM(async (ppom: any) => {
+        ppom
           .testJsonRPCRequest({ method: 'DUMMY_METHOD' })
           .catch((exp: any) => {
             // eslint-disable-next-line jest/no-conditional-expect
@@ -226,20 +199,18 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
 
-      await ppomController.usePPOM(async (ppom: PPOM) => {
-        await (ppom as any).testJsonRPCRequest();
-        await (ppom as any).testJsonRPCRequest();
-        await (ppom as any).testJsonRPCRequest();
-        await (ppom as any).testJsonRPCRequest();
-        await (ppom as any).testJsonRPCRequest();
-        const result = await (ppom as any)
-          .testJsonRPCRequest()
-          .catch((exp: any) => {
-            // eslint-disable-next-line jest/no-conditional-expect
-            expect(exp.toString()).toBe(
-              'Error: Number of request to provider from PPOM exceed rate limit',
-            );
-          });
+      await ppomController.usePPOM(async (ppom: any) => {
+        await ppom.testJsonRPCRequest();
+        await ppom.testJsonRPCRequest();
+        await ppom.testJsonRPCRequest();
+        await ppom.testJsonRPCRequest();
+        await ppom.testJsonRPCRequest();
+        const result = await ppom.testJsonRPCRequest().catch((exp: any) => {
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(exp.toString()).toBe(
+            'Error: Number of request to provider from PPOM exceed rate limit',
+          );
+        });
         expect(result).toBeUndefined();
       });
     });
@@ -465,7 +436,9 @@ describe('PPOMController', () => {
         // is helping fetch new files as value of fileScheduleInterval is adjusted to be able to fetch all data files
         const spy = buildFetchSpy();
         ppomController = buildPPOMController({
-          fileScheduleInterval: REFRESH_TIME_INTERVAL * 100,
+          state: {
+            fileScheduleInterval: REFRESH_TIME_INTERVAL * 100,
+          },
         });
         expect(spy).toHaveBeenCalledTimes(0);
         jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);

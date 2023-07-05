@@ -31,7 +31,6 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@blockaid/ppom-mock": "^1.0.0",
     "@metamask/base-controller": "^3.0.0",
     "@metamask/controller-utils": "^4.0.0",
     "await-semaphore": "^0.1.3"
