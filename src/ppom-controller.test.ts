@@ -572,7 +572,7 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(0);
       callBack({ securityAlertsEnabled: true });
-      jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       jest.runOnlyPendingTimers();
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(2);
@@ -606,7 +606,7 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(2);
       callBack({ securityAlertsEnabled: false });
-      jest.advanceTimersByTime(REFRESH_TIME_DURATION);
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       jest.runOnlyPendingTimers();
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(2);

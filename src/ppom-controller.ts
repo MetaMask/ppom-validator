@@ -282,7 +282,7 @@ export class PPOMController extends BaseControllerV2<
         return;
       }
       if (blockaidEnabled) {
-        this.#startDataRefreshTask();
+        this.#scheduleFileDownloadForAllChains();
       } else {
         clearInterval(this.#refreshDataInterval);
         clearInterval(this.#fileScheduleInterval);
