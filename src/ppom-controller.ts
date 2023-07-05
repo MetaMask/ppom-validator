@@ -732,9 +732,6 @@ export class PPOMController extends BaseControllerV2<
    * Starts the scheduled periodic task to refresh data.
    */
   #scheduleFileDownloadForAllChains() {
-    if (this.#refreshDataInterval) {
-      clearInterval(this.#refreshDataInterval);
-    }
     this.#onFileScheduledInterval();
     this.#refreshDataInterval = setInterval(
       this.#onFileScheduledInterval.bind(this),
