@@ -243,6 +243,19 @@ describe('PPOMController', () => {
         expect(result).toBeUndefined();
       });
     });
+
+    it('should throw error if the user has not enabled blockaid security check', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        securityAlertsEnabled: false,
+      });
+      jest.runOnlyPendingTimers();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
+    });
   });
 
   describe('updatePPOM', () => {
@@ -318,6 +331,17 @@ describe('PPOMController', () => {
         const chainIdData2 = ppomController.state.chainStatus['0x2'];
         expect(chainIdData1.dataFetched).toBe(true);
         expect(chainIdData2.dataFetched).toBe(true);
+      });
+
+      it('should throw error if the user has not enabled blockaid security check', async () => {
+        buildFetchSpy();
+        ppomController = buildPPOMController({
+          securityAlertsEnabled: false,
+        });
+        jest.runOnlyPendingTimers();
+        await expect(async () => {
+          await ppomController.updatePPOM(false);
+        }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
       });
     });
 
@@ -471,20 +495,6 @@ describe('PPOMController', () => {
     });
   });
 
-  describe('clear', () => {
-    it('should clear controller state', async () => {
-      buildFetchSpy();
-      ppomController = buildPPOMController();
-
-      jest.runOnlyPendingTimers();
-      await ppomController.updatePPOM({ updateForAllChains: false });
-
-      expect(ppomController.state.storageMetadata).toHaveLength(2);
-      ppomController.clear();
-      expect(ppomController.state.storageMetadata).toHaveLength(0);
-    });
-  });
-
   describe('onNetworkChange', () => {
     it('should add network to chainStatus if not already added', () => {
       buildFetchSpy();
@@ -545,6 +555,77 @@ describe('PPOMController', () => {
         ppomController.state.chainStatus['0x1'].lastVisited;
       expect(chainIdCacheBefore).toStrictEqual(chainIdCacheAfter);
       expect(lastVisitedBefore).toBe(lastVisitedAfter);
+    });
+  });
+
+  describe('onPreferencesChange', () => {
+    it('should start file fetching if securityAlertsEnabled is set to true', async () => {
+      const spy = buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        securityAlertsEnabled: false,
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(0);
+      callBack({ securityAlertsEnabled: true });
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should update securityAlertsEnabled in state', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      const securityAlertsEnabledBefore =
+        ppomController.state.securityAlertsEnabled;
+      callBack({ securityAlertsEnabled: false });
+      const securityAlertsEnabledAfter =
+        ppomController.state.securityAlertsEnabled;
+      expect(securityAlertsEnabledBefore).not.toBe(securityAlertsEnabledAfter);
+    });
+
+    it('should stop file fetching if securityAlertsEnabled is set to false', async () => {
+      const spy = buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(2);
+      callBack({ securityAlertsEnabled: false });
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(2);
+    });
+
+    it('should do nothing if new chainId is same as the current chainId', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+      });
+      const securityAlertsEnabledBefore =
+        ppomController.state.securityAlertsEnabled;
+      callBack({ securityAlertsEnabled: true });
+      const securityAlertsEnabledAfter =
+        ppomController.state.securityAlertsEnabled;
+      expect(securityAlertsEnabledBefore).toBe(securityAlertsEnabledAfter);
     });
   });
 });
