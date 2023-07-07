@@ -6,13 +6,19 @@ Object.defineProperty(globalThis, 'fetch', {
   value: () => undefined,
 });
 
+Object.defineProperty(globalThis, 'performance', {
+  writable: true,
+  value: () => undefined,
+});
+
 describe('PPOMMiddleware', () => {
   it('should return PPOM Middleware when createPPOMMiddleware function called', () => {
+    jest.useFakeTimers();
     buildFetchSpy();
     const ppomController = buildPPOMController();
     const middlewareFunction = createPPOMMiddleware(ppomController);
     expect(middlewareFunction).toBeDefined();
-    ppomController.clearRefreshInterval();
+    jest.useRealTimers();
   });
 
   it('should call ppomController.usePPOM for requests of type confirmation', async () => {

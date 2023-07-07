@@ -1,6 +1,6 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 
-import { PPOMController, REFRESH_TIME_DURATION } from '../src/ppom-controller';
+import { PPOMController } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildStorageBackend = (obj = {}) => {
@@ -26,7 +26,7 @@ export const storageBackendReturningData = buildStorageBackend({
 export const VERSION_INFO = [
   {
     name: 'blob',
-    chainId: '',
+    chainId: '0x1',
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
@@ -95,8 +95,16 @@ export const buildPPOMController = (args?: any) => {
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
     }),
-    refreshInterval: REFRESH_TIME_DURATION,
+    securityAlertsEnabled: true,
+    onPreferencesChange: () => undefined,
     ...args,
   });
   return ppomController;
 };
+
+// eslint-disable-next-line jsdoc/require-jsdoc
+export async function flushPromises() {
+  // Wait for promises running in the non-async timer callback to complete.
+  // From https://github.com/facebook/jest/issues/2157#issuecomment-897935688
+  return new Promise(jest.requireActual('timers').setImmediate);
+}
