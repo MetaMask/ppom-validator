@@ -367,6 +367,9 @@ export class PPOMController extends BaseControllerV2<
   async #maybeUpdatePPOM() {
     if (await this.#shouldUpdate()) {
       await this.#updatePPOM(false);
+    } else {
+      this.#ppom.free();
+      this.#ppom = undefined;
     }
   }
 
@@ -546,6 +549,7 @@ export class PPOMController extends BaseControllerV2<
     return fileToBeFetchedList;
   }
 
+  // todo: implement a max limit to K, number of chain over K limited to max K
   /**
    * Delete from chainStatus chainIds of networks visited more than one week ago.
    */
@@ -555,7 +559,8 @@ export class PPOMController extends BaseControllerV2<
     const oldChaninIds = Object.keys(this.state.chainStatus).filter(
       (chainId) =>
         (this.state.chainStatus[chainId] as any).lastVisited <
-        currentTimestamp - NETWORK_CACHE_DURATION,
+          currentTimestamp - NETWORK_CACHE_DURATION &&
+        chainId !== this.state.chainId,
     );
     const chainStatus = { ...this.state.chainStatus };
     oldChaninIds.forEach((chainId) => {
@@ -721,6 +726,8 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
+    console.log('------------------------', this.state.versionInfo, files);
+
     return new PPOM(this.#jsonRpcRequest.bind(this), files);
   }
 
@@ -744,3 +751,5 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 }
+
+// todo: handle empty version info file to hold on validations
