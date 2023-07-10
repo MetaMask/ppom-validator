@@ -131,6 +131,44 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(10);
     });
 
+    it('should re-initialise ppom to use files fetched with scheduled job', async () => {
+      buildFetchSpy();
+      const freeMock = jest.fn();
+      ppomController = buildPPOMController({
+        ppomProvider: {
+          ppomInit: () => undefined,
+          PPOM: class PPOMClass {
+            #jsonRpcRequest;
+
+            constructor(jsonRpcRequest: any) {
+              this.#jsonRpcRequest = jsonRpcRequest;
+            }
+
+            validateJsonRpc = async () => {
+              return Promise.resolve();
+            };
+
+            free = freeMock;
+
+            testJsonRPCRequest = async (args2: any) =>
+              await this.#jsonRpcRequest({
+                method: 'eth_blockNumber',
+                ...args2,
+              });
+          },
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      jest.runOnlyPendingTimers();
+      await ppomController.usePPOM(async () => {
+        return Promise.resolve();
+      });
+      expect(freeMock).toHaveBeenCalledTimes(1);
+    });
+
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
@@ -452,11 +490,17 @@ describe('PPOMController', () => {
 
       it('should delete network more than a week old from chainStatus', async () => {
         buildFetchSpy();
-        ppomController = buildPPOMController();
+        let callBack: any;
+        ppomController = buildPPOMController({
+          onNetworkChange: (func: any) => {
+            callBack = func;
+          },
+        });
         jest.runOnlyPendingTimers();
         await flushPromises();
         const chainIdData1 = ppomController.state.chainStatus['0x1'];
         expect(chainIdData1).toBeDefined();
+        callBack({ providerConfig: { chainId: '0x2' } });
 
         jest.advanceTimersByTime(NETWORK_CACHE_DURATION);
         jest.runOnlyPendingTimers();

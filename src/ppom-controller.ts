@@ -365,11 +365,12 @@ export class PPOMController extends BaseControllerV2<
    * to update the configuration.
    */
   async #maybeUpdatePPOM() {
-    if (await this.#shouldUpdate()) {
-      await this.#updatePPOM(false);
-    } else {
+    if (this.#ppom) {
       this.#ppom.free();
       this.#ppom = undefined;
+    }
+    if (await this.#shouldUpdate()) {
+      await this.#updatePPOM(false);
     }
   }
 
@@ -391,11 +392,6 @@ export class PPOMController extends BaseControllerV2<
    * @param updateForAllChains - True if update is required to be done for all chains in chainStatus.
    */
   async #updatePPOM(updateForAllChains: boolean) {
-    if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
-    }
-
     await this.#updateVersionInfo();
 
     await this.#storage.syncMetadata(this.state.versionInfo);
@@ -725,8 +721,6 @@ export class PPOMController extends BaseControllerV2<
           return [file.name, new Uint8Array(data)];
         }),
     );
-
-    console.log('------------------------', this.state.versionInfo, files);
 
     return new PPOM(this.#jsonRpcRequest.bind(this), files);
   }
