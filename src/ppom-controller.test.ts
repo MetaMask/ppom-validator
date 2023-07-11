@@ -19,8 +19,6 @@ Object.defineProperty(globalThis, 'performance', {
   value: () => undefined,
 });
 
-(AbortSignal.prototype as any).timeout = () => undefined;
-
 // eslint-disable-next-line jsdoc/require-jsdoc
 async function flushPromises() {
   // Wait for promises running in the non-async timer callback to complete.
