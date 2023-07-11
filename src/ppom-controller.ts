@@ -117,11 +117,7 @@ const stateMetaData = {
   securityAlertsEnabled: { persist: false, anonymous: false },
 };
 
-// TODO: replace with metamask cdn
-const PPOM_CDN_BASE_URL = 'https://storage.googleapis.com/ppom-cdn/';
-const PPOM_VERSION = 'ppom_version.json';
-const PPOM_VERSION_PATH = `${PPOM_CDN_BASE_URL}${PPOM_VERSION}`;
-
+const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
 const controllerName = 'PPOMController';
 
 export type UsePPOM = {
@@ -182,6 +178,8 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomProvider: PPOMProvider;
 
+  #cdnBaseUrl: string;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -194,6 +192,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
    * @param options.onPreferencesChange - Callback invoked when user changes preferences.
    * @param options.ppomProvider - Object wrapping PPOM.
+   * @param options.cdnBaseUrl - Base URL for the CDN.
    * @param options.state - Initial state of the controller.
    * @returns The PPOMController instance.
    */
@@ -206,6 +205,7 @@ export class PPOMController extends BaseControllerV2<
     securityAlertsEnabled,
     onPreferencesChange,
     ppomProvider,
+    cdnBaseUrl,
     state,
   }: {
     chainId: string;
@@ -216,6 +216,7 @@ export class PPOMController extends BaseControllerV2<
     securityAlertsEnabled: boolean;
     onPreferencesChange: (callback: (perferenceState: any) => void) => void;
     ppomProvider: PPOMProvider;
+    cdnBaseUrl: string;
     state?: PPOMState;
   }) {
     const initialState = {
@@ -260,6 +261,7 @@ export class PPOMController extends BaseControllerV2<
       },
     });
     this.#ppomMutex = new Mutex();
+    this.#cdnBaseUrl = cdnBaseUrl;
 
     onNetworkChange((networkControllerState: any) => {
       const id = networkControllerState.providerConfig.chainId;
@@ -406,7 +408,9 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the version info from the CDN and update the version info in state.
    */
   async #updateVersionInfo() {
-    const versionInfo = await this.#fetchVersionInfo(PPOM_VERSION_PATH);
+    const versionInfo = await this.#fetchVersionInfo(
+      `${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`,
+    );
     if (versionInfo) {
       this.update((draftState) => {
         draftState.versionInfo = versionInfo;
@@ -444,7 +448,7 @@ export class PPOMController extends BaseControllerV2<
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
       return;
     }
-    const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
+    const fileUrl = `${this.#cdnBaseUrl}/${fileVersionInfo.filePath}`;
     const fileData = await this.#fetchBlob(fileUrl);
 
     await this.#storage.writeFile({

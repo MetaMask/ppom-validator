@@ -42,8 +42,7 @@ export const VERSION_INFO = [
   },
 ];
 
-const PPOM_VERSION_PATH =
-  'https://storage.googleapis.com/ppom-cdn/ppom_version.json';
+const PPOM_VERSION_PATH = 'https://ppom_cdn_base_url/ppom_version.json';
 
 export const buildFetchDataSpy = (
   versionData: any = {
@@ -120,6 +119,7 @@ export const buildPPOMController = (args?: any) => {
           });
       },
     },
+    cdnBaseUrl: 'https://ppom_cdn_base_url',
     ...args,
   });
   return ppomController;

@@ -314,7 +314,7 @@ describe('PPOMController', () => {
         await expect(async () => {
           await ppomController.updatePPOM({ updateForAllChains: false });
         }).rejects.toThrow(
-          'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
+          'Failed to fetch file with url https://ppom_cdn_base_url/blob',
         );
       });
 
@@ -379,7 +379,7 @@ describe('PPOMController', () => {
           await ppomController.updatePPOM();
           jest.runOnlyPendingTimers();
         }).not.toThrow(
-          'Failed to fetch file with url https://storage.googleapis.com/ppom-cdn/blob',
+          'Failed to fetch file with url https://ppom_cdn_base_url/blob',
         );
         await flushPromises();
       });
