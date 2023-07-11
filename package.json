@@ -16,7 +16,7 @@
     "dist/"
   ],
   "scripts": {
-    "build": "tsc --project tsconfig.build.json && cp node_modules/@blockaid/ppom-mock/dist/ppom_bg.wasm dist/ppom_bg.wasm",
+    "build": "tsc --project tsconfig.build.json",
     "build:clean": "rimraf dist && yarn build",
     "build:docs": "typedoc",
     "lint": "yarn lint:eslint && yarn lint:constraints && yarn lint:misc --check && yarn lint:dependencies --check && yarn lint:changelog",
@@ -31,7 +31,6 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@blockaid/ppom-mock": "^1.0.0",
     "@metamask/base-controller": "^3.0.0",
     "@metamask/controller-utils": "^4.0.0",
     "await-semaphore": "^0.1.3"

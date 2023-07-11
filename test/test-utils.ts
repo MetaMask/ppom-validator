@@ -97,6 +97,29 @@ export const buildPPOMController = (args?: any) => {
     }),
     securityAlertsEnabled: true,
     onPreferencesChange: () => undefined,
+    state: {},
+    ppomProvider: {
+      ppomInit: () => undefined,
+      PPOM: class PPOMClass {
+        #jsonRpcRequest;
+
+        constructor(jsonRpcRequest: any) {
+          this.#jsonRpcRequest = jsonRpcRequest;
+        }
+
+        validateJsonRpc = async () => {
+          return Promise.resolve();
+        };
+
+        free = () => undefined;
+
+        testJsonRPCRequest = async (args2: any) =>
+          await this.#jsonRpcRequest({
+            method: 'eth_blockNumber',
+            ...args2,
+          });
+      },
+    },
     ...args,
   });
   return ppomController;
