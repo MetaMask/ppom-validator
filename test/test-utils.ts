@@ -119,7 +119,7 @@ export const buildPPOMController = (args?: any) => {
           });
       },
     },
-    cdnBaseUrl: 'https://ppom_cdn_base_url',
+    cdnBaseUrl: 'ppom_cdn_base_url',
     ...args,
   });
   return ppomController;

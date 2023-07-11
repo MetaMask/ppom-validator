@@ -19,6 +19,8 @@ Object.defineProperty(globalThis, 'performance', {
   value: () => undefined,
 });
 
+(AbortSignal.prototype as any).timeout = () => undefined;
+
 // eslint-disable-next-line jsdoc/require-jsdoc
 async function flushPromises() {
   // Wait for promises running in the non-async timer callback to complete.
@@ -301,7 +303,9 @@ describe('PPOMController', () => {
 
         await expect(async () => {
           await ppomController.updatePPOM({ updateForAllChains: false });
-        }).rejects.toThrow('Failed to fetch version info');
+        }).rejects.toThrow(
+          'Failed to fetch file with url: https://ppom_cdn_base_url/ppom_version.json',
+        );
       });
 
       it('should throw error if fetch for blob return 500', async () => {
@@ -314,7 +318,7 @@ describe('PPOMController', () => {
         await expect(async () => {
           await ppomController.updatePPOM({ updateForAllChains: false });
         }).rejects.toThrow(
-          'Failed to fetch file with url https://ppom_cdn_base_url/blob',
+          'Failed to fetch file with url: https://ppom_cdn_base_url/blob',
         );
       });
 
@@ -365,7 +369,9 @@ describe('PPOMController', () => {
 
         await expect(async () => {
           await ppomController.updatePPOM();
-        }).rejects.toThrow('Failed to fetch version info');
+        }).rejects.toThrow(
+          'Failed to fetch file with url: https://ppom_cdn_base_url/ppom_version.json',
+        );
       });
 
       it('should not throw error if fetch for blob return 500', async () => {
@@ -379,7 +385,7 @@ describe('PPOMController', () => {
           await ppomController.updatePPOM();
           jest.runOnlyPendingTimers();
         }).not.toThrow(
-          'Failed to fetch file with url https://ppom_cdn_base_url/blob',
+          'Failed to fetch file with url: https://ppom_cdn_base_url/blob',
         );
         await flushPromises();
       });

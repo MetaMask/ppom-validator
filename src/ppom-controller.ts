@@ -118,6 +118,7 @@ const stateMetaData = {
 };
 
 const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
+const URL_PREFIX = 'https://';
 const controllerName = 'PPOMController';
 
 export type UsePPOM = {
@@ -409,7 +410,7 @@ export class PPOMController extends BaseControllerV2<
    */
   async #updateVersionInfo() {
     const versionInfo = await this.#fetchVersionInfo(
-      `${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`,
+      `${URL_PREFIX}${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`,
     );
     if (versionInfo) {
       this.update((draftState) => {
@@ -448,7 +449,9 @@ export class PPOMController extends BaseControllerV2<
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
       return;
     }
-    const fileUrl = `${this.#cdnBaseUrl}/${fileVersionInfo.filePath}`;
+    const fileUrl = `${URL_PREFIX}${this.#cdnBaseUrl}/${
+      fileVersionInfo.filePath
+    }`;
     const fileData = await this.#fetchBlob(fileUrl);
 
     await this.#storage.writeFile({
@@ -626,44 +629,49 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
+   * fetchFile - Generic method to fetch file from CDN.
+   */
+  async #fetchFile(
+    url: string,
+    options: Record<string, unknown> = {},
+  ): Promise<any> {
+    const response = await safelyExecute(
+      async () =>
+        fetch(url, {
+          cache: 'no-cache',
+          redirect: 'error',
+          signal: (AbortSignal as any).timeout(10000),
+          ...options,
+        }),
+      true,
+    );
+    if (response?.status !== 200) {
+      throw new Error(`Failed to fetch file with url: ${url}`);
+    }
+    return response;
+  }
+
+  /*
    * Fetch the version info from the PPOM cdn.
    */
   async #fetchVersionInfo(
     url: string,
   ): Promise<PPOMVersionResponse | undefined> {
-    const response = await safelyExecute(
-      async () => fetch(url, { cache: 'no-cache' }),
-      true,
-    );
-    switch (response?.status) {
-      case 200: {
-        return response.json();
-      }
-
-      default: {
-        throw new Error(`Failed to fetch version info url: ${url}`);
-      }
-    }
+    const response = await this.#fetchFile(url, {
+      headers: {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        'Content-Type': 'application/json',
+      },
+    });
+    return response.json();
   }
 
   /*
    * Fetch the blob from the PPOM cdn.
    */
-  async #fetchBlob(fileUrl: string): Promise<ArrayBuffer> {
-    const response = await safelyExecute(
-      async () => fetch(fileUrl, { cache: 'no-cache' }),
-      true,
-    );
-
-    switch (response?.status) {
-      case 200: {
-        return await response.arrayBuffer();
-      }
-
-      default: {
-        throw new Error(`Failed to fetch file with url ${fileUrl}`);
-      }
-    }
+  async #fetchBlob(url: string): Promise<ArrayBuffer> {
+    const response = await this.#fetchFile(url);
+    return await response.arrayBuffer();
   }
 
   /*
