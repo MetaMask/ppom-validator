@@ -12,7 +12,7 @@ import {
   FileMetadata,
 } from './ppom-storage';
 
-export const REFRESH_TIME_INTERVAL = 1000;
+export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
 const PROVIDER_REQUEST_LIMIT = 500;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
