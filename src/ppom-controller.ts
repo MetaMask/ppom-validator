@@ -12,7 +12,7 @@ import {
   FileMetadata,
 } from './ppom-storage';
 
-export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 24;
+export const REFRESH_TIME_INTERVAL = 1000;
 
 const PROVIDER_REQUEST_LIMIT = 500;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
@@ -103,6 +103,8 @@ export type PPOMState = {
   providerRequests: number[];
   // true if user has enabled preference for blockaid secirity check
   securityAlertsEnabled: boolean;
+  // ETag obtained using HEAD request on version file
+  versionFileETag?: string;
 };
 
 const stateMetaData = {
@@ -115,11 +117,18 @@ const stateMetaData = {
   providerRequestLimit: { persist: false, anonymous: false },
   providerRequests: { persist: false, anonymous: false },
   securityAlertsEnabled: { persist: false, anonymous: false },
+  versionFileETag: { persist: false, anonymous: false },
 };
 
 const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
 const URL_PREFIX = 'https://';
 const controllerName = 'PPOMController';
+const versionInfoFileHeaders = {
+  headers: {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    'Content-Type': 'application/json',
+  },
+};
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
@@ -174,8 +183,6 @@ export class PPOMController extends BaseControllerV2<
    * and protect the PPOM instance from being used while it is being initialized/updated
    */
   #ppomMutex: Mutex;
-
-  #initState: PPOMState;
 
   #ppomProvider: PPOMProvider;
 
@@ -245,8 +252,6 @@ export class PPOMController extends BaseControllerV2<
       messenger,
       state: initialState,
     });
-
-    this.#initState = initialState;
 
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
@@ -395,7 +400,10 @@ export class PPOMController extends BaseControllerV2<
    * @param updateForAllChains - True if update is required to be done for all chains in chainStatus.
    */
   async #updatePPOM(updateForAllChains: boolean) {
-    await this.#updateVersionInfo();
+    const versionInfoUpdated = await this.#updateVersionInfo();
+    if (!versionInfoUpdated) {
+      return;
+    }
 
     await this.#storage.syncMetadata(this.state.versionInfo);
     if (updateForAllChains) {
@@ -408,7 +416,7 @@ export class PPOMController extends BaseControllerV2<
   /*
    * Fetch the version info from the CDN and update the version info in state.
    */
-  async #updateVersionInfo() {
+  async #updateVersionInfo(): Promise<boolean> {
     const versionInfo = await this.#fetchVersionInfo(
       `${URL_PREFIX}${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`,
     );
@@ -416,7 +424,9 @@ export class PPOMController extends BaseControllerV2<
       this.update((draftState) => {
         draftState.versionInfo = versionInfo;
       });
+      return true;
     }
+    return false;
   }
 
   /**
@@ -629,15 +639,17 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * fetchFile - Generic method to fetch file from CDN.
+   * getAPIResponse - Generic method to fetch file from CDN.
    */
-  async #fetchFile(
+  async #getAPIResponse(
     url: string,
     options: Record<string, unknown> = {},
+    method = 'GET',
   ): Promise<any> {
     const response = await safelyExecute(
       async () =>
         fetch(url, {
+          method,
           cache: 'no-cache',
           redirect: 'error',
           signal: (AbortSignal as any).timeout(10000),
@@ -657,11 +669,25 @@ export class PPOMController extends BaseControllerV2<
   async #fetchVersionInfo(
     url: string,
   ): Promise<PPOMVersionResponse | undefined> {
-    const response = await this.#fetchFile(url, {
-      headers: {
-        // eslint-disable-next-line @typescript-eslint/naming-convention
-        'Content-Type': 'application/json',
+    const headResponse = await this.#getAPIResponse(
+      url,
+      {
+        headers: versionInfoFileHeaders,
       },
+      'HEAD',
+    );
+
+    const { versionFileETag } = this.state;
+    if (headResponse.headers.get('ETag') === versionFileETag) {
+      return undefined;
+    }
+
+    this.update((draftState) => {
+      draftState.versionFileETag = headResponse.headers.get('ETag');
+    });
+
+    const response = await this.#getAPIResponse(url, {
+      headers: versionInfoFileHeaders,
     });
     return response.json();
   }
@@ -670,7 +696,7 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the blob from the PPOM cdn.
    */
   async #fetchBlob(url: string): Promise<ArrayBuffer> {
-    const response = await this.#fetchFile(url);
+    const response = await this.#getAPIResponse(url);
     return await response.arrayBuffer();
   }
 
