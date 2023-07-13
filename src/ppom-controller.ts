@@ -652,7 +652,7 @@ export class PPOMController extends BaseControllerV2<
           method,
           cache: 'no-cache',
           redirect: 'error',
-          signal: (AbortSignal as any).timeout(10000),
+          // signal: (AbortSignal as any).timeout(10000),
           ...options,
         }),
       true,
