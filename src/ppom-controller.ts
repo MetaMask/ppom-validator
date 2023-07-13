@@ -400,7 +400,9 @@ export class PPOMController extends BaseControllerV2<
    * @param updateForAllChains - True if update is required to be done for all chains in chainStatus.
    */
   async #updatePPOM(updateForAllChains: boolean) {
-    const versionInfoUpdated = await this.#updateVersionInfo();
+    const versionInfoUpdated = await this.#updateVersionInfo(
+      updateForAllChains,
+    );
     if (!versionInfoUpdated) {
       return;
     }
@@ -416,10 +418,8 @@ export class PPOMController extends BaseControllerV2<
   /*
    * Fetch the version info from the CDN and update the version info in state.
    */
-  async #updateVersionInfo(): Promise<boolean> {
-    const versionInfo = await this.#fetchVersionInfo(
-      `${URL_PREFIX}${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`,
-    );
+  async #updateVersionInfo(updateForAllChains: boolean): Promise<boolean> {
+    const versionInfo = await this.#fetchVersionInfo(updateForAllChains);
     if (versionInfo) {
       this.update((draftState) => {
         draftState.versionInfo = versionInfo;
@@ -670,25 +670,27 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the version info from the PPOM cdn.
    */
   async #fetchVersionInfo(
-    url: string,
+    updateForAllChains: boolean,
   ): Promise<PPOMVersionResponse | undefined> {
-    const headResponse = await this.#getAPIResponse(
-      url,
-      {
-        headers: versionInfoFileHeaders,
-      },
-      'HEAD',
-    );
+    const url = `${URL_PREFIX}${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`;
+    if (updateForAllChains) {
+      const headResponse = await this.#getAPIResponse(
+        url,
+        {
+          headers: versionInfoFileHeaders,
+        },
+        'HEAD',
+      );
 
-    const { versionFileETag } = this.state;
-    if (headResponse.headers.get('ETag') === versionFileETag) {
-      return undefined;
+      const { versionFileETag } = this.state;
+      if (headResponse.headers.get('ETag') === versionFileETag) {
+        return undefined;
+      }
+
+      this.update((draftState) => {
+        draftState.versionFileETag = headResponse.headers.get('ETag');
+      });
     }
-
-    this.update((draftState) => {
-      draftState.versionFileETag = headResponse.headers.get('ETag');
-    });
-
     const response = await this.#getAPIResponse(url, {
       headers: versionInfoFileHeaders,
     });
