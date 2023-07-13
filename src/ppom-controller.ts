@@ -646,17 +646,20 @@ export class PPOMController extends BaseControllerV2<
     options: Record<string, unknown> = {},
     method = 'GET',
   ): Promise<any> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     const response = await safelyExecute(
       async () =>
         fetch(url, {
           method,
           cache: 'no-cache',
           redirect: 'error',
-          // signal: (AbortSignal as any).timeout(10000),
+          signal: controller.signal,
           ...options,
         }),
       true,
     );
+    clearTimeout(timeoutId);
     if (response?.status !== 200) {
       throw new Error(`Failed to fetch file with url: ${url}`);
     }
