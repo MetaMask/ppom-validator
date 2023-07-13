@@ -12,7 +12,7 @@ import {
   FileMetadata,
 } from './ppom-storage';
 
-export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 24;
+export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
 const PROVIDER_REQUEST_LIMIT = 500;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
@@ -103,6 +103,8 @@ export type PPOMState = {
   providerRequests: number[];
   // true if user has enabled preference for blockaid secirity check
   securityAlertsEnabled: boolean;
+  // ETag obtained using HEAD request on version file
+  versionFileETag?: string;
 };
 
 const stateMetaData = {
@@ -115,14 +117,18 @@ const stateMetaData = {
   providerRequestLimit: { persist: false, anonymous: false },
   providerRequests: { persist: false, anonymous: false },
   securityAlertsEnabled: { persist: false, anonymous: false },
+  versionFileETag: { persist: false, anonymous: false },
 };
 
-// TODO: replace with metamask cdn
-const PPOM_CDN_BASE_URL = 'https://storage.googleapis.com/ppom-cdn/';
-const PPOM_VERSION = 'ppom_version.json';
-const PPOM_VERSION_PATH = `${PPOM_CDN_BASE_URL}${PPOM_VERSION}`;
-
+const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
+const URL_PREFIX = 'https://';
 const controllerName = 'PPOMController';
+const versionInfoFileHeaders = {
+  headers: {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    'Content-Type': 'application/json',
+  },
+};
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
@@ -178,9 +184,9 @@ export class PPOMController extends BaseControllerV2<
    */
   #ppomMutex: Mutex;
 
-  #initState: PPOMState;
-
   #ppomProvider: PPOMProvider;
+
+  #cdnBaseUrl: string;
 
   /**
    * Creates a PPOMController instance.
@@ -194,6 +200,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
    * @param options.onPreferencesChange - Callback invoked when user changes preferences.
    * @param options.ppomProvider - Object wrapping PPOM.
+   * @param options.cdnBaseUrl - Base URL for the CDN.
    * @param options.state - Initial state of the controller.
    * @returns The PPOMController instance.
    */
@@ -206,6 +213,7 @@ export class PPOMController extends BaseControllerV2<
     securityAlertsEnabled,
     onPreferencesChange,
     ppomProvider,
+    cdnBaseUrl,
     state,
   }: {
     chainId: string;
@@ -216,6 +224,7 @@ export class PPOMController extends BaseControllerV2<
     securityAlertsEnabled: boolean;
     onPreferencesChange: (callback: (perferenceState: any) => void) => void;
     ppomProvider: PPOMProvider;
+    cdnBaseUrl: string;
     state?: PPOMState;
   }) {
     const initialState = {
@@ -244,8 +253,6 @@ export class PPOMController extends BaseControllerV2<
       state: initialState,
     });
 
-    this.#initState = initialState;
-
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
     this.#storage = new PPOMStorage({
@@ -260,6 +267,7 @@ export class PPOMController extends BaseControllerV2<
       },
     });
     this.#ppomMutex = new Mutex();
+    this.#cdnBaseUrl = cdnBaseUrl;
 
     onNetworkChange((networkControllerState: any) => {
       const id = networkControllerState.providerConfig.chainId;
@@ -392,7 +400,10 @@ export class PPOMController extends BaseControllerV2<
    * @param updateForAllChains - True if update is required to be done for all chains in chainStatus.
    */
   async #updatePPOM(updateForAllChains: boolean) {
-    await this.#updateVersionInfo();
+    const versionInfoUpdated = await this.#updateVersionInfo();
+    if (!versionInfoUpdated) {
+      return;
+    }
 
     await this.#storage.syncMetadata(this.state.versionInfo);
     if (updateForAllChains) {
@@ -405,13 +416,17 @@ export class PPOMController extends BaseControllerV2<
   /*
    * Fetch the version info from the CDN and update the version info in state.
    */
-  async #updateVersionInfo() {
-    const versionInfo = await this.#fetchVersionInfo(PPOM_VERSION_PATH);
+  async #updateVersionInfo(): Promise<boolean> {
+    const versionInfo = await this.#fetchVersionInfo(
+      `${URL_PREFIX}${this.#cdnBaseUrl}/${PPOM_VERSION_FILE_NAME}`,
+    );
     if (versionInfo) {
       this.update((draftState) => {
         draftState.versionInfo = versionInfo;
       });
+      return true;
     }
+    return false;
   }
 
   /**
@@ -444,7 +459,9 @@ export class PPOMController extends BaseControllerV2<
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
       return;
     }
-    const fileUrl = `${PPOM_CDN_BASE_URL}${fileVersionInfo.filePath}`;
+    const fileUrl = `${URL_PREFIX}${this.#cdnBaseUrl}/${
+      fileVersionInfo.filePath
+    }`;
     const fileData = await this.#fetchBlob(fileUrl);
 
     await this.#storage.writeFile({
@@ -622,44 +639,68 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
+   * getAPIResponse - Generic method to fetch file from CDN.
+   */
+  async #getAPIResponse(
+    url: string,
+    options: Record<string, unknown> = {},
+    method = 'GET',
+  ): Promise<any> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const response = await safelyExecute(
+      async () =>
+        fetch(url, {
+          method,
+          cache: 'no-cache',
+          redirect: 'error',
+          signal: controller.signal,
+          ...options,
+        }),
+      true,
+    );
+    clearTimeout(timeoutId);
+    if (response?.status !== 200) {
+      throw new Error(`Failed to fetch file with url: ${url}`);
+    }
+    return response;
+  }
+
+  /*
    * Fetch the version info from the PPOM cdn.
    */
   async #fetchVersionInfo(
     url: string,
   ): Promise<PPOMVersionResponse | undefined> {
-    const response = await safelyExecute(
-      async () => fetch(url, { cache: 'no-cache' }),
-      true,
+    const headResponse = await this.#getAPIResponse(
+      url,
+      {
+        headers: versionInfoFileHeaders,
+      },
+      'HEAD',
     );
-    switch (response?.status) {
-      case 200: {
-        return response.json();
-      }
 
-      default: {
-        throw new Error(`Failed to fetch version info url: ${url}`);
-      }
+    const { versionFileETag } = this.state;
+    if (headResponse.headers.get('ETag') === versionFileETag) {
+      return undefined;
     }
+
+    this.update((draftState) => {
+      draftState.versionFileETag = headResponse.headers.get('ETag');
+    });
+
+    const response = await this.#getAPIResponse(url, {
+      headers: versionInfoFileHeaders,
+    });
+    return response.json();
   }
 
   /*
    * Fetch the blob from the PPOM cdn.
    */
-  async #fetchBlob(fileUrl: string): Promise<ArrayBuffer> {
-    const response = await safelyExecute(
-      async () => fetch(fileUrl, { cache: 'no-cache' }),
-      true,
-    );
-
-    switch (response?.status) {
-      case 200: {
-        return await response.arrayBuffer();
-      }
-
-      default: {
-        throw new Error(`Failed to fetch file with url ${fileUrl}`);
-      }
-    }
+  async #fetchBlob(url: string): Promise<ArrayBuffer> {
+    const response = await this.#getAPIResponse(url);
+    return await response.arrayBuffer();
   }
 
   /*
