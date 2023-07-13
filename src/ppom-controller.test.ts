@@ -114,13 +114,13 @@ describe('PPOMController', () => {
         return Promise.resolve();
       });
       jest.runOnlyPendingTimers();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(7);
 
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
       jest.runOnlyPendingTimers();
-      expect(spy).toHaveBeenCalledTimes(10);
+      expect(spy).toHaveBeenCalledTimes(9);
 
       callBack({ providerConfig: { chainId: '0x2' } });
       await ppomController.usePPOM(async () => {
@@ -128,7 +128,7 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(17);
+      expect(spy).toHaveBeenCalledTimes(15);
     });
 
     it('should re-initialise ppom to use files fetched with scheduled job', async () => {
@@ -289,7 +289,7 @@ describe('PPOMController', () => {
         ppomController = buildPPOMController();
         jest.runOnlyPendingTimers();
         await ppomController.updatePPOM({ updateForAllChains: false });
-        expect(spy).toHaveBeenCalledTimes(4);
+        expect(spy).toHaveBeenCalledTimes(6);
         jest.runOnlyPendingTimers();
         await ppomController.updatePPOM({ updateForAllChains: false });
         expect(spy).toHaveBeenCalledTimes(8);
@@ -299,10 +299,10 @@ describe('PPOMController', () => {
         ppomController = buildPPOMController();
         jest.runOnlyPendingTimers();
         await ppomController.updatePPOM({ updateForAllChains: false });
-        expect(spy).toHaveBeenCalledTimes(8);
+        expect(spy).toHaveBeenCalledTimes(7);
         jest.runOnlyPendingTimers();
         await ppomController.updatePPOM({ updateForAllChains: false });
-        expect(spy).toHaveBeenCalledTimes(12);
+        expect(spy).toHaveBeenCalledTimes(10);
       });
       it('should throw error if fetch for version info return 500', async () => {
         buildFetchSpy({
