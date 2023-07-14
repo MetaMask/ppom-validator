@@ -462,7 +462,12 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 
-  checkFilePath(filePath: string) {
+  /**
+   * The function check to ensure that file path can contain only alphanumeric characters and a dot character (.) or slash (/).
+   *
+   * @param filePath - Path of the file.
+   */
+  #checkFilePath(filePath: string) {
     const filePathRegex = /^[\w./]+$/u;
     if (!filePathRegex.test(filePath)) {
       throw new Error(`Invalid file path for data file: ${filePath}`);
@@ -479,7 +484,7 @@ export class PPOMController extends BaseControllerV2<
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
       return;
     }
-    this.checkFilePath(fileVersionInfo.filePath);
+    this.#checkFilePath(fileVersionInfo.filePath);
     const fileUrl = `${URL_PREFIX}${this.#cdnBaseUrl}/${
       fileVersionInfo.filePath
     }`;
