@@ -7,13 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.1.1]
-### Uncategorized
-- Minor fixes ([#24](https://github.com/MetaMask/ppom-validator/pull/24))
-- Bump @metamask/eslint-config-jest from 12.0.0 to 12.1.0 ([#20](https://github.com/MetaMask/ppom-validator/pull/20))
+### Added
 - Improvements in CDN data fetching ([#15](https://github.com/MetaMask/ppom-validator/pull/15))
-- Bump @metamask/eslint-config-jest from 11.1.0 to 12.0.0 ([#17](https://github.com/MetaMask/ppom-validator/pull/17))
-- Bump semver from 6.3.0 to 6.3.1 ([#16](https://github.com/MetaMask/ppom-validator/pull/16))
-- Bump @metamask/base-controller from 3.0.0 to 3.1.0 ([#18](https://github.com/MetaMask/ppom-validator/pull/18))
 - Mobile integration ([#14](https://github.com/MetaMask/ppom-validator/pull/14))
 - Caching data for multiple networks ([#10](https://github.com/MetaMask/ppom-validator/pull/10))
 - Adding periodic sync for ppom data ([#6](https://github.com/MetaMask/ppom-validator/pull/6))
