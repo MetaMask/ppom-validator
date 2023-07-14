@@ -274,7 +274,20 @@ export class PPOMController extends BaseControllerV2<
       if (id === this.state.chainId) {
         return;
       }
-      let { chainStatus } = this.state;
+      let chainStatus = { ...this.state.chainStatus };
+      // delete ols chainId if total number of chainId is equal 5
+      const chainIds = Object.keys(chainStatus);
+      if (chainIds.length >= 5) {
+        const oldestChainId = chainIds.sort((c1, c2) =>
+          (chainStatus[c1]?.lastVisited as any) >
+          (chainStatus[c2]?.lastVisited as any)
+            ? -1
+            : 1,
+        )[4];
+        if (oldestChainId) {
+          delete chainStatus[oldestChainId];
+        }
+      }
       const existingNetworkObject = chainStatus[id];
       chainStatus = {
         ...chainStatus,
@@ -449,6 +462,13 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 
+  checkFilePath(filePath: string) {
+    const filePathRegex = /^[\w./]+$/u;
+    if (!filePathRegex.test(filePath)) {
+      throw new Error(`Invalid file path for data file: ${filePath}`);
+    }
+  }
+
   /**
    * Gets a single file from CDN and write to the storage.
    *
@@ -459,6 +479,7 @@ export class PPOMController extends BaseControllerV2<
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
       return;
     }
+    this.checkFilePath(fileVersionInfo.filePath);
     const fileUrl = `${URL_PREFIX}${this.#cdnBaseUrl}/${
       fileVersionInfo.filePath
     }`;
@@ -562,11 +583,14 @@ export class PPOMController extends BaseControllerV2<
     return fileToBeFetchedList;
   }
 
-  // todo: implement a max limit to K, number of chain over K limited to max K
   /**
    * Delete from chainStatus chainIds of networks visited more than one week ago.
    */
   #deleteOldChainIds() {
+    // We keep minimum of 2 chainIds in the state
+    if (Object.keys(this.state.chainStatus)?.length <= 2) {
+      return;
+    }
     const currentTimestamp = new Date().getTime();
 
     const oldChaninIds = Object.keys(this.state.chainStatus).filter(
@@ -617,20 +641,24 @@ export class PPOMController extends BaseControllerV2<
       if (!fileToBeFetched) {
         return;
       }
+
+      const { chainStatus } = this.state;
       const { fileVersionInfo, isLastFileOfNetwork } = fileToBeFetched;
-      // get the file from CDN
-      this.#getFile(fileVersionInfo)
-        .then(() => {
-          if (isLastFileOfNetwork) {
-            // set dataFetched for chainId to true
-            this.#setChainIdDataFetched(fileVersionInfo.chainId);
-          }
-        })
-        .catch((exp: Error) =>
-          console.error(
-            `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-          ),
-        );
+      if (chainStatus[fileVersionInfo.chainId]) {
+        // get the file from CDN
+        this.#getFile(fileVersionInfo)
+          .then(() => {
+            if (isLastFileOfNetwork) {
+              // set dataFetched for chainId to true
+              this.#setChainIdDataFetched(fileVersionInfo.chainId);
+            }
+          })
+          .catch((exp: Error) =>
+            console.error(
+              `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+            ),
+          );
+      }
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
@@ -751,9 +779,6 @@ export class PPOMController extends BaseControllerV2<
    * It will load the PPOM data from storage and initialize the PPOM.
    */
   async #getPPOM(): Promise<any> {
-    const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit();
-
     const { chainId } = this.state;
 
     const files = await Promise.all(
@@ -765,6 +790,14 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
+    if (!files.length) {
+      throw new Error(
+        `Aborting validation as no files are found for the network with chainId: ${chainId}`,
+      );
+    }
+
+    const { ppomInit, PPOM } = this.#ppomProvider;
+    await ppomInit();
     return new PPOM(this.#jsonRpcRequest.bind(this), files);
   }
 
@@ -788,5 +821,3 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 }
-
-// todo: handle empty version info file to hold on validations
