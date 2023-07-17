@@ -11,6 +11,7 @@ import {
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
+import { createPayload } from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
@@ -763,7 +764,7 @@ export class PPOMController extends BaseControllerV2<
         reject(new Error(`Method not allowed on provider ${req.method}`));
         return;
       }
-      this.#provider.sendAsync(req, (error: Error, res: any) => {
+      this.#provider.sendAsync(createPayload(req), (error: Error, res: any) => {
         if (error) {
           reject(error);
         } else {
