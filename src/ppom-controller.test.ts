@@ -265,7 +265,7 @@ describe('PPOMController', () => {
         await ppomController.usePPOM(async () => {
           return Promise.resolve();
         });
-      }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
+      }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
     it('should throw error if no files are present for the network', async () => {
@@ -396,7 +396,7 @@ describe('PPOMController', () => {
         jest.runOnlyPendingTimers();
         await expect(async () => {
           await ppomController.updatePPOM(false);
-        }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
+        }).rejects.toThrow('User has securityAlertsEnabled set to false');
       });
     });
     describe('when updating all chainids in chainStatus', () => {
@@ -511,9 +511,7 @@ describe('PPOMController', () => {
         // is helping fetch new files as value of fileScheduleInterval is adjusted to be able to fetch all data files
         const spy = buildFetchSpy();
         ppomController = buildPPOMController({
-          state: {
-            fileScheduleInterval: REFRESH_TIME_INTERVAL * 100,
-          },
+          fileFetchScheduleDuration: REFRESH_TIME_INTERVAL * 100,
         });
         expect(spy).toHaveBeenCalledTimes(0);
         jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
@@ -670,12 +668,20 @@ describe('PPOMController', () => {
           callBack = func;
         },
       });
-      const securityAlertsEnabledBefore =
-        ppomController.state.securityAlertsEnabled;
+      jest.runOnlyPendingTimers();
+
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve();
+      });
       callBack({ securityAlertsEnabled: false });
-      const securityAlertsEnabledAfter =
-        ppomController.state.securityAlertsEnabled;
-      expect(securityAlertsEnabledBefore).not.toBe(securityAlertsEnabledAfter);
+      // jest.runOnlyPendingTimers();
+      // await flushPromises();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
     it('should stop file fetching if securityAlertsEnabled is set to false', async () => {
