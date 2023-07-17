@@ -14,7 +14,7 @@ import {
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
-const PROVIDER_REQUEST_LIMIT = 500;
+const PROVIDER_REQUEST_LIMIT = 300;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
@@ -22,6 +22,7 @@ export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 const ALLOWED_PROVIDER_CALLS = [
   'eth_call',
   'eth_blockNumber',
+  'eth_createAccessList',
   'eth_getLogs',
   'eth_getFilterLogs',
   'eth_getTransactionByHash',
@@ -74,8 +75,6 @@ type PPOMVersionResponse = PPOMFileVersion[];
  * @property chainStatus - Array of chainId and time it was last visited.
  * @property versionInfo - Version information fetched from CDN.
  * @property storageMetadata - Metadata of files storaged in storage.
- * @property providerRequestLimit - Number of requests in last 5 minutes that PPOM can make.
- * @property providerRequests - Array of timestamps in last 5 minutes when request was made from PPOM to provider.
  */
 export type PPOMState = {
   // chainId of currently selected network
@@ -97,10 +96,6 @@ export type PPOMState = {
   refreshInterval: number;
   // interval at which files for a network are fetched
   fileScheduleInterval: number;
-  // number of requests PPOM is allowed to make to provider per transaction
-  providerRequestLimit: number;
-  // number of requests PPOM has already made to the provider in current transaction
-  providerRequests: number[];
   // true if user has enabled preference for blockaid secirity check
   securityAlertsEnabled: boolean;
   // ETag obtained using HEAD request on version file
@@ -114,8 +109,6 @@ const stateMetaData = {
   storageMetadata: { persist: false, anonymous: false },
   refreshInterval: { persist: false, anonymous: false },
   fileScheduleInterval: { persist: false, anonymous: false },
-  providerRequestLimit: { persist: false, anonymous: false },
-  providerRequests: { persist: false, anonymous: false },
   securityAlertsEnabled: { persist: false, anonymous: false },
   versionFileETag: { persist: false, anonymous: false },
 };
@@ -188,6 +181,10 @@ export class PPOMController extends BaseControllerV2<
 
   #cdnBaseUrl: string;
 
+  #providerRequestLimit: number;
+
+  #providerRequests = 0;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -201,6 +198,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.onPreferencesChange - Callback invoked when user changes preferences.
    * @param options.ppomProvider - Object wrapping PPOM.
    * @param options.cdnBaseUrl - Base URL for the CDN.
+   * @param options.providerRequestLimit - Limit of number of requests that can be sent to provider per transaction.
    * @param options.state - Initial state of the controller.
    * @returns The PPOMController instance.
    */
@@ -214,6 +212,7 @@ export class PPOMController extends BaseControllerV2<
     onPreferencesChange,
     ppomProvider,
     cdnBaseUrl,
+    providerRequestLimit,
     state,
   }: {
     chainId: string;
@@ -225,6 +224,7 @@ export class PPOMController extends BaseControllerV2<
     onPreferencesChange: (callback: (perferenceState: any) => void) => void;
     ppomProvider: PPOMProvider;
     cdnBaseUrl: string;
+    providerRequestLimit?: number;
     state?: PPOMState;
   }) {
     const initialState = {
@@ -241,9 +241,6 @@ export class PPOMController extends BaseControllerV2<
       refreshInterval: state?.refreshInterval ?? REFRESH_TIME_INTERVAL,
       fileScheduleInterval:
         state?.fileScheduleInterval ?? FILE_FETCH_SCHEDULE_INTERVAL,
-      providerRequestLimit:
-        state?.providerRequestLimit ?? PROVIDER_REQUEST_LIMIT,
-      providerRequests: state?.providerRequests ?? [],
       securityAlertsEnabled,
     };
     super({
@@ -268,6 +265,7 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#ppomMutex = new Mutex();
     this.#cdnBaseUrl = cdnBaseUrl;
+    this.#providerRequestLimit = providerRequestLimit ?? PROVIDER_REQUEST_LIMIT;
 
     onNetworkChange((networkControllerState: any) => {
       const id = networkControllerState.providerConfig.chainId;
@@ -359,6 +357,7 @@ export class PPOMController extends BaseControllerV2<
         this.#ppom = await this.#getPPOM();
       }
 
+      this.#providerRequests = 0;
       return await callback(this.#ppom);
     });
   }
@@ -744,25 +743,15 @@ export class PPOMController extends BaseControllerV2<
    */
   async #jsonRpcRequest(req: ProviderRequest): Promise<any> {
     return new Promise((resolve, reject) => {
-      const currentTimestamp = new Date().getTime();
-      const requests = this.state.providerRequests.filter(
-        (requestTime) =>
-          requestTime - currentTimestamp < FILE_FETCH_SCHEDULE_INTERVAL,
-      );
-      if (requests.length >= 5) {
+      if (this.#providerRequests > this.#providerRequestLimit) {
         reject(
           new Error(
-            'Number of request to provider from PPOM exceed rate limit',
+            'Number of request to provider from PPOM exceed rate limit of 300 per transaction',
           ),
         );
         return;
       }
-      this.update((draftState) => {
-        draftState.providerRequests = [
-          ...this.state.providerRequests,
-          currentTimestamp,
-        ];
-      });
+      this.#providerRequests += 1;
       if (!ALLOWED_PROVIDER_CALLS.includes(req.method)) {
         reject(new Error(`Method not allowed on provider ${req.method}`));
         return;
@@ -795,6 +784,8 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
+    // This check has been put in place after suggestion of security team.
+    // If we want to disable ppom validation on all instances of Metamask, this can be achieved by returning empty data from version file.
     if (!files.length) {
       throw new Error(
         `Aborting validation as no files are found for the network with chainId: ${chainId}`,

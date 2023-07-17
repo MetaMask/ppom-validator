@@ -234,6 +234,7 @@ describe('PPOMController', () => {
             arg2(undefined, 'DUMMY_VALUE');
           },
         },
+        providerRequestLimit: 5,
       });
       jest.runOnlyPendingTimers();
 
@@ -243,10 +244,11 @@ describe('PPOMController', () => {
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
+        await ppom.testJsonRPCRequest();
         const result = await ppom.testJsonRPCRequest().catch((exp: any) => {
           // eslint-disable-next-line jest/no-conditional-expect
           expect(exp.toString()).toBe(
-            'Error: Number of request to provider from PPOM exceed rate limit',
+            'Error: Number of request to provider from PPOM exceed rate limit of 300 per transaction',
           );
         });
         expect(result).toBeUndefined();
