@@ -137,8 +137,13 @@ describe('PPOMController', () => {
       class PPOMClass {
         #jsonRpcRequest: any;
 
+        constructor(freeM: any) {
+          this.free = freeM;
+        }
+
         new = (jsonRpcRequest: any) => {
           this.#jsonRpcRequest = jsonRpcRequest;
+          return this;
         };
 
         validateJsonRpc = async () => {
@@ -156,7 +161,7 @@ describe('PPOMController', () => {
       ppomController = buildPPOMController({
         ppomProvider: {
           ppomInit: () => undefined,
-          PPOM: new PPOMClass(),
+          PPOM: new PPOMClass(freeMock),
         },
       });
       jest.runOnlyPendingTimers();
