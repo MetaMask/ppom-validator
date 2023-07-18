@@ -7,9 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.1.2]
-### Uncategorized
-- Changes in way new ppom files are initialised ([#29](https://github.com/MetaMask/ppom-validator/pull/29))
-- Bump @metamask/auto-changelog from 3.1.0 to 3.2.0 ([#26](https://github.com/MetaMask/ppom-validator/pull/26))
+### Changed
+- Change in way new ppom module is initialised ([#29](https://github.com/MetaMask/ppom-validator/pull/29))
 
 ## [0.1.1]
 ### Added
