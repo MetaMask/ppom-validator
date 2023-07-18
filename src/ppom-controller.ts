@@ -11,13 +11,18 @@ import {
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
-import { createPayload } from './util';
+import { IdGenerator, PROVIDER_ERRORS, createPayload } from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
 const PROVIDER_REQUEST_LIMIT = 300;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
+
+const NETWORK_CACHE_LIMIT = {
+  MAX: 5,
+  MIN: 2,
+};
 
 // The following methods on provider are allowed to PPOM
 const ALLOWED_PROVIDER_CALLS = [
@@ -133,7 +138,11 @@ export type PPOMControllerMessenger = RestrictedControllerMessenger<
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
-type PPOMProvider = { ppomInit: () => Promise<void>; PPOM: any };
+type PPOMProvider = {
+  ppomInit: (wasmFilePath: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  PPOM: any;
+};
 
 /**
  * PPOMController
@@ -285,13 +294,12 @@ export class PPOMController extends BaseControllerV2<
       let chainStatus = { ...this.state.chainStatus };
       // delete ols chainId if total number of chainId is equal 5
       const chainIds = Object.keys(chainStatus);
-      if (chainIds.length >= 5) {
-        const oldestChainId = chainIds.sort((c1, c2) =>
-          (chainStatus[c1]?.lastVisited as any) >
-          (chainStatus[c2]?.lastVisited as any)
-            ? -1
-            : 1,
-        )[4];
+      if (chainIds.length >= NETWORK_CACHE_LIMIT.MAX) {
+        const oldestChainId = chainIds.sort(
+          (c1, c2) =>
+            Number(chainStatus[c2]?.lastVisited) -
+            Number(chainStatus[c1]?.lastVisited),
+        )[NETWORK_CACHE_LIMIT.MAX - 1];
         if (oldestChainId) {
           delete chainStatus[oldestChainId];
         }
@@ -475,7 +483,7 @@ export class PPOMController extends BaseControllerV2<
    */
   #checkFilePath(filePath: string) {
     const filePathRegex = /^[\w./]+$/u;
-    if (!filePathRegex.test(filePath)) {
+    if (!filePath.match(filePathRegex)) {
       throw new Error(`Invalid file path for data file: ${filePath}`);
     }
   }
@@ -599,7 +607,9 @@ export class PPOMController extends BaseControllerV2<
    */
   #deleteOldChainIds() {
     // We keep minimum of 2 chainIds in the state
-    if (Object.keys(this.state.chainStatus)?.length <= 2) {
+    if (
+      Object.keys(this.state.chainStatus)?.length <= NETWORK_CACHE_LIMIT.MIN
+    ) {
       return;
     }
     const currentTimestamp = new Date().getTime();
@@ -749,28 +759,30 @@ export class PPOMController extends BaseControllerV2<
    * Send a JSON RPC request to the provider.
    * This method is used by the PPOM to make requests to the provider.
    */
-  async #jsonRpcRequest(req: ProviderRequest): Promise<any> {
+  async #jsonRpcRequest(
+    method: string,
+    params: Record<string, unknown>,
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.#providerRequests > this.#providerRequestLimit) {
-        reject(
-          new Error(
-            'Number of request to provider from PPOM exceed rate limit of 300 per transaction',
-          ),
-        );
+        reject(PROVIDER_ERRORS.limitExceeded());
         return;
       }
       this.#providerRequests += 1;
-      if (!ALLOWED_PROVIDER_CALLS.includes(req.method)) {
-        reject(new Error(`Method not allowed on provider ${req.method}`));
+      if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
+        reject(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
-      this.#provider.sendAsync(createPayload(req), (error: Error, res: any) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(res);
-        }
-      });
+      this.#provider.sendAsync(
+        createPayload(method, params),
+        (error: Error, res: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(res);
+          }
+        },
+      );
     });
   }
 
@@ -801,8 +813,8 @@ export class PPOMController extends BaseControllerV2<
     }
 
     const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit();
-    return new PPOM(this.#jsonRpcRequest.bind(this), files);
+    await ppomInit('./ppom_bg.wasm');
+    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 
   /**
