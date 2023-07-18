@@ -145,7 +145,11 @@ export type PPOMControllerMessenger = RestrictedControllerMessenger<
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
-type PPOMProvider = { ppomInit: () => Promise<void>; PPOM: any };
+type PPOMProvider = {
+  ppomInit: (wasmFilePath: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  PPOM: any;
+};
 
 /**
  * PPOMController
@@ -709,7 +713,6 @@ export class PPOMController extends BaseControllerV2<
    */
   async #getPPOM(): Promise<any> {
     const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit();
 
     const { chainId } = this.state;
 
@@ -722,7 +725,8 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
-    return new PPOM(this.#jsonRpcRequest.bind(this), files);
+    await ppomInit('./ppom_bg.wasm');
+    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 
   /**
