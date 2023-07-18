@@ -42,8 +42,7 @@ export const VERSION_INFO = [
   },
 ];
 
-const PPOM_VERSION_PATH =
-  'https://storage.googleapis.com/ppom-cdn/ppom_version.json';
+const PPOM_VERSION_PATH = 'https://ppom_cdn_base_url/ppom_version.json';
 
 export const buildFetchDataSpy = (
   versionData: any = {
@@ -79,7 +78,12 @@ export const buildFetchSpy = (
     .spyOn(globalThis, 'fetch' as any)
     .mockImplementation((url: any) => {
       if (url === PPOM_VERSION_PATH) {
-        return versionData;
+        return {
+          headers: {
+            get: () => ({ ETag: Math.round(Math.random() * 100) }),
+          },
+          ...versionData,
+        };
       }
       return blobData;
     });
@@ -123,6 +127,7 @@ export const buildPPOMController = (args?: any) => {
       ppomInit: () => undefined,
       PPOM: new PPOMClass(),
     },
+    cdnBaseUrl: 'ppom_cdn_base_url',
     ...args,
   });
   return ppomController;
