@@ -134,28 +134,34 @@ describe('PPOMController', () => {
     it('should re-initialise ppom to use files fetched with scheduled job', async () => {
       buildFetchSpy();
       const freeMock = jest.fn();
+      class PPOMClass {
+        #jsonRpcRequest: any;
+
+        constructor(freeM: any) {
+          this.free = freeM;
+        }
+
+        new = (jsonRpcRequest: any) => {
+          this.#jsonRpcRequest = jsonRpcRequest;
+          return this;
+        };
+
+        validateJsonRpc = async () => {
+          return Promise.resolve();
+        };
+
+        free = freeMock;
+
+        testJsonRPCRequest = async (args2: any) =>
+          await this.#jsonRpcRequest({
+            method: 'eth_blockNumber',
+            ...args2,
+          });
+      }
       ppomController = buildPPOMController({
         ppomProvider: {
           ppomInit: () => undefined,
-          PPOM: class PPOMClass {
-            #jsonRpcRequest;
-
-            constructor(jsonRpcRequest: any) {
-              this.#jsonRpcRequest = jsonRpcRequest;
-            }
-
-            validateJsonRpc = async () => {
-              return Promise.resolve();
-            };
-
-            free = freeMock;
-
-            testJsonRPCRequest = async (args2: any) =>
-              await this.#jsonRpcRequest({
-                method: 'eth_blockNumber',
-                ...args2,
-              });
-          },
+          PPOM: new PPOMClass(freeMock),
         },
       });
       jest.runOnlyPendingTimers();
