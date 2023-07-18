@@ -89,6 +89,27 @@ export const buildFetchSpy = (
     });
 };
 
+class PPOMClass {
+  #jsonRpcRequest: any;
+
+  new = (jsonRpcRequest: any) => {
+    this.#jsonRpcRequest = jsonRpcRequest;
+    return this;
+  };
+
+  validateJsonRpc = async () => {
+    return Promise.resolve();
+  };
+
+  free = () => undefined;
+
+  testJsonRPCRequest = async (args2: any) =>
+    await this.#jsonRpcRequest({
+      method: 'eth_blockNumber',
+      ...args2,
+    });
+}
+
 export const buildPPOMController = (args?: any) => {
   const controllerMessenger = new ControllerMessenger();
   const ppomController = new PPOMController({
@@ -104,25 +125,7 @@ export const buildPPOMController = (args?: any) => {
     state: {},
     ppomProvider: {
       ppomInit: () => undefined,
-      PPOM: class PPOMClass {
-        #jsonRpcRequest;
-
-        constructor(jsonRpcRequest: any) {
-          this.#jsonRpcRequest = jsonRpcRequest;
-        }
-
-        validateJsonRpc = async () => {
-          return Promise.resolve();
-        };
-
-        free = () => undefined;
-
-        testJsonRPCRequest = async (args2: any) =>
-          await this.#jsonRpcRequest({
-            method: 'eth_blockNumber',
-            ...args2,
-          });
-      },
+      PPOM: new PPOMClass(),
     },
     cdnBaseUrl: 'ppom_cdn_base_url',
     ...args,
