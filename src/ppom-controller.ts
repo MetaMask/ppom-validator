@@ -18,6 +18,11 @@ const PROVIDER_REQUEST_LIMIT = 500;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
+const NETWORK_CACHE_LIMIT = {
+  MAX: 5,
+  MIN: 2,
+};
+
 // The following methods on provider are allowed to PPOM
 const ALLOWED_PROVIDER_CALLS = [
   'eth_call',
@@ -281,13 +286,12 @@ export class PPOMController extends BaseControllerV2<
       let chainStatus = { ...this.state.chainStatus };
       // delete ols chainId if total number of chainId is equal 5
       const chainIds = Object.keys(chainStatus);
-      if (chainIds.length >= 5) {
-        const oldestChainId = chainIds.sort((c1, c2) =>
-          Number((chainStatus[c1]?.lastVisited) - Number((chainStatus[c2]?.lastVisited)
-          (chainStatus[c2]?.lastVisited as any)
-            ? -1
-            : 1,
-        )[4];
+      if (chainIds.length >= NETWORK_CACHE_LIMIT.MAX) {
+        const oldestChainId = chainIds.sort(
+          (c1, c2) =>
+            Number(chainStatus[c2]?.lastVisited) -
+            Number(chainStatus[c1]?.lastVisited),
+        )[NETWORK_CACHE_LIMIT.MAX - 1];
         if (oldestChainId) {
           delete chainStatus[oldestChainId];
         }
@@ -473,7 +477,7 @@ export class PPOMController extends BaseControllerV2<
    */
   #checkFilePath(filePath: string) {
     const filePathRegex = /^[\w./]+$/u;
-    if (!filePathRegex.test(filePath)) {
+    if (!filePath.match(filePathRegex)) {
       throw new Error(`Invalid file path for data file: ${filePath}`);
     }
   }
@@ -597,7 +601,9 @@ export class PPOMController extends BaseControllerV2<
    */
   #deleteOldChainIds() {
     // We keep minimum of 2 chainIds in the state
-    if (Object.keys(this.state.chainStatus)?.length <= 2) {
+    if (
+      Object.keys(this.state.chainStatus)?.length <= NETWORK_CACHE_LIMIT.MIN
+    ) {
       return;
     }
     const currentTimestamp = new Date().getTime();
