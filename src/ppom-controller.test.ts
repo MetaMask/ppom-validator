@@ -338,7 +338,7 @@ describe('PPOMController', () => {
           'Failed to fetch file with url: https://ppom_cdn_base_url/ppom_version.json',
         );
       });
-      it('should throw error if file path containe weird characters', async () => {
+      it('should throw error if file path contains weird characters', async () => {
         buildFetchSpy({
           status: 200,
           json: () => [
