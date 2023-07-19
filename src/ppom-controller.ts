@@ -755,7 +755,6 @@ export class PPOMController extends BaseControllerV2<
         return;
       }
       this.#providerRequests += 1;
-      console.log('-------------------', ALLOWED_PROVIDER_CALLS, method);
       if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
         reject(PROVIDER_ERRORS.methodNotSupported());
         return;
