@@ -283,7 +283,7 @@ export class PPOMController extends BaseControllerV2<
       const chainIds = Object.keys(chainStatus);
       if (chainIds.length >= 5) {
         const oldestChainId = chainIds.sort((c1, c2) =>
-          (chainStatus[c1]?.lastVisited as any) >
+          Number((chainStatus[c1]?.lastVisited) - Number((chainStatus[c2]?.lastVisited)
           (chainStatus[c2]?.lastVisited as any)
             ? -1
             : 1,
