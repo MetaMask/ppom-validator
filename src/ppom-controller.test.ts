@@ -152,11 +152,10 @@ describe('PPOMController', () => {
 
         free = freeMock;
 
-        testJsonRPCRequest = async (args2: any) =>
-          await this.#jsonRpcRequest({
-            method: 'eth_blockNumber',
-            ...args2,
-          });
+        testJsonRPCRequest = async (
+          method = 'eth_blockNumber',
+          args2: any = {},
+        ) => await this.#jsonRpcRequest(method, ...args2);
       }
       ppomController = buildPPOMController({
         ppomProvider: {
@@ -221,14 +220,10 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
       await ppomController.usePPOM(async (ppom: any) => {
-        ppom
-          .testJsonRPCRequest({ method: 'DUMMY_METHOD' })
-          .catch((exp: any) => {
-            // eslint-disable-next-line jest/no-conditional-expect
-            expect(exp.toString()).toBe(
-              'Error: Method not allowed on provider DUMMY_METHOD',
-            );
-          });
+        ppom.testJsonRPCRequest('DUMMY_METHOD').catch((exp: any) => {
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(exp.error.message).toBe('Method not supported');
+        });
       });
     });
 
@@ -253,9 +248,7 @@ describe('PPOMController', () => {
         await ppom.testJsonRPCRequest();
         const result = await ppom.testJsonRPCRequest().catch((exp: any) => {
           // eslint-disable-next-line jest/no-conditional-expect
-          expect(exp.toString()).toBe(
-            'Error: Number of request to provider from PPOM exceed rate limit of 300 per transaction',
-          );
+          expect(exp.error.message).toBe('Limit exceeded');
         });
         expect(result).toBeUndefined();
       });

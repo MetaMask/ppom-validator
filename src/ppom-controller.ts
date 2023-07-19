@@ -11,7 +11,7 @@ import {
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
-import { IdGenerator, PROVIDER_ERRORS, createPayload } from './util';
+import { PROVIDER_ERRORS, createPayload } from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
@@ -44,20 +44,6 @@ const ALLOWED_PROVIDER_CALLS = [
   'debug_traceCall',
   'trace_filter',
 ];
-
-/**
- * @type ProviderRequest - Type of JSON RPC request sent to provider.
- * @property id - Request identifier.
- * @property jsonrpc - JSON RPC version.
- * @property method - Method to be invoked on the provider.
- * @property params - Parameters to be passed to method call.
- */
-type ProviderRequest = {
-  id: number;
-  jsonrpc: string;
-  method: string;
-  params: any[];
-};
 
 /**
  * @type PPOMFileVersion
@@ -769,6 +755,7 @@ export class PPOMController extends BaseControllerV2<
         return;
       }
       this.#providerRequests += 1;
+      console.log('-------------------', ALLOWED_PROVIDER_CALLS, method);
       if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
         reject(PROVIDER_ERRORS.methodNotSupported());
         return;
