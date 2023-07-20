@@ -271,6 +271,22 @@ describe('PPOMController', () => {
         });
       }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
     });
+
+    it('should throw error if no files are present for the network', async () => {
+      buildFetchSpy({
+        status: 200,
+        json: () => [],
+      });
+      ppomController = buildPPOMController();
+      jest.runOnlyPendingTimers();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow(
+        'Aborting validation as no files are found for the network with chainId: 0x1',
+      );
+    });
   });
 
   describe('updatePPOM', () => {
@@ -321,6 +337,26 @@ describe('PPOMController', () => {
         }).rejects.toThrow(
           'Failed to fetch file with url: https://ppom_cdn_base_url/ppom_version.json',
         );
+      });
+      it('should throw error if file path contains weird characters', async () => {
+        buildFetchSpy({
+          status: 200,
+          json: () => [
+            {
+              name: 'blob',
+              chainId: '0x1',
+              version: '1.0.0',
+              checksum:
+                '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+              filePath: 'test~123$.2*()',
+            },
+          ],
+        });
+        ppomController = buildPPOMController();
+        jest.runOnlyPendingTimers();
+        await expect(async () => {
+          await ppomController.updatePPOM({ updateForAllChains: false });
+        }).rejects.toThrow('Invalid file path for data file: test~123$.2*()');
       });
       it('should throw error if fetch for blob return 500', async () => {
         buildFetchSpy(undefined, {
@@ -504,6 +540,7 @@ describe('PPOMController', () => {
         const chainIdData1 = ppomController.state.chainStatus['0x1'];
         expect(chainIdData1).toBeDefined();
         callBack({ providerConfig: { chainId: '0x2' } });
+        callBack({ providerConfig: { chainId: '0x3' } });
         jest.advanceTimersByTime(NETWORK_CACHE_DURATION);
         jest.runOnlyPendingTimers();
         await flushPromises();
@@ -573,6 +610,39 @@ describe('PPOMController', () => {
         ppomController.state.chainStatus['0x1'].lastVisited;
       expect(chainIdCacheBefore).toStrictEqual(chainIdCacheAfter);
       expect(lastVisitedBefore).toBe(lastVisitedAfter);
+    });
+
+    it('should delete old network if more than 5 networks are added', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-01'));
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+      });
+
+      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(1);
+
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
+      callBack({ providerConfig: { chainId: '0x2' } });
+
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-05'));
+      callBack({ providerConfig: { chainId: '0x5' } });
+
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-03'));
+      callBack({ providerConfig: { chainId: '0x3' } });
+
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-04'));
+      callBack({ providerConfig: { chainId: '0x4' } });
+
+      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
+
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-06'));
+      callBack({ providerConfig: { chainId: '0x6' } });
+      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
+
+      expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
     });
   });
 

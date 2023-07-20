@@ -18,6 +18,11 @@ const PROVIDER_REQUEST_LIMIT = 500;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
+const NETWORK_CACHE_LIMIT = {
+  MAX: 5,
+  MIN: 2,
+};
+
 // The following methods on provider are allowed to PPOM
 const ALLOWED_PROVIDER_CALLS = [
   'eth_call',
@@ -278,7 +283,19 @@ export class PPOMController extends BaseControllerV2<
       if (id === this.state.chainId) {
         return;
       }
-      let { chainStatus } = this.state;
+      let chainStatus = { ...this.state.chainStatus };
+      // delete ols chainId if total number of chainId is equal 5
+      const chainIds = Object.keys(chainStatus);
+      if (chainIds.length >= NETWORK_CACHE_LIMIT.MAX) {
+        const oldestChainId = chainIds.sort(
+          (c1, c2) =>
+            Number(chainStatus[c2]?.lastVisited) -
+            Number(chainStatus[c1]?.lastVisited),
+        )[NETWORK_CACHE_LIMIT.MAX - 1];
+        if (oldestChainId) {
+          delete chainStatus[oldestChainId];
+        }
+      }
       const existingNetworkObject = chainStatus[id];
       chainStatus = {
         ...chainStatus,
@@ -454,6 +471,18 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
+   * The function check to ensure that file path can contain only alphanumeric characters and a dot character (.) or slash (/).
+   *
+   * @param filePath - Path of the file.
+   */
+  #checkFilePath(filePath: string) {
+    const filePathRegex = /^[\w./]+$/u;
+    if (!filePath.match(filePathRegex)) {
+      throw new Error(`Invalid file path for data file: ${filePath}`);
+    }
+  }
+
+  /**
    * Gets a single file from CDN and write to the storage.
    *
    * @param fileVersionInfo - Information about the file to be retrieved.
@@ -463,6 +492,7 @@ export class PPOMController extends BaseControllerV2<
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
       return;
     }
+    this.#checkFilePath(fileVersionInfo.filePath);
     const fileUrl = `${URL_PREFIX}${this.#cdnBaseUrl}/${
       fileVersionInfo.filePath
     }`;
@@ -566,11 +596,16 @@ export class PPOMController extends BaseControllerV2<
     return fileToBeFetchedList;
   }
 
-  // todo: implement a max limit to K, number of chain over K limited to max K
   /**
    * Delete from chainStatus chainIds of networks visited more than one week ago.
    */
   #deleteOldChainIds() {
+    // We keep minimum of 2 chainIds in the state
+    if (
+      Object.keys(this.state.chainStatus)?.length <= NETWORK_CACHE_LIMIT.MIN
+    ) {
+      return;
+    }
     const currentTimestamp = new Date().getTime();
 
     const oldChaninIds = Object.keys(this.state.chainStatus).filter(
@@ -621,20 +656,24 @@ export class PPOMController extends BaseControllerV2<
       if (!fileToBeFetched) {
         return;
       }
+
+      const { chainStatus } = this.state;
       const { fileVersionInfo, isLastFileOfNetwork } = fileToBeFetched;
-      // get the file from CDN
-      this.#getFile(fileVersionInfo)
-        .then(() => {
-          if (isLastFileOfNetwork) {
-            // set dataFetched for chainId to true
-            this.#setChainIdDataFetched(fileVersionInfo.chainId);
-          }
-        })
-        .catch((exp: Error) =>
-          console.error(
-            `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-          ),
-        );
+      if (chainStatus[fileVersionInfo.chainId]) {
+        // get the file from CDN
+        this.#getFile(fileVersionInfo)
+          .then(() => {
+            if (isLastFileOfNetwork) {
+              // set dataFetched for chainId to true
+              this.#setChainIdDataFetched(fileVersionInfo.chainId);
+            }
+          })
+          .catch((exp: Error) =>
+            console.error(
+              `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+            ),
+          );
+      }
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
@@ -755,8 +794,6 @@ export class PPOMController extends BaseControllerV2<
    * It will load the PPOM data from storage and initialize the PPOM.
    */
   async #getPPOM(): Promise<any> {
-    const { ppomInit, PPOM } = this.#ppomProvider;
-
     const { chainId } = this.state;
 
     const files = await Promise.all(
@@ -768,6 +805,13 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
+    if (!files.length) {
+      throw new Error(
+        `Aborting validation as no files are found for the network with chainId: ${chainId}`,
+      );
+    }
+
+    const { ppomInit, PPOM } = this.#ppomProvider;
     await ppomInit('./ppom_bg.wasm');
     return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
@@ -792,5 +836,3 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 }
-
-// todo: handle empty version info file to hold on validations
