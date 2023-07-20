@@ -13,7 +13,7 @@
 <li><a href="../modules.html">@metamask/ppom-validator</a></li>
 <li><a href="PPOMState.html">PPOMState</a></li></ul>
 <h1>Type alias PPOMState</h1></div>
-<div class="tsd-signature">PPOMState<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>chainId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>chainStatus<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">{ </span>chainId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>dataFetched<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">; </span>lastVisited<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>fileScheduleInterval<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>providerRequestLimit<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>providerRequests<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">; </span>refreshInterval<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">; </span>securityAlertsEnabled<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">; </span>storageMetadata<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">FileMetadataList</span><span class="tsd-signature-symbol">; </span>versionFileETag<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>versionInfo<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">PPOMVersionResponse</span><span class="tsd-signature-symbol"> }</span></div>
+<div class="tsd-signature">PPOMState<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>chainStatus<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">{ </span>chainId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>dataFetched<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">; </span>lastVisited<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span>storageMetadata<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">FileMetadataList</span><span class="tsd-signature-symbol">; </span>versionFileETag<span class="tsd-signature-symbol">?: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>versionInfo<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">PPOMVersionResponse</span><span class="tsd-signature-symbol"> }</span></div>
 <div class="tsd-comment tsd-typography">
 <h3>Property</h3><p>ID of current chain.</p>
 
@@ -22,28 +22,12 @@
 <h3>Property</h3><p>Version information fetched from CDN.</p>
 
 <h3>Property</h3><p>Metadata of files storaged in storage.</p>
-
-<h3>Property</h3><p>Number of requests in last 5 minutes that PPOM can make.</p>
-
-<h3>Property</h3><p>Array of timestamps in last 5 minutes when request was made from PPOM to provider.</p>
 </div>
 <div class="tsd-type-declaration">
 <h4>Type declaration</h4>
 <ul class="tsd-parameters">
 <li class="tsd-parameter">
-<h5>chain<wbr/>Id<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span></h5></li>
-<li class="tsd-parameter">
 <h5>chain<wbr/>Status<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-symbol">{ </span>chainId<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>dataFetched<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">; </span>lastVisited<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">&gt;</span></h5></li>
-<li class="tsd-parameter">
-<h5>file<wbr/>Schedule<wbr/>Interval<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5></li>
-<li class="tsd-parameter">
-<h5>provider<wbr/>Request<wbr/>Limit<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5></li>
-<li class="tsd-parameter">
-<h5>provider<wbr/>Requests<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">[]</span></h5></li>
-<li class="tsd-parameter">
-<h5>refresh<wbr/>Interval<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span></h5></li>
-<li class="tsd-parameter">
-<h5>security<wbr/>Alerts<wbr/>Enabled<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">boolean</span></h5></li>
 <li class="tsd-parameter">
 <h5>storage<wbr/>Metadata<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">FileMetadataList</span></h5></li>
 <li class="tsd-parameter">
@@ -51,7 +35,7 @@
 <li class="tsd-parameter">
 <h5>version<wbr/>Info<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">PPOMVersionResponse</span></h5></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/c3b72d2/src/ppom-controller.ts#L85">src/ppom-controller.ts:85</a></li></ul></aside></div>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/0474d4a/src/ppom-controller.ts#L71">src/ppom-controller.ts:71</a></li></ul></aside></div>
 <div class="col-4 col-menu menu-sticky-wrap menu-highlight">
 <div class="tsd-navigation settings">
 <details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
