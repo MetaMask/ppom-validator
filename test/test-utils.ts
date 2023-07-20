@@ -103,11 +103,8 @@ class PPOMClass {
 
   free = () => undefined;
 
-  testJsonRPCRequest = async (args2: any) =>
-    await this.#jsonRpcRequest({
-      method: 'eth_blockNumber',
-      ...args2,
-    });
+  testJsonRPCRequest = async (method: string, args2: any) =>
+    await this.#jsonRpcRequest(method ?? 'eth_blockNumber', args2);
 }
 
 export const buildPPOMController = (args?: any) => {
