@@ -152,11 +152,10 @@ describe('PPOMController', () => {
 
         free = freeMock;
 
-        testJsonRPCRequest = async (args2: any) =>
-          await this.#jsonRpcRequest({
-            method: 'eth_blockNumber',
-            ...args2,
-          });
+        testJsonRPCRequest = async (
+          method = 'eth_blockNumber',
+          args2: any = {},
+        ) => await this.#jsonRpcRequest(method, ...args2);
       }
       ppomController = buildPPOMController({
         ppomProvider: {
@@ -221,14 +220,10 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
       await ppomController.usePPOM(async (ppom: any) => {
-        ppom
-          .testJsonRPCRequest({ method: 'DUMMY_METHOD' })
-          .catch((exp: any) => {
-            // eslint-disable-next-line jest/no-conditional-expect
-            expect(exp.toString()).toBe(
-              'Error: Method not allowed on provider DUMMY_METHOD',
-            );
-          });
+        ppom.testJsonRPCRequest('DUMMY_METHOD').catch((exp: any) => {
+          // eslint-disable-next-line jest/no-conditional-expect
+          expect(exp.error.message).toBe('Method not supported');
+        });
       });
     });
 
@@ -240,6 +235,7 @@ describe('PPOMController', () => {
             arg2(undefined, 'DUMMY_VALUE');
           },
         },
+        providerRequestLimit: 5,
       });
       jest.runOnlyPendingTimers();
 
@@ -249,11 +245,10 @@ describe('PPOMController', () => {
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
+        await ppom.testJsonRPCRequest();
         const result = await ppom.testJsonRPCRequest().catch((exp: any) => {
           // eslint-disable-next-line jest/no-conditional-expect
-          expect(exp.toString()).toBe(
-            'Error: Number of request to provider from PPOM exceed rate limit',
-          );
+          expect(exp.error.message).toBe('Limit exceeded');
         });
         expect(result).toBeUndefined();
       });
@@ -269,7 +264,7 @@ describe('PPOMController', () => {
         await ppomController.usePPOM(async () => {
           return Promise.resolve();
         });
-      }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
+      }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
     it('should throw error if no files are present for the network', async () => {
@@ -338,7 +333,7 @@ describe('PPOMController', () => {
           'Failed to fetch file with url: https://ppom_cdn_base_url/ppom_version.json',
         );
       });
-      it('should throw error if file path contains weird characters', async () => {
+      it('should throw error if file path containe weird characters', async () => {
         buildFetchSpy({
           status: 200,
           json: () => [
@@ -400,7 +395,7 @@ describe('PPOMController', () => {
         jest.runOnlyPendingTimers();
         await expect(async () => {
           await ppomController.updatePPOM(false);
-        }).rejects.toThrow('User has not enabled blockaidSecurityCheck');
+        }).rejects.toThrow('User has securityAlertsEnabled set to false');
       });
     });
     describe('when updating all chainids in chainStatus', () => {
@@ -515,9 +510,7 @@ describe('PPOMController', () => {
         // is helping fetch new files as value of fileScheduleInterval is adjusted to be able to fetch all data files
         const spy = buildFetchSpy();
         ppomController = buildPPOMController({
-          state: {
-            fileScheduleInterval: REFRESH_TIME_INTERVAL * 100,
-          },
+          fileFetchScheduleDuration: REFRESH_TIME_INTERVAL * 100,
         });
         expect(spy).toHaveBeenCalledTimes(0);
         jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
@@ -674,12 +667,20 @@ describe('PPOMController', () => {
           callBack = func;
         },
       });
-      const securityAlertsEnabledBefore =
-        ppomController.state.securityAlertsEnabled;
+      jest.runOnlyPendingTimers();
+
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve();
+      });
       callBack({ securityAlertsEnabled: false });
-      const securityAlertsEnabledAfter =
-        ppomController.state.securityAlertsEnabled;
-      expect(securityAlertsEnabledBefore).not.toBe(securityAlertsEnabledAfter);
+      // jest.runOnlyPendingTimers();
+      // await flushPromises();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
     it('should stop file fetching if securityAlertsEnabled is set to false', async () => {
