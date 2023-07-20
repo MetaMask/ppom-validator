@@ -11,7 +11,7 @@ import {
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
-import { createPayload } from './util';
+import { PROVIDER_ERRORS, createPayload } from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
@@ -44,20 +44,6 @@ const ALLOWED_PROVIDER_CALLS = [
   'debug_traceCall',
   'trace_filter',
 ];
-
-/**
- * @type ProviderRequest - Type of JSON RPC request sent to provider.
- * @property id - Request identifier.
- * @property jsonrpc - JSON RPC version.
- * @property method - Method to be invoked on the provider.
- * @property params - Parameters to be passed to method call.
- */
-type ProviderRequest = {
-  id: number;
-  jsonrpc: string;
-  method: string;
-  params: any[];
-};
 
 /**
  * @type PPOMFileVersion
@@ -759,28 +745,30 @@ export class PPOMController extends BaseControllerV2<
    * Send a JSON RPC request to the provider.
    * This method is used by the PPOM to make requests to the provider.
    */
-  async #jsonRpcRequest(req: ProviderRequest): Promise<any> {
+  async #jsonRpcRequest(
+    method: string,
+    params: Record<string, unknown>,
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       if (this.#providerRequests > this.#providerRequestLimit) {
-        reject(
-          new Error(
-            'Number of request to provider from PPOM exceed rate limit of 300 per transaction',
-          ),
-        );
+        reject(PROVIDER_ERRORS.limitExceeded());
         return;
       }
       this.#providerRequests += 1;
-      if (!ALLOWED_PROVIDER_CALLS.includes(req.method)) {
-        reject(new Error(`Method not allowed on provider ${req.method}`));
+      if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
+        reject(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
-      this.#provider.sendAsync(createPayload(req), (error: Error, res: any) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(res);
-        }
-      });
+      this.#provider.sendAsync(
+        createPayload(method, params),
+        (error: Error, res: any) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(res);
+          }
+        },
+      );
     });
   }
 
@@ -800,6 +788,8 @@ export class PPOMController extends BaseControllerV2<
         }),
     );
 
+    // This check has been put in place after suggestion of security team.
+    // If we want to disable ppom validation on all instances of Metamask, this can be achieved by returning empty data from version file.
     if (!files.length) {
       throw new Error(
         `Aborting validation as no files are found for the network with chainId: ${
