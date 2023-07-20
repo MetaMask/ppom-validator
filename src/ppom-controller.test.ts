@@ -282,22 +282,6 @@ describe('PPOMController', () => {
         'Aborting validation as no files are found for the network with chainId: 0x1',
       );
     });
-
-    it('should throw error if no files are present for the network', async () => {
-      buildFetchSpy({
-        status: 200,
-        json: () => [],
-      });
-      ppomController = buildPPOMController();
-      jest.runOnlyPendingTimers();
-      await expect(async () => {
-        await ppomController.usePPOM(async () => {
-          return Promise.resolve();
-        });
-      }).rejects.toThrow(
-        'Aborting validation as no files are found for the network with chainId: 0x1',
-      );
-    });
   });
 
   describe('updatePPOM', () => {
@@ -349,15 +333,7 @@ describe('PPOMController', () => {
           'Failed to fetch file with url: https://ppom_cdn_base_url/ppom_version.json',
         );
       });
-<<<<<<< HEAD
-<<<<<<< HEAD
       it('should throw error if file path containe weird characters', async () => {
-=======
-      it('should throw error if file path contains weird characters', async () => {
->>>>>>> c3b72d2ce9f83c59bb352d5afe0ade7981d67535
-=======
-      it('should throw error if file path contains weird characters', async () => {
->>>>>>> 0b7db17c22f33d6b999c8960ecf8369749d59e0f
         buildFetchSpy({
           status: 200,
           json: () => [
