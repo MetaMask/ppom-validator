@@ -73,6 +73,7 @@ export const buildFetchSpy = (
     status: 200,
     arrayBuffer: () => new ArrayBuffer(123),
   },
+  eTag?: number,
 ) => {
   return jest
     .spyOn(globalThis, 'fetch' as any)
@@ -80,7 +81,7 @@ export const buildFetchSpy = (
       if (url === PPOM_VERSION_PATH) {
         return {
           headers: {
-            get: () => ({ ETag: Math.round(Math.random() * 100) }),
+            get: () => eTag ?? Math.round(Math.random() * 100),
           },
           ...versionData,
         };

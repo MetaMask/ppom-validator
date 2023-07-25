@@ -713,6 +713,11 @@ export class PPOMController extends BaseControllerV2<
     );
 
     const { versionFileETag } = this.state;
+    console.log(
+      versionFileETag,
+      headResponse.headers.get('ETag'),
+      headResponse.headers.get('ETag') === versionFileETag,
+    );
     if (headResponse.headers.get('ETag') === versionFileETag) {
       return false;
     }
@@ -732,6 +737,7 @@ export class PPOMController extends BaseControllerV2<
 
     // If ETag is same it is not required to fetch data files again
     const eTagChanged = await this.#versionInfoETagChanged(url);
+    console.log('eTagChanged = ', eTagChanged);
     if (!eTagChanged) {
       return undefined;
     }
