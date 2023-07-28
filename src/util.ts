@@ -1,4 +1,7 @@
+import elliptic from 'elliptic';
 import IdIterator from 'json-rpc-random-id';
+
+const EdDSA = elliptic.eddsa;
 
 export const IdGenerator = IdIterator();
 
@@ -29,4 +32,19 @@ export const PROVIDER_ERRORS = {
       message: 'Method not supported',
     },
   }),
+};
+
+export const validateSignature = async (
+  data: any,
+  signature: string,
+  key: string,
+  filePath: string,
+) => {
+  const ec = new EdDSA('ed25519');
+  const ecKey = ec.keyFromPublic(key);
+  // eslint-disable-next-line no-restricted-globals
+  const result = ecKey.verify(Buffer.from(data), signature);
+  if (!result) {
+    throw Error(`Signature verification failed for file path: ${filePath}`);
+  }
 };

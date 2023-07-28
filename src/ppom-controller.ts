@@ -11,7 +11,7 @@ import {
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
-import { PROVIDER_ERRORS, createPayload } from './util';
+import { PROVIDER_ERRORS, createPayload, validateSignature } from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
@@ -52,6 +52,7 @@ const ALLOWED_PROVIDER_CALLS = [
  */
 type PPOMFileVersion = FileMetadata & {
   filePath: string;
+  signature: string;
 };
 
 /**
@@ -184,6 +185,8 @@ export class PPOMController extends BaseControllerV2<
   // true if user has enabled preference for blockaid secirity check
   #securityAlertsEnabled: boolean;
 
+  #blockaidPublicKey: string;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -201,6 +204,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.dataUpdateDuration - Duration after which data is fetched again.
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
+   * @param options.blockaidPublicKey - Public key of blcokaid for verifying signatures of data files.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -217,6 +221,7 @@ export class PPOMController extends BaseControllerV2<
     dataUpdateDuration,
     fileFetchScheduleDuration,
     state,
+    blockaidPublicKey,
   }: {
     chainId: string;
     onNetworkChange: (callback: (networkState: any) => void) => void;
@@ -231,6 +236,7 @@ export class PPOMController extends BaseControllerV2<
     dataUpdateDuration?: number;
     fileFetchScheduleDuration?: number;
     state?: PPOMState;
+    blockaidPublicKey: string;
   }) {
     const initialState = {
       versionInfo: state?.versionInfo ?? [],
@@ -271,6 +277,7 @@ export class PPOMController extends BaseControllerV2<
     this.#fileFetchScheduleDuration =
       fileFetchScheduleDuration ?? FILE_FETCH_SCHEDULE_INTERVAL;
     this.#securityAlertsEnabled = securityAlertsEnabled;
+    this.#blockaidPublicKey = blockaidPublicKey;
 
     onNetworkChange((networkControllerState: any) => {
       const id = networkControllerState.providerConfig.chainId;
@@ -489,6 +496,13 @@ export class PPOMController extends BaseControllerV2<
       fileVersionInfo.filePath
     }`;
     const fileData = await this.#fetchBlob(fileUrl);
+
+    await validateSignature(
+      fileData,
+      fileVersionInfo.signature,
+      this.#blockaidPublicKey,
+      fileVersionInfo.filePath,
+    );
 
     await this.#storage.writeFile({
       data: fileData,
