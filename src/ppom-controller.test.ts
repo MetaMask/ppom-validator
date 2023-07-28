@@ -1,6 +1,5 @@
 import {
   VERSION_INFO,
-  PPOM_VERSION_PATH,
   buildFetchSpy,
   buildPPOMController,
   buildStorageBackend,

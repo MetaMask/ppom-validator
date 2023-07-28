@@ -47,7 +47,7 @@ export const VERSION_INFO = [
   },
 ];
 
-export const PPOM_VERSION_PATH = 'https://ppom_cdn_base_url/ppom_version.json';
+const PPOM_VERSION_PATH = 'https://ppom_cdn_base_url/ppom_version.json';
 
 export const buildFetchDataSpy = (
   versionData: any = {
