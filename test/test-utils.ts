@@ -30,6 +30,8 @@ export const VERSION_INFO = [
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+    signature:
+      '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
     filePath: 'blob',
   },
   {
@@ -38,6 +40,8 @@ export const VERSION_INFO = [
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+    signature:
+      '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
     filePath: 'data',
   },
 ];
@@ -51,7 +55,7 @@ export const buildFetchDataSpy = (
   },
   blobData: any = {
     status: 200,
-    arrayBuffer: () => new ArrayBuffer(123),
+    arrayBuffer: () => new TextEncoder().encode('test\n'),
   },
 ) => {
   return jest

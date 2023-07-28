@@ -8,6 +8,7 @@ import {
   NETWORK_CACHE_DURATION,
   REFRESH_TIME_INTERVAL,
 } from './ppom-controller';
+import * as Utils from './util';
 
 Object.defineProperty(globalThis, 'fetch', {
   writable: true,
@@ -31,6 +32,9 @@ describe('PPOMController', () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
+    jest
+      .spyOn(Utils, 'validateSignature')
+      .mockImplementation(async () => Promise.resolve());
   });
 
   afterEach(() => {
@@ -53,12 +57,12 @@ describe('PPOMController', () => {
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL - 1);
 
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(6);
+      expect(spy).toHaveBeenCalledTimes(8);
 
       jest.advanceTimersByTime(1);
 
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(10);
     });
   });
 
