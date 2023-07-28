@@ -1,5 +1,6 @@
 import {
   VERSION_INFO,
+  PPOM_VERSION_PATH,
   buildFetchSpy,
   buildPPOMController,
   buildStorageBackend,
@@ -10,9 +11,12 @@ import {
 } from './ppom-controller';
 import * as Utils from './util';
 
-Object.defineProperty(globalThis, 'fetch', {
-  writable: true,
-  value: () => undefined,
+jest.mock('@metamask/controller-utils', () => {
+  return {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    __esModule: true,
+    ...jest.requireActual('@metamask/controller-utils'),
+  };
 });
 
 Object.defineProperty(globalThis, 'performance', {
