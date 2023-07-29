@@ -1,4 +1,5 @@
 import { ControllerMessenger } from '@metamask/base-controller';
+import * as ControllerUtils from '@metamask/controller-utils';
 
 import { PPOMController } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
@@ -59,7 +60,7 @@ export const buildFetchDataSpy = (
   },
 ) => {
   return jest
-    .spyOn(globalThis, 'fetch' as any)
+    .spyOn(ControllerUtils, 'timeoutFetch' as any)
     .mockImplementation((url: any) => {
       if (url === PPOM_VERSION_PATH) {
         return versionData;
@@ -77,14 +78,15 @@ export const buildFetchSpy = (
     status: 200,
     arrayBuffer: () => new ArrayBuffer(123),
   },
+  eTag?: number,
 ) => {
   return jest
-    .spyOn(globalThis, 'fetch' as any)
+    .spyOn(ControllerUtils, 'timeoutFetch' as any)
     .mockImplementation((url: any) => {
       if (url === PPOM_VERSION_PATH) {
         return {
           headers: {
-            get: () => ({ ETag: Math.round(Math.random() * 100) }),
+            get: () => eTag ?? Math.round(Math.random() * 100),
           },
           ...versionData,
         };
