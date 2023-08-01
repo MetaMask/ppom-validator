@@ -7,14 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.2.0]
-### Uncategorized
-- Bump @metamask/controller-utils from 4.0.0 to 4.3.1 ([#37](https://github.com/MetaMask/ppom-validator/pull/37))
-- Code cleanup ([#36](https://github.com/MetaMask/ppom-validator/pull/36))
-- Bump @metamask/base-controller from 3.1.0 to 3.2.0 ([#33](https://github.com/MetaMask/ppom-validator/pull/33))
+### Changed
 - Adding code to verify signature of data blobs fetched from CDN ([#35](https://github.com/MetaMask/ppom-validator/pull/35))
-- Bump word-wrap from 1.2.3 to 1.2.4 ([#34](https://github.com/MetaMask/ppom-validator/pull/34))
-- Rate limit requests ([#28](https://github.com/MetaMask/ppom-validator/pull/28))
-- Check data file path ([#27](https://github.com/MetaMask/ppom-validator/pull/27))
+- Rate limit requests to the provider ([#28](https://github.com/MetaMask/ppom-validator/pull/28))
+- Validate path of data files ([#27](https://github.com/MetaMask/ppom-validator/pull/27))
 
 ## [0.1.2]
 ### Changed
