@@ -776,7 +776,11 @@ export class PPOMController extends BaseControllerV2<
     method: string,
     params: Record<string, unknown>,
   ): Promise<any> {
+<<<<<<< HEAD
     return new Promise((resolve) => {
+=======
+    return new Promise((resolve, reject) => {
+>>>>>>> a3e14f82222cc3ccd9a515779b5c2d795be65ad7
       // Throw error if number of request to provider from PPOM exceed the limit for current transaction
       if (this.#providerRequests > this.#providerRequestLimit) {
         resolve(PROVIDER_ERRORS.limitExceeded());
