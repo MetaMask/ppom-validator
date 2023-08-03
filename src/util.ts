@@ -20,7 +20,7 @@ export const PROVIDER_ERRORS = {
     jsonrpc: '2.0',
     id: IdGenerator(),
     error: {
-      code: -32005,
+      code: -32601,
       message: 'Limit exceeded',
     },
   }),

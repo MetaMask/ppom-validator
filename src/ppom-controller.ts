@@ -11,7 +11,12 @@ import {
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
-import { PROVIDER_ERRORS, createPayload, validateSignature } from './util';
+import {
+  IdGenerator,
+  PROVIDER_ERRORS,
+  createPayload,
+  validateSignature,
+} from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
@@ -371,13 +376,13 @@ export class PPOMController extends BaseControllerV2<
     if (blockaidEnabled === this.#securityAlertsEnabled) {
       return;
     }
+    this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
       this.#scheduleFileDownloadForAllChains();
     } else {
       clearInterval(this.#refreshDataInterval);
       clearInterval(this.#fileScheduleInterval);
     }
-    this.#securityAlertsEnabled = blockaidEnabled;
   }
 
   /*
@@ -771,16 +776,16 @@ export class PPOMController extends BaseControllerV2<
     method: string,
     params: Record<string, unknown>,
   ): Promise<any> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       // Throw error if number of request to provider from PPOM exceed the limit for current transaction
       if (this.#providerRequests > this.#providerRequestLimit) {
-        reject(PROVIDER_ERRORS.limitExceeded());
+        resolve(PROVIDER_ERRORS.limitExceeded());
         return;
       }
       this.#providerRequests += 1;
       // Throw error if the method called on provider by PPOM is not allowed for PPOM
       if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
-        reject(PROVIDER_ERRORS.methodNotSupported());
+        resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
       // Invoke provider and return result
@@ -788,7 +793,11 @@ export class PPOMController extends BaseControllerV2<
         createPayload(method, params),
         (error: Error, res: any) => {
           if (error) {
-            reject(error);
+            resolve({
+              jsonrpc: '2.0',
+              id: IdGenerator(),
+              error,
+            });
           } else {
             resolve(res);
           }
