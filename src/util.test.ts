@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-import { validateSignature } from './util';
+import { constructURLHref, validateSignature } from './util';
 
 const TEST_PUBLIC_KEY =
   '821e94d60bf030d7f5c399f751324093363a229acc1aa77cfbd795a0e62ff947';
@@ -35,6 +35,25 @@ describe('Util', () => {
         );
       }).not.toThrow(
         'Signature verification failed for file path: valid_data_file',
+      );
+    });
+  });
+  describe('constructURLHref', () => {
+    it('should create correct URL', () => {
+      expect(constructURLHref('https://www.base.com', 'test')).toBe(
+        'https://www.base.com/test',
+      );
+      expect(constructURLHref('https://www.base.com', '/test')).toBe(
+        'https://www.base.com/test',
+      );
+      expect(constructURLHref('https://www.base.com/', 'test')).toBe(
+        'https://www.base.com/test',
+      );
+      expect(constructURLHref('https://www.base.com/', 'test')).toBe(
+        'https://www.base.com/test',
+      );
+      expect(constructURLHref('www.base.com/', 'test')).toBe(
+        'https://www.base.com/test',
       );
     });
   });
