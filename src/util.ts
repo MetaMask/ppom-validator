@@ -48,3 +48,6 @@ export const validateSignature = async (
     throw Error(`Signature verification failed for file path: ${filePath}`);
   }
 };
+
+export const constructURL = (base: string, path: string): string =>
+  new URL(`${base}/${path}`.replace(/\/\//gu, '/')).href;
