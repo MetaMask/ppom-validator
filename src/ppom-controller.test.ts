@@ -257,7 +257,9 @@ describe('PPOMController', () => {
           // eslint-disable-next-line jest/no-conditional-expect
           expect(exp.error.message).toBe('Limit exceeded');
         });
-        expect(result).toBeUndefined();
+        expect(result.error.code).toBe(
+          Utils.PROVIDER_ERRORS.limitExceeded().error.code,
+        );
       });
     });
 
@@ -330,6 +332,13 @@ describe('PPOMController', () => {
   });
 
   describe('updatePPOM', () => {
+    it('should throw error if preference securityAlertsEnabled is not enabled', async () => {
+      ppomController = buildPPOMController({ securityAlertsEnabled: false });
+      jest.runOnlyPendingTimers();
+      await expect(async () => {
+        await ppomController.updatePPOM();
+      }).rejects.toThrow('User has securityAlertsEnabled set to false');
+    });
     it('should throw error if fetch for version info return 500', async () => {
       buildFetchSpy({
         status: 500,
@@ -599,7 +608,7 @@ describe('PPOMController', () => {
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(6);
     });
 
     it('should update securityAlertsEnabled in state', async () => {
