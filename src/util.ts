@@ -20,7 +20,7 @@ export const PROVIDER_ERRORS = {
     jsonrpc: '2.0',
     id: IdGenerator(),
     error: {
-      code: -32601,
+      code: -32005,
       message: 'Limit exceeded',
     },
   }),
@@ -28,7 +28,7 @@ export const PROVIDER_ERRORS = {
     jsonrpc: '2.0',
     id: IdGenerator(),
     error: {
-      code: -32004,
+      code: -32601,
       message: 'Method not supported',
     },
   }),
