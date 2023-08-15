@@ -40,14 +40,20 @@ describe('Util', () => {
   });
   describe('constructURL', () => {
     it('should create correct URL', () => {
-      expect(constructURL('http://www.base.com', 'test')).toBe(
-        'http://www.base.com/test',
+      expect(constructURL('https://www.base.com', 'test')).toBe(
+        'https://www.base.com/test',
       );
-      expect(constructURL('http://www.base.com', '/test')).toBe(
-        'http://www.base.com/test',
+      expect(constructURL('https://www.base.com', '/test')).toBe(
+        'https://www.base.com/test',
       );
-      expect(constructURL('http://www.base.com/', 'test')).toBe(
-        'http://www.base.com/test',
+      expect(constructURL('https://www.base.com/', 'test')).toBe(
+        'https://www.base.com/test',
+      );
+      expect(constructURL('https://www.base.com/', 'test')).toBe(
+        'https://www.base.com/test',
+      );
+      expect(constructURL('www.base.com/', 'test')).toBe(
+        'https://www.base.com/test',
       );
     });
   });

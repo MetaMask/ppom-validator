@@ -2,6 +2,7 @@ import elliptic from 'elliptic';
 import IdIterator from 'json-rpc-random-id';
 
 const EdDSA = elliptic.eddsa;
+const URL_PREFIX = 'https://';
 
 export const IdGenerator = IdIterator();
 
@@ -50,4 +51,8 @@ export const validateSignature = async (
 };
 
 export const constructURL = (base: string, path: string): string =>
-  new URL(`${base}/${path}`.replace(/\/\//gu, '/')).href;
+  new URL(
+    `${URL_PREFIX}${base}/${path}`
+      .replace(/https:\/\/https:\/\//gu, 'https://')
+      .replace(/\/\//gu, '/'),
+  ).href;
