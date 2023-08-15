@@ -13,7 +13,7 @@ import {
 } from './ppom-storage';
 import {
   PROVIDER_ERRORS,
-  constructURL,
+  constructURLHref,
   createPayload,
   validateSignature,
 } from './util';
@@ -494,7 +494,10 @@ export class PPOMController extends BaseControllerV2<
     }
     // validate file path for valid characters
     this.#checkFilePath(fileVersionInfo.filePath);
-    const fileUrl = constructURL(this.#cdnBaseUrl, fileVersionInfo.filePath);
+    const fileUrl = constructURLHref(
+      this.#cdnBaseUrl,
+      fileVersionInfo.filePath,
+    );
     const fileData = await this.#fetchBlob(fileUrl);
 
     await validateSignature(
@@ -743,7 +746,7 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the version info from the PPOM cdn.
    */
   async #fetchVersionInfo(): Promise<PPOMVersionResponse | undefined> {
-    const url = constructURL(this.#cdnBaseUrl, PPOM_VERSION_FILE_NAME);
+    const url = constructURLHref(this.#cdnBaseUrl, PPOM_VERSION_FILE_NAME);
 
     // If ETag is same it is not required to fetch data files again
     const eTagChanged = await this.#checkIfVersionInfoETagChanged(url);

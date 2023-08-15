@@ -50,7 +50,7 @@ export const validateSignature = async (
   }
 };
 
-export const constructURL = (base: string, path: string): string =>
+export const constructURLHref = (base: string, path: string): string =>
   new URL(
     `${URL_PREFIX}${base}/${path}`
       .replace(/https:\/\/https:\/\//gu, 'https://')
