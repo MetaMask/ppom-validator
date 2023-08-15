@@ -783,7 +783,7 @@ export class PPOMController extends BaseControllerV2<
         return;
       }
       this.#providerRequests += 1;
-      // Throw error if the method called on provider by PPOM is not allowed for PPOM
+      // Resolve with error if the provider method called by PPOM is not allowed for PPOM
       if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
         resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
