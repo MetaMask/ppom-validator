@@ -12,6 +12,7 @@ import {
   FileMetadata,
 } from './ppom-storage';
 import {
+  IdGenerator,
   PROVIDER_ERRORS,
   constructURLHref,
   createPayload,
@@ -375,13 +376,13 @@ export class PPOMController extends BaseControllerV2<
     if (blockaidEnabled === this.#securityAlertsEnabled) {
       return;
     }
+    this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
       this.#scheduleFileDownloadForAllChains();
     } else {
       clearInterval(this.#refreshDataInterval);
       clearInterval(this.#fileScheduleInterval);
     }
-    this.#securityAlertsEnabled = blockaidEnabled;
   }
 
   /*
@@ -776,16 +777,16 @@ export class PPOMController extends BaseControllerV2<
     method: string,
     params: Record<string, unknown>,
   ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      // Throw error if number of request to provider from PPOM exceed the limit for current transaction
+    return new Promise((resolve) => {
+      // Resolve with error if number of requests from PPOM to provider exceeds the limit for the current transaction
       if (this.#providerRequests > this.#providerRequestLimit) {
-        reject(PROVIDER_ERRORS.limitExceeded());
+        resolve(PROVIDER_ERRORS.limitExceeded());
         return;
       }
       this.#providerRequests += 1;
-      // Throw error if the method called on provider by PPOM is not allowed for PPOM
+      // Resolve with error if the provider method called by PPOM is not allowed for PPOM
       if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
-        reject(PROVIDER_ERRORS.methodNotSupported());
+        resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
       // Invoke provider and return result
@@ -793,7 +794,11 @@ export class PPOMController extends BaseControllerV2<
         createPayload(method, params),
         (error: Error, res: any) => {
           if (error) {
-            reject(error);
+            resolve({
+              jsonrpc: '2.0',
+              id: IdGenerator(),
+              error,
+            });
           } else {
             resolve(res);
           }
