@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.3.0]
-### Uncategorized
-- QA issue fixes ([#39](https://github.com/MetaMask/ppom-validator/pull/39))
-- Fix url construction ([#40](https://github.com/MetaMask/ppom-validator/pull/40))
+### Changed
+- Fix issue with fetching files the first time extension is installed ([#39](https://github.com/MetaMask/ppom-validator/pull/39))
+- Fix url construction for fetching blockaid files from CDN ([#40](https://github.com/MetaMask/ppom-validator/pull/40))
 
 ## [0.2.0]
 ### Changed
