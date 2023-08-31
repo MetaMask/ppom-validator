@@ -329,6 +329,51 @@ describe('PPOMController', () => {
         });
       }).rejects.toThrow('Invalid file path for data file: test~123$.2*()');
     });
+
+    it('should not fail even if local storage files are corrupted', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        storageBackend: buildStorageBackend({
+          read: async (): Promise<any> => {
+            throw new Error('not found');
+          },
+        }),
+      });
+      jest.runOnlyPendingTimers();
+
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve();
+      });
+    });
+
+    it('should not fail even if local storage files are corrupted and CDN also not return file', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        storageBackend: buildStorageBackend({
+          read: async (): Promise<any> => {
+            throw new Error('not found');
+          },
+        }),
+      });
+      jest.runOnlyPendingTimers();
+
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve();
+      });
+      jest.runOnlyPendingTimers();
+      buildFetchSpy(undefined, {
+        status: 500,
+      });
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow(
+        'Aborting validation as no files are found for the network with chainId: 0x1',
+      );
+    });
   });
 
   describe('updatePPOM', () => {

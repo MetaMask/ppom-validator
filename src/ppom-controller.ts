@@ -487,11 +487,17 @@ export class PPOMController extends BaseControllerV2<
   /*
    * Gets a single file from CDN and write to the storage.
    */
-  async #getFile(fileVersionInfo: PPOMFileVersion): Promise<void> {
+  async #getFile(
+    fileVersionInfo: PPOMFileVersion,
+    overrideStorage = false,
+  ): Promise<ArrayBuffer | undefined> {
     const { storageMetadata } = this.state;
     // do not fetch file if the storage version is latest
-    if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
-      return;
+    if (
+      !overrideStorage &&
+      this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)
+    ) {
+      return undefined;
     }
     // validate file path for valid characters
     this.#checkFilePath(fileVersionInfo.filePath);
@@ -512,6 +518,8 @@ export class PPOMController extends BaseControllerV2<
       data: fileData,
       ...fileVersionInfo,
     });
+
+    return fileData;
   }
 
   /*
@@ -815,14 +823,32 @@ export class PPOMController extends BaseControllerV2<
    */
   async #getPPOM(): Promise<any> {
     // Get all the files for  the chainId
-    const files = await Promise.all(
+    let files = await Promise.all(
       this.state.versionInfo
         .filter((file) => file.chainId === this.#chainId)
         .map(async (file) => {
-          const data = await this.#storage.readFile(file.name, file.chainId);
-          return [file.name, new Uint8Array(data)];
+          let data: ArrayBuffer | undefined;
+          try {
+            data = await this.#storage.readFile(file.name, file.chainId);
+          } catch {
+            try {
+              data = await this.#getFile(file, true);
+            } catch (exp: unknown) {
+              console.error(
+                `Error in getting file ${file.filePath}: ${
+                  (exp as Error).message
+                }`,
+              );
+            }
+          }
+          if (data) {
+            return [file.name, new Uint8Array(data)];
+          }
+          return undefined;
         }),
     );
+
+    files = files.filter((data: unknown) => data !== undefined);
 
     // The following code throw error if no data files are found for the chainId.
     // This check has been put in place after suggestion of security team.
