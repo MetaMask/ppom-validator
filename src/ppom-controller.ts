@@ -66,6 +66,12 @@ type PPOMFileVersion = FileMetadata & {
  */
 type PPOMVersionResponse = PPOMFileVersion[];
 
+type ChainInfo = {
+  chainId: string;
+  lastVisited: number;
+  dataFetched: boolean;
+};
+
 /**
  * @type PPOMState
  *
@@ -77,14 +83,7 @@ type PPOMVersionResponse = PPOMFileVersion[];
  */
 export type PPOMState = {
   // list of chainIds and time the network was last visited, list of all networks visited in last 1 week is maintained
-  chainStatus: Record<
-    string,
-    {
-      chainId: string;
-      lastVisited: number;
-      dataFetched: boolean;
-    }
-  >;
+  chainStatus: Record<string, ChainInfo>;
   // version information obtained from version info file
   versionInfo: PPOMVersionResponse;
   // storage metadat of files already present in the storage
@@ -432,11 +431,30 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
+   * Reset data fetched to false for all chains.
+   */
+  #resetDataFetchedForAllChains(): void {
+    this.update((draftState) => {
+      draftState.chainStatus = Object.keys(draftState.chainStatus).reduce(
+        (result, chainId) => {
+          (result as any)[chainId] = {
+            ...draftState.chainStatus[chainId],
+            dataFetched: false,
+          };
+          return result;
+        },
+        {},
+      );
+    });
+  }
+
+  /*
    * Update the PPOM configuration for all chainId.
    */
   async #updatePPOM(): Promise<void> {
     const versionInfoUpdated = await this.#updateVersionInfo();
     if (versionInfoUpdated) {
+      this.#resetDataFetchedForAllChains();
       await this.#storage.syncMetadata(this.state.versionInfo);
       await this.#getNewFilesForAllChains();
     }

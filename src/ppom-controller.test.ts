@@ -348,7 +348,7 @@ describe('PPOMController', () => {
     });
 
     it('should not fail even if local storage files are corrupted and CDN also not return file', async () => {
-      buildFetchSpy();
+      buildFetchSpy(undefined, undefined, 123);
       ppomController = buildPPOMController({
         storageBackend: buildStorageBackend({
           read: async (): Promise<any> => {
@@ -363,9 +363,13 @@ describe('PPOMController', () => {
         return Promise.resolve();
       });
       jest.runOnlyPendingTimers();
-      buildFetchSpy(undefined, {
-        status: 500,
-      });
+      buildFetchSpy(
+        undefined,
+        {
+          status: 500,
+        },
+        123,
+      );
       await expect(async () => {
         await ppomController.usePPOM(async () => {
           return Promise.resolve();
@@ -424,7 +428,7 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(10);
     });
     it('should set dataFetched to true for chainId in chainStatus', async () => {
-      buildFetchSpy();
+      buildFetchSpy(undefined, undefined, 123);
       let callBack: any;
       ppomController = buildPPOMController({
         onNetworkChange: (func: any) => {
