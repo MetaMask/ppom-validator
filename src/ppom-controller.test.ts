@@ -276,6 +276,21 @@ describe('PPOMController', () => {
       }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
+    it('should throw error if the user is not on ethereum mainnet', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        chainId: '0x2',
+      });
+      jest.runOnlyPendingTimers();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow(
+        'Blockaid validation is available only on ethereum mainnet',
+      );
+    });
+
     it('should throw error if no files are present for the network', async () => {
       buildFetchSpy({
         status: 200,
@@ -411,17 +426,15 @@ describe('PPOMController', () => {
       await flushPromises();
     });
     it('should not fetch data for network if network data is already fetched', async () => {
-      const spy = buildFetchSpy();
-      ppomController = buildPPOMController({
-        chainId: '0x2',
-      });
+      const spy = buildFetchSpy(undefined, undefined, 123);
+      ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       expect(spy).toHaveBeenCalledTimes(6);
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
-      expect(spy).toHaveBeenCalledTimes(10);
+      expect(spy).toHaveBeenCalledTimes(8);
     });
     it('should set dataFetched to true for chainId in chainStatus', async () => {
       buildFetchSpy();
