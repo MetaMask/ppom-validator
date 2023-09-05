@@ -51,6 +51,8 @@ const ALLOWED_PROVIDER_CALLS = [
   'trace_filter',
 ];
 
+const ETHEREUM_CHAIN_ID = '0x1';
+
 /**
  * @type PPOMFileVersion
  * @augments FileMetadata
@@ -66,6 +68,15 @@ type PPOMFileVersion = FileMetadata & {
  */
 type PPOMVersionResponse = PPOMFileVersion[];
 
+type ChainType = Record<
+  string,
+  {
+    chainId: string;
+    lastVisited: number;
+    dataFetched: boolean;
+  }
+>;
+
 /**
  * @type PPOMState
  *
@@ -77,14 +88,7 @@ type PPOMVersionResponse = PPOMFileVersion[];
  */
 export type PPOMState = {
   // list of chainIds and time the network was last visited, list of all networks visited in last 1 week is maintained
-  chainStatus: Record<
-    string,
-    {
-      chainId: string;
-      lastVisited: number;
-      dataFetched: boolean;
-    }
-  >;
+  chainStatus: ChainType;
   // version information obtained from version info file
   versionInfo: PPOMVersionResponse;
   // storage metadat of files already present in the storage
@@ -294,9 +298,27 @@ export class PPOMController extends BaseControllerV2<
     this.#registerMessageHandlers();
 
     // start scheduled task to fetch data files
-    if (this.#securityAlertsEnabled) {
-      this.#scheduleFileDownloadForAllChains();
-    }
+    this.#checkScheduleFileDownloadForAllChains();
+  }
+
+  /*
+   * The function check if ethereum mainnet is in list of recent networks
+   */
+  #includesEthereumMainnet() {
+    return (
+      this.state?.chainStatus &&
+      Object.keys(this.state?.chainStatus)?.some(
+        (chainId: string) => chainId === ETHEREUM_CHAIN_ID,
+      )
+    );
+  }
+
+  /*
+   * Reset intervals for data fetching
+   */
+  #resetDataFetchIntervals() {
+    clearInterval(this.#refreshDataInterval);
+    clearInterval(this.#fileScheduleInterval);
   }
 
   /**
@@ -307,6 +329,13 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
+    // delete chains more than a week old
+    this.#deleteOldChainIds();
+    if (!this.#includesEthereumMainnet()) {
+      this.#resetDataFetchIntervals();
+      return;
+    }
+
     await this.#ppomMutex.use(async () => {
       await this.#updatePPOM();
     });
@@ -322,6 +351,9 @@ export class PPOMController extends BaseControllerV2<
   async usePPOM<T>(callback: (ppom: any) => Promise<T>): Promise<T> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
+    }
+    if (!this.#includesEthereumMainnet()) {
+      throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {
       this.#resetPPOM();
@@ -342,18 +374,6 @@ export class PPOMController extends BaseControllerV2<
       return;
     }
     let chainStatus = { ...this.state.chainStatus };
-    // delete ols chainId if total number of chainId is equal 5
-    const chainIds = Object.keys(chainStatus);
-    if (chainIds.length >= NETWORK_CACHE_LIMIT.MAX) {
-      const oldestChainId = chainIds.sort(
-        (c1, c2) =>
-          Number(chainStatus[c2]?.lastVisited) -
-          Number(chainStatus[c1]?.lastVisited),
-      )[NETWORK_CACHE_LIMIT.MAX - 1];
-      if (oldestChainId) {
-        delete chainStatus[oldestChainId];
-      }
-    }
     const existingNetworkObject = chainStatus[id];
     this.#chainId = id;
     chainStatus = {
@@ -366,6 +386,8 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.chainStatus = chainStatus;
     });
+    this.#deleteOldChainIds();
+    this.#checkScheduleFileDownloadForAllChains();
   }
 
   /*
@@ -377,12 +399,7 @@ export class PPOMController extends BaseControllerV2<
       return;
     }
     this.#securityAlertsEnabled = blockaidEnabled;
-    if (blockaidEnabled) {
-      this.#scheduleFileDownloadForAllChains();
-    } else {
-      clearInterval(this.#refreshDataInterval);
-      clearInterval(this.#fileScheduleInterval);
-    }
+    this.#checkScheduleFileDownloadForAllChains();
   }
 
   /*
@@ -622,16 +639,28 @@ export class PPOMController extends BaseControllerV2<
     }
     const currentTimestamp = new Date().getTime();
 
-    const oldChaninIds = Object.keys(this.state.chainStatus).filter(
+    const chainIds = Object.keys(this.state.chainStatus);
+    const oldChaninIds: any[] = chainIds.filter(
       (chainId) =>
         (this.state.chainStatus[chainId] as any).lastVisited <
           currentTimestamp - NETWORK_CACHE_DURATION &&
         chainId !== this.#chainId,
     );
+
+    if (chainIds.length > NETWORK_CACHE_LIMIT.MAX) {
+      const oldestChainId = chainIds.sort(
+        (c1, c2) =>
+          Number(this.state.chainStatus[c2]?.lastVisited) -
+          Number(this.state.chainStatus[c1]?.lastVisited),
+      )[NETWORK_CACHE_LIMIT.MAX];
+      oldChaninIds.push(oldestChainId);
+    }
+
     const chainStatus = { ...this.state.chainStatus };
     oldChaninIds.forEach((chainId) => {
       delete chainStatus[chainId];
     });
+
     this.update((draftState) => {
       draftState.chainStatus = chainStatus;
     });
@@ -643,9 +672,6 @@ export class PPOMController extends BaseControllerV2<
    * avoid sending a lot of parallel requests to CDN.
    */
   async #getNewFilesForAllChains(): Promise<void> {
-    // delete chains more than a week old
-    this.#deleteOldChainIds();
-
     // clear existing scheduled task to fetch files if any
     if (this.#fileScheduleInterval) {
       clearInterval(this.#fileScheduleInterval);
@@ -880,11 +906,17 @@ export class PPOMController extends BaseControllerV2<
    * The function invokes the task to fetch files of all the chains and then
    * starts the scheduled periodic task to fetch files for all the chains.
    */
-  #scheduleFileDownloadForAllChains(): void {
-    this.#onDataUpdateDuration();
-    this.#refreshDataInterval = setInterval(
-      this.#onDataUpdateDuration.bind(this),
-      this.#dataUpdateDuration,
-    );
+  #checkScheduleFileDownloadForAllChains(): void {
+    if (this.#securityAlertsEnabled && this.#includesEthereumMainnet()) {
+      if (!this.#refreshDataInterval) {
+        this.#onDataUpdateDuration();
+        this.#refreshDataInterval = setInterval(
+          this.#onDataUpdateDuration.bind(this),
+          this.#dataUpdateDuration,
+        );
+      }
+    } else {
+      this.#resetDataFetchIntervals();
+    }
   }
 }
