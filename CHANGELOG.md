@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0]
+### Uncategorized
+- PPOM should function only if user is on ethereum mainnet ([#46](https://github.com/MetaMask/ppom-validator/pull/46))
+- Handle corruption of localstorage data files ([#44](https://github.com/MetaMask/ppom-validator/pull/44))
+- Bump @metamask/controller-utils from 4.3.1 to 4.3.2 ([#43](https://github.com/MetaMask/ppom-validator/pull/43))
+- Bump @metamask/base-controller from 3.2.0 to 3.2.1 ([#42](https://github.com/MetaMask/ppom-validator/pull/42))
+
 ## [0.3.0]
 ### Changed
 - Fix issue with fetching files the first time extension is installed ([#39](https://github.com/MetaMask/ppom-validator/pull/39))
@@ -40,7 +47,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/MetaMask/ppom-validator/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/MetaMask/ppom-validator/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/MetaMask/ppom-validator/compare/v0.1.2...v0.2.0
 [0.1.2]: https://github.com/MetaMask/ppom-validator/compare/v0.1.1...v0.1.2
