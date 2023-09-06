@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0]
+### Changed
+- Fix the check for ethereum mainnet and add hex prefix to chainId ([#48](https://github.com/MetaMask/ppom-validator/pull/48))
+
 ## [0.4.0]
 ### Changed
 - PPOM should function only if user is on ethereum mainnet ([#46](https://github.com/MetaMask/ppom-validator/pull/46))
@@ -45,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/MetaMask/ppom-validator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/MetaMask/ppom-validator/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/MetaMask/ppom-validator/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/MetaMask/ppom-validator/compare/v0.1.2...v0.2.0
