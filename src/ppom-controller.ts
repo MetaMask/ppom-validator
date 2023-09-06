@@ -259,7 +259,6 @@ export class PPOMController extends BaseControllerV2<
         },
       },
     };
-    console.log('chainid = ', chainId);
     super({
       name: controllerName,
       metadata: stateMetaData,
