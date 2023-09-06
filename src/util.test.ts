@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-import { constructURLHref, validateSignature } from './util';
+import { addHexPrefix, constructURLHref, validateSignature } from './util';
 
 const TEST_PUBLIC_KEY =
   '821e94d60bf030d7f5c399f751324093363a229acc1aa77cfbd795a0e62ff947';
@@ -55,6 +55,13 @@ describe('Util', () => {
       expect(constructURLHref('www.base.com/', 'test')).toBe(
         'https://www.base.com/test',
       );
+    });
+  });
+  describe('addHexPrefix', () => {
+    it('should add prefix', () => {
+      expect(addHexPrefix('123')).toBe('0x123');
+      expect(addHexPrefix('0X123')).toBe('0x123');
+      expect(addHexPrefix('0x123')).toBe('0x123');
     });
   });
 });

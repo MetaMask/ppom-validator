@@ -14,6 +14,7 @@ import {
 import {
   IdGenerator,
   PROVIDER_ERRORS,
+  addHexPrefix,
   constructURLHref,
   createPayload,
   validateSignature,
@@ -258,6 +259,7 @@ export class PPOMController extends BaseControllerV2<
         },
       },
     };
+    console.log('chainid = ', chainId);
     super({
       name: controllerName,
       metadata: stateMetaData,
@@ -265,7 +267,7 @@ export class PPOMController extends BaseControllerV2<
       state: initialState,
     });
 
-    this.#chainId = chainId;
+    this.#chainId = addHexPrefix(chainId);
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
     this.#storage = new PPOMStorage({
@@ -369,7 +371,7 @@ export class PPOMController extends BaseControllerV2<
    * The function adds new network to chainStatus list.
    */
   #onNetworkChange(networkControllerState: any): void {
-    const id = networkControllerState.providerConfig.chainId;
+    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     if (id === this.#chainId) {
       return;
     }
@@ -379,6 +381,7 @@ export class PPOMController extends BaseControllerV2<
     chainStatus = {
       ...chainStatus,
       [id]: {
+        chainId: id,
         lastVisited: new Date().getTime(),
         dataFetched: existingNetworkObject?.dataFetched ?? false,
       },
