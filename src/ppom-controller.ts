@@ -352,7 +352,7 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
-    if (!this.#includesEthereumMainnet()) {
+    if (this.#chainId !== ETHEREUM_CHAIN_ID) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {

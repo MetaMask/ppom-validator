@@ -93,7 +93,7 @@ describe('PPOMController', () => {
       expect(result).toBe('DUMMY_VALUE');
     });
 
-    it('should refresh data if network is changed and data is not available for new network', async () => {
+    it('should use data cached when fetched once', async () => {
       const spy = buildFetchSpy({
         status: 200,
         json: () => [
@@ -109,12 +109,7 @@ describe('PPOMController', () => {
         ],
       });
 
-      let callBack: any;
-      ppomController = buildPPOMController({
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-      });
+      ppomController = buildPPOMController({});
       jest.runOnlyPendingTimers();
 
       await ppomController.usePPOM(async () => {
@@ -128,14 +123,6 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
       expect(spy).toHaveBeenCalledTimes(8);
-
-      callBack({ providerConfig: { chainId: '0x2' } });
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(13);
     });
 
     it('should re-initialise ppom to use files fetched with scheduled job', async () => {
