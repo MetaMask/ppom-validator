@@ -46,7 +46,7 @@ describe('PPOMController', () => {
 
   describe('constructor', () => {
     it('should update PPOM immediately and periodically on creating instance of PPOMController', async () => {
-      const spy = buildFetchSpy();
+      const spy = buildFetchSpy(undefined, undefined, 123);
       ppomController = buildPPOMController();
 
       expect(spy).toHaveBeenCalledTimes(0);
@@ -56,16 +56,16 @@ describe('PPOMController', () => {
 
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(6);
+      expect(spy).toHaveBeenCalledTimes(5);
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL - 1);
 
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(5);
 
       jest.advanceTimersByTime(1);
 
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(10);
+      expect(spy).toHaveBeenCalledTimes(6);
     });
   });
 
@@ -93,49 +93,49 @@ describe('PPOMController', () => {
       expect(result).toBe('DUMMY_VALUE');
     });
 
-    it('should refresh data if network is changed and data is not available for new network', async () => {
-      const spy = buildFetchSpy({
-        status: 200,
-        json: () => [
-          ...VERSION_INFO,
-          {
-            name: 'data',
-            chainId: '0x2',
-            version: '1.0.3',
-            checksum:
-              '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-            filePath: 'data',
-          },
-        ],
-      });
-
+    it('should use data cached when fetched once', async () => {
+      const spy = buildFetchSpy(
+        {
+          status: 200,
+          json: () => [
+            ...VERSION_INFO,
+            {
+              name: 'data',
+              chainId: '0x2',
+              version: '1.0.3',
+              checksum:
+                '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+              filePath: 'data',
+            },
+          ],
+        },
+        undefined,
+        123,
+      );
       let callBack: any;
       ppomController = buildPPOMController({
         onNetworkChange: (func: any) => {
           callBack = func;
         },
+        chainId: '0x2',
+        fileFetchScheduleDuration: 0,
       });
-      jest.runOnlyPendingTimers();
 
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
+      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
-      expect(spy).toHaveBeenCalledTimes(6);
+      const result = await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve('DUMMY_VALUE');
+      });
+      expect(result).toBe('DUMMY_VALUE');
+      expect(spy).toHaveBeenCalledTimes(5);
 
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
       jest.runOnlyPendingTimers();
-      expect(spy).toHaveBeenCalledTimes(8);
-
-      callBack({ providerConfig: { chainId: '0x2' } });
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve('DUMMY_VALUE');
       });
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(13);
+      expect(spy).toHaveBeenCalledTimes(7);
     });
 
     it('should re-initialise ppom to use files fetched with scheduled job', async () => {
@@ -486,7 +486,7 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(11);
     });
     it('should not re-throw error if file write fails', async () => {
-      const spy = buildFetchSpy();
+      const spy = buildFetchSpy(undefined, undefined, 123);
       const storageBackend = buildStorageBackend({
         write: async (_key: any, _data: any): Promise<void> =>
           Promise.reject(new Error('some error')),
@@ -498,7 +498,7 @@ describe('PPOMController', () => {
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(1);
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(6);
     });
     it('should decrease scheduleInterval is its set very high', async () => {
       // here fileScheduleInterval is set very high but advance it by just REFRESH_TIME_INTERVAL

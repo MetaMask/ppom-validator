@@ -56,3 +56,15 @@ export const constructURLHref = (base: string, path: string): string =>
       .replace(/https:\/\/https:\/\//gu, 'https://')
       .replace(/\/\//gu, '/'),
   ).href;
+
+export const addHexPrefix = (str: string) => {
+  if (typeof str !== 'string' || str.match(/^-?0x/u)) {
+    return str;
+  }
+
+  if (str.match(/^-?0X/u)) {
+    return str.replace('0X', '0x');
+  }
+
+  return `0x${str}`;
+};

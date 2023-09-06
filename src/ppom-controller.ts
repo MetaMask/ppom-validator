@@ -14,6 +14,7 @@ import {
 import {
   IdGenerator,
   PROVIDER_ERRORS,
+  addHexPrefix,
   constructURLHref,
   createPayload,
   validateSignature,
@@ -265,7 +266,7 @@ export class PPOMController extends BaseControllerV2<
       state: initialState,
     });
 
-    this.#chainId = chainId;
+    this.#chainId = addHexPrefix(chainId);
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
     this.#storage = new PPOMStorage({
@@ -352,7 +353,7 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
-    if (!this.#includesEthereumMainnet()) {
+    if (this.#chainId !== ETHEREUM_CHAIN_ID) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {
@@ -369,7 +370,7 @@ export class PPOMController extends BaseControllerV2<
    * The function adds new network to chainStatus list.
    */
   #onNetworkChange(networkControllerState: any): void {
-    const id = networkControllerState.providerConfig.chainId;
+    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     if (id === this.#chainId) {
       return;
     }
@@ -379,6 +380,7 @@ export class PPOMController extends BaseControllerV2<
     chainStatus = {
       ...chainStatus,
       [id]: {
+        chainId: id,
         lastVisited: new Date().getTime(),
         dataFetched: existingNetworkObject?.dataFetched ?? false,
       },
@@ -694,28 +696,26 @@ export class PPOMController extends BaseControllerV2<
     // schedule files to be fetched in regular intervals
     this.#fileScheduleInterval = setInterval(() => {
       const fileToBeFetched = fileToBeFetchedList.pop();
-      if (!fileToBeFetched) {
-        return;
-      }
-
-      const { chainStatus } = this.state;
-      const { fileVersionInfo, isLastFileOfNetwork } = fileToBeFetched;
-      // check here if chain is present in chainStatus, it may be removed from chainStatus
-      // if more than 5 networks are added to it.
-      if (chainStatus[fileVersionInfo.chainId]) {
-        // get the file from CDN
-        this.#getFile(fileVersionInfo)
-          .then(() => {
-            if (isLastFileOfNetwork) {
-              // if this was last file for the chainId set dataFetched for chainId to true
-              this.#setChainIdDataFetched(fileVersionInfo.chainId);
-            }
-          })
-          .catch((exp: Error) =>
-            console.error(
-              `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-            ),
-          );
+      if (fileToBeFetched) {
+        const { chainStatus } = this.state;
+        const { fileVersionInfo, isLastFileOfNetwork } = fileToBeFetched;
+        // check here if chain is present in chainStatus, it may be removed from chainStatus
+        // if more than 5 networks are added to it.
+        if (chainStatus[fileVersionInfo.chainId]) {
+          // get the file from CDN
+          this.#getFile(fileVersionInfo)
+            .then(() => {
+              if (isLastFileOfNetwork) {
+                // if this was last file for the chainId set dataFetched for chainId to true
+                this.#setChainIdDataFetched(fileVersionInfo.chainId);
+              }
+            })
+            .catch((exp: Error) =>
+              console.error(
+                `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+              ),
+            );
+        }
       }
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
