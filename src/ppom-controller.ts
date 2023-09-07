@@ -248,12 +248,13 @@ export class PPOMController extends BaseControllerV2<
     state?: PPOMState;
     blockaidPublicKey: string;
   }) {
+    const currentChainId = addHexPrefix(chainId);
     const initialState = {
       versionInfo: state?.versionInfo ?? [],
       storageMetadata: state?.storageMetadata ?? [],
       chainStatus: state?.chainStatus ?? {
-        [chainId]: {
-          chainId,
+        [currentChainId]: {
+          chainId: currentChainId,
           lastVisited: new Date().getTime(),
           dataFetched: false,
         },
@@ -266,7 +267,7 @@ export class PPOMController extends BaseControllerV2<
       state: initialState,
     });
 
-    this.#chainId = addHexPrefix(chainId);
+    this.#chainId = currentChainId;
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
     this.#storage = new PPOMStorage({
