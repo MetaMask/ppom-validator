@@ -294,7 +294,7 @@ describe('PPOMController', () => {
       );
     });
 
-    it('should throw error if file version info is not present present for the network', async () => {
+    it('should throw error if file version info is not present for the network', async () => {
       buildFetchSpy({
         status: 200,
         json: () => [],
@@ -457,7 +457,7 @@ describe('PPOMController', () => {
       expect(chainIdData1.dataFetched).toBe(true);
       expect(chainIdData2.dataFetched).toBe(false);
     });
-    it('should get files for onclu supported chains in chainStatus', async () => {
+    it('should get files for only supported chains in chainStatus', async () => {
       const spy = buildFetchSpy({
         status: 200,
         json: () => [

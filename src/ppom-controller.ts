@@ -877,9 +877,11 @@ export class PPOMController extends BaseControllerV2<
       chainInfo.versionInfo.map(async (file) => {
         let data: ArrayBuffer | undefined;
         try {
+          // First try to get file from storage
           data = await this.#storage.readFile(file.name, file.chainId);
         } catch {
           try {
+            // Get the file from CDN if it is not found in storage
             data = await this.#getFile(file, true);
           } catch (exp: unknown) {
             console.error(
