@@ -75,6 +75,7 @@ type ChainType = Record<
     chainId: string;
     lastVisited: number;
     dataFetched: boolean;
+    versionInfo: PPOMVersionResponse;
   }
 >;
 
@@ -214,7 +215,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.dataUpdateDuration - Duration after which data is fetched again.
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
-   * @param options.blockaidPublicKey - Public key of blcokaid for verifying signatures of data files.
+   * @param options.blockaidPublicKey - Public key of blockaid for verifying signatures of data files.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -257,6 +258,7 @@ export class PPOMController extends BaseControllerV2<
           chainId: currentChainId,
           lastVisited: new Date().getTime(),
           dataFetched: false,
+          versionInfo: [],
         },
       },
     };
@@ -306,13 +308,20 @@ export class PPOMController extends BaseControllerV2<
   /*
    * The function check if ethereum mainnet is in list of recent networks
    */
-  #includesEthereumMainnet() {
+  #chainStatusIncludeSupportedNetworks() {
+    const networkIsSupported = this.#networkIsSupported.bind(this);
     return (
       this.state?.chainStatus &&
-      Object.keys(this.state?.chainStatus)?.some(
-        (chainId: string) => chainId === ETHEREUM_CHAIN_ID,
-      )
+      Object.keys(this.state?.chainStatus)?.some(networkIsSupported)
     );
+  }
+
+  /*
+   * The function check if ethereum chainId is supported for validation
+   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
+   */
+  #networkIsSupported(chainId: string) {
+    return chainId === ETHEREUM_CHAIN_ID;
   }
 
   /*
@@ -333,7 +342,7 @@ export class PPOMController extends BaseControllerV2<
     }
     // delete chains more than a week old
     this.#deleteOldChainIds();
-    if (!this.#includesEthereumMainnet()) {
+    if (!this.#chainStatusIncludeSupportedNetworks()) {
       this.#resetDataFetchIntervals();
       return;
     }
@@ -354,7 +363,7 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
-    if (this.#chainId !== ETHEREUM_CHAIN_ID) {
+    if (!this.#networkIsSupported(this.#chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {
@@ -372,9 +381,6 @@ export class PPOMController extends BaseControllerV2<
    */
   #onNetworkChange(networkControllerState: any): void {
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
-    if (id === this.#chainId) {
-      return;
-    }
     let chainStatus = { ...this.state.chainStatus };
     const existingNetworkObject = chainStatus[id];
     this.#chainId = id;
@@ -384,6 +390,7 @@ export class PPOMController extends BaseControllerV2<
         chainId: id,
         lastVisited: new Date().getTime(),
         dataFetched: existingNetworkObject?.dataFetched ?? false,
+        versionInfo: existingNetworkObject?.versionInfo ?? [],
       },
     };
     this.update((draftState) => {
@@ -547,13 +554,20 @@ export class PPOMController extends BaseControllerV2<
    * property for that chainId in chainStatus to true.
    */
   #setChainIdDataFetched(chainId: string): void {
-    const { chainStatus } = this.state;
+    const { chainStatus, versionInfo } = this.state;
     const chainIdObject = chainStatus[chainId];
+    const versionInfoForChain = versionInfo.filter(
+      ({ chainId: id }) => id === chainId,
+    );
     if (chainIdObject && !chainIdObject.dataFetched) {
       this.update((draftState) => {
         draftState.chainStatus = {
           ...chainStatus,
-          [chainId]: { ...chainIdObject, dataFetched: true },
+          [chainId]: {
+            ...chainIdObject,
+            dataFetched: true,
+            versionInfo: versionInfoForChain,
+          },
         };
       });
     }
@@ -593,19 +607,19 @@ export class PPOMController extends BaseControllerV2<
       storageMetadata,
       versionInfo: stateVersionInfo,
     } = this.state;
-
+    const networkIsSupported = this.#networkIsSupported.bind(this);
     // create a map of chainId and files belonging to that chainId
     // not include the files for which the version in storage is the latest one
-    const chainIdsFileInfoList = Object.keys(chainStatus).map(
-      (chainId): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
+    const chainIdsFileInfoList = Object.keys(chainStatus)
+      .filter(networkIsSupported)
+      .map((chainId): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
         chainId,
         versionInfo: stateVersionInfo.filter(
           (versionInfo) =>
             versionInfo.chainId === chainId &&
             !this.#checkFilePresentInStorage(storageMetadata, versionInfo),
         ),
-      }),
-    );
+      }));
 
     // build a list of files to be fetched for all networks
     const fileToBeFetchedList: {
@@ -849,30 +863,37 @@ export class PPOMController extends BaseControllerV2<
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
   async #getPPOM(): Promise<any> {
+    const { chainStatus } = this.state;
+    const chainInfo = chainStatus[this.#chainId];
+    if (!chainInfo?.versionInfo?.length) {
+      throw new Error(
+        `Aborting validation as no files are found for the network with chainId: ${
+          this.#chainId
+        }`,
+      );
+    }
     // Get all the files for  the chainId
     let files = await Promise.all(
-      this.state.versionInfo
-        .filter((file) => file.chainId === this.#chainId)
-        .map(async (file) => {
-          let data: ArrayBuffer | undefined;
+      chainInfo.versionInfo.map(async (file) => {
+        let data: ArrayBuffer | undefined;
+        try {
+          data = await this.#storage.readFile(file.name, file.chainId);
+        } catch {
           try {
-            data = await this.#storage.readFile(file.name, file.chainId);
-          } catch {
-            try {
-              data = await this.#getFile(file, true);
-            } catch (exp: unknown) {
-              console.error(
-                `Error in getting file ${file.filePath}: ${
-                  (exp as Error).message
-                }`,
-              );
-            }
+            data = await this.#getFile(file, true);
+          } catch (exp: unknown) {
+            console.error(
+              `Error in getting file ${file.filePath}: ${
+                (exp as Error).message
+              }`,
+            );
           }
-          if (data) {
-            return [file.name, new Uint8Array(data)];
-          }
-          return undefined;
-        }),
+        }
+        if (data) {
+          return [file.name, new Uint8Array(data)];
+        }
+        return undefined;
+      }),
     );
 
     files = files.filter((data: unknown) => data !== undefined);
@@ -908,7 +929,10 @@ export class PPOMController extends BaseControllerV2<
    * starts the scheduled periodic task to fetch files for all the chains.
    */
   #checkScheduleFileDownloadForAllChains(): void {
-    if (this.#securityAlertsEnabled && this.#includesEthereumMainnet()) {
+    if (
+      this.#securityAlertsEnabled &&
+      this.#chainStatusIncludeSupportedNetworks()
+    ) {
       if (!this.#refreshDataInterval) {
         this.#onDataUpdateDuration();
         this.#refreshDataInterval = setInterval(
