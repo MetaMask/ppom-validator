@@ -718,7 +718,7 @@ describe('PPOMController', () => {
     });
 
     it('should stop file fetching if securityAlertsEnabled is set to false', async () => {
-      const spy = buildFetchSpy();
+      const spy = buildFetchSpy(undefined, undefined, 123);
       let callBack: any;
       ppomController = buildPPOMController({
         onPreferencesChange: (func: any) => {
@@ -727,12 +727,12 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
       callBack({ securityAlertsEnabled: false });
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
     });
   });
 });
