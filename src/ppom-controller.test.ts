@@ -294,6 +294,31 @@ describe('PPOMController', () => {
       );
     });
 
+    it(`should use old version info data that was fetched even if after CDN is updated,
+        till next scheduled job to fetch data runs`, async () => {
+      const spyEmptyResponse = buildFetchSpy({
+        status: 200,
+        json: () => [],
+      });
+      ppomController = buildPPOMController();
+      jest.runAllTicks();
+      await flushPromises();
+      expect(spyEmptyResponse).toHaveBeenCalledTimes(2);
+
+      const spyWithResponse = buildFetchSpy();
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
+      jest.runOnlyPendingTimers();
+      expect(spyWithResponse).toHaveBeenCalledTimes(2);
+
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow(
+        'Aborting validation as no files are found for the network with chainId: 0x1',
+      );
+    });
+
     it('should throw error if file version info is not present for the network', async () => {
       buildFetchSpy({
         status: 200,
@@ -503,20 +528,20 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       expect(spy).toHaveBeenCalledTimes(6);
     });
-    it('should decrease scheduleInterval is its set very high', async () => {
+    it('should decrease scheduleInterval if its set very high', async () => {
       // here fileScheduleInterval is set very high but advance it by just REFRESH_TIME_INTERVAL
       // is helping fetch new files as value of fileScheduleInterval is adjusted to be able to fetch all data files
-      const spy = buildFetchSpy();
+      const spy = buildFetchSpy(undefined, undefined, 123);
       ppomController = buildPPOMController({
         fileFetchScheduleDuration: REFRESH_TIME_INTERVAL * 100,
       });
       expect(spy).toHaveBeenCalledTimes(0);
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(6);
     });
     it('should delete network more than a week old from chainStatus', async () => {
       buildFetchSpy();
