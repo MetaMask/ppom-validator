@@ -674,7 +674,7 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(6);
     });
 
-    it('should do nothing incoming value of securityAlertsEnabled is set to false when it was already false', async () => {
+    it('should do nothing if incoming value of securityAlertsEnabled is set to false when it was already false', async () => {
       const spy = buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
