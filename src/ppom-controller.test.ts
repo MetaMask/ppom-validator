@@ -93,7 +93,7 @@ describe('PPOMController', () => {
       expect(result).toBe('DUMMY_VALUE');
     });
 
-    it('should for fetch data for files in version info other than mainnet', async () => {
+    it('should fetch data for files in version info other than mainnet', async () => {
       const spy = buildFetchSpy(
         {
           status: 200,
