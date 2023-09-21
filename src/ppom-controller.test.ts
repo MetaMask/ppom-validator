@@ -93,7 +93,7 @@ describe('PPOMController', () => {
       expect(result).toBe('DUMMY_VALUE');
     });
 
-    it('should use data cached when fetched once', async () => {
+    it('should fetch data for files in version info other than mainnet', async () => {
       const spy = buildFetchSpy(
         {
           status: 200,
@@ -112,16 +112,10 @@ describe('PPOMController', () => {
         undefined,
         123,
       );
-      let callBack: any;
       ppomController = buildPPOMController({
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-        chainId: '0x2',
         fileFetchScheduleDuration: 0,
       });
 
-      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
       const result = await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
@@ -129,13 +123,6 @@ describe('PPOMController', () => {
       });
       expect(result).toBe('DUMMY_VALUE');
       expect(spy).toHaveBeenCalledTimes(5);
-
-      jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async (ppom: any) => {
-        expect(ppom).toBeDefined();
-        return Promise.resolve('DUMMY_VALUE');
-      });
-      expect(spy).toHaveBeenCalledTimes(7);
     });
 
     it('should re-initialise ppom to use files fetched with scheduled job', async () => {
@@ -307,6 +294,47 @@ describe('PPOMController', () => {
       );
     });
 
+    it(`should use old version info data that was fetched even if after CDN is updated,
+        till next scheduled job to fetch data runs`, async () => {
+      const spyEmptyResponse = buildFetchSpy({
+        status: 200,
+        json: () => [],
+      });
+      ppomController = buildPPOMController();
+      jest.runAllTicks();
+      await flushPromises();
+      expect(spyEmptyResponse).toHaveBeenCalledTimes(2);
+
+      const spyWithResponse = buildFetchSpy();
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
+      jest.runOnlyPendingTimers();
+      expect(spyWithResponse).toHaveBeenCalledTimes(2);
+
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow(
+        'Aborting validation as no files are found for the network with chainId: 0x1',
+      );
+    });
+
+    it('should throw error if file version info is not present for the network', async () => {
+      buildFetchSpy({
+        status: 200,
+        json: () => [],
+      });
+      ppomController = buildPPOMController();
+      jest.runOnlyPendingTimers();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow(
+        'Aborting validation as no files are found for the network with chainId: 0x1',
+      );
+    });
+
     it('should throw error if fetch for blob return 500', async () => {
       buildFetchSpy(undefined, {
         status: 500,
@@ -436,7 +464,7 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       expect(spy).toHaveBeenCalledTimes(8);
     });
-    it('should set dataFetched to true for chainId in chainStatus', async () => {
+    it('should set dataFetched to true for supported chainIds in chainStatus', async () => {
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -452,9 +480,9 @@ describe('PPOMController', () => {
       const chainIdData1 = ppomController.state.chainStatus['0x1'];
       const chainIdData2 = ppomController.state.chainStatus['0x2'];
       expect(chainIdData1.dataFetched).toBe(true);
-      expect(chainIdData2.dataFetched).toBe(true);
+      expect(chainIdData2.dataFetched).toBe(false);
     });
-    it('should get files for all chains in chainStatus', async () => {
+    it('should get files for only supported chains in chainStatus', async () => {
       const spy = buildFetchSpy({
         status: 200,
         json: () => [
@@ -483,7 +511,7 @@ describe('PPOMController', () => {
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(11);
+      expect(spy).toHaveBeenCalledTimes(10);
     });
     it('should not re-throw error if file write fails', async () => {
       const spy = buildFetchSpy(undefined, undefined, 123);
@@ -500,20 +528,20 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       expect(spy).toHaveBeenCalledTimes(6);
     });
-    it('should decrease scheduleInterval is its set very high', async () => {
+    it('should decrease scheduleInterval if its set very high', async () => {
       // here fileScheduleInterval is set very high but advance it by just REFRESH_TIME_INTERVAL
       // is helping fetch new files as value of fileScheduleInterval is adjusted to be able to fetch all data files
-      const spy = buildFetchSpy();
+      const spy = buildFetchSpy(undefined, undefined, 123);
       ppomController = buildPPOMController({
         fileFetchScheduleDuration: REFRESH_TIME_INTERVAL * 100,
       });
       expect(spy).toHaveBeenCalledTimes(0);
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(6);
     });
     it('should delete network more than a week old from chainStatus', async () => {
       buildFetchSpy();
@@ -592,29 +620,6 @@ describe('PPOMController', () => {
       expect(lastVisitedBefore !== lastVisitedAfter).toBe(true);
     });
 
-    it('should do nothing if new chainId is same as the current chainId', async () => {
-      jest.useFakeTimers().setSystemTime(new Date('2023-01-01'));
-      buildFetchSpy();
-      let callBack: any;
-      ppomController = buildPPOMController({
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-      });
-
-      const chainIdCacheBefore = { ...ppomController.state.chainStatus };
-      const lastVisitedBefore =
-        ppomController.state.chainStatus['0x1'].lastVisited;
-
-      jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
-      callBack({ providerConfig: { chainId: '0x1' } });
-      const chainIdCacheAfter = { ...ppomController.state.chainStatus };
-      const lastVisitedAfter =
-        ppomController.state.chainStatus['0x1'].lastVisited;
-      expect(chainIdCacheBefore).toStrictEqual(chainIdCacheAfter);
-      expect(lastVisitedBefore).toBe(lastVisitedAfter);
-    });
-
     it('should delete old network if more than 5 networks are added', async () => {
       jest.useFakeTimers().setSystemTime(new Date('2023-01-01'));
       buildFetchSpy();
@@ -669,6 +674,25 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(6);
     });
 
+    it('should do nothing if incoming value of securityAlertsEnabled is set to false when it was already false', async () => {
+      const spy = buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+        securityAlertsEnabled: false,
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(0);
+      callBack({ securityAlertsEnabled: false });
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(spy).toHaveBeenCalledTimes(0);
+    });
+
     it('should update securityAlertsEnabled in state', async () => {
       buildFetchSpy();
       let callBack: any;
@@ -694,7 +718,7 @@ describe('PPOMController', () => {
     });
 
     it('should stop file fetching if securityAlertsEnabled is set to false', async () => {
-      const spy = buildFetchSpy();
+      const spy = buildFetchSpy(undefined, undefined, 123);
       let callBack: any;
       ppomController = buildPPOMController({
         onPreferencesChange: (func: any) => {
@@ -703,28 +727,12 @@ describe('PPOMController', () => {
       });
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
       callBack({ securityAlertsEnabled: false });
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(4);
-    });
-
-    it('should do nothing if new chainId is same as the current chainId', async () => {
-      buildFetchSpy();
-      let callBack: any;
-      ppomController = buildPPOMController({
-        onPreferencesChange: (func: any) => {
-          callBack = func;
-        },
-      });
-      const securityAlertsEnabledBefore =
-        ppomController.state.securityAlertsEnabled;
-      callBack({ securityAlertsEnabled: true });
-      const securityAlertsEnabledAfter =
-        ppomController.state.securityAlertsEnabled;
-      expect(securityAlertsEnabledBefore).toBe(securityAlertsEnabledAfter);
+      expect(spy).toHaveBeenCalledTimes(3);
     });
   });
 });
