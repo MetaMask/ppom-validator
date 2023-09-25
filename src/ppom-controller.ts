@@ -275,6 +275,7 @@ export class PPOMController extends BaseControllerV2<
       state: initialState,
     });
 
+    this.#chainId = currentChainId;
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
     this.#storage = new PPOMStorage({
