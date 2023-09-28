@@ -1,15 +1,26 @@
+import crypto from 'crypto';
+
 import {
+  DUMMY_ARRAY_BUFFER_DATA_JSON,
+  DUMMY_CHAINID,
+  DUMMY_NAME,
   VERSION_INFO,
   buildDummyResponse,
   buildFetchSpy,
   buildPPOMController,
-  buildStorageBackend,
+  getFileData,
 } from '../test/test-utils';
 import {
   NETWORK_CACHE_DURATION,
   REFRESH_TIME_INTERVAL,
 } from './ppom-controller';
 import * as Utils from './util';
+
+Object.defineProperty(globalThis, 'crypto', {
+  value: {
+    subtle: crypto.webcrypto.subtle,
+  },
+});
 
 jest.mock('@metamask/controller-utils', () => {
   return {
@@ -30,7 +41,6 @@ async function flushPromises() {
   // From https://github.com/facebook/jest/issues/2157#issuecomment-897935688
   return new Promise(jest.requireActual('timers').setImmediate);
 }
-
 describe('PPOMController', () => {
   let ppomController: any;
 
@@ -140,7 +150,7 @@ describe('PPOMController', () => {
         return Promise.resolve(buildDummyResponse());
       });
       expect(result).toStrictEqual(dummyResponse);
-      expect(spy).toHaveBeenCalledTimes(5);
+      expect(spy).toHaveBeenCalledTimes(7);
     });
 
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
@@ -273,6 +283,7 @@ describe('PPOMController', () => {
       }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
+    // TODO: We currently have constraint of mainnet in controller, but we will soon remove this.
     it('should throw error if the user is not on ethereum mainnet', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
@@ -385,13 +396,7 @@ describe('PPOMController', () => {
 
     it('should not fail even if local storage files are corrupted', async () => {
       buildFetchSpy();
-      ppomController = buildPPOMController({
-        storageBackend: buildStorageBackend({
-          read: async (): Promise<any> => {
-            throw new Error('not found');
-          },
-        }),
-      });
+      ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
 
       await ppomController.usePPOM(async (ppom: any) => {
@@ -400,15 +405,16 @@ describe('PPOMController', () => {
       });
     });
 
-    it('should not fail even if local storage files are corrupted and CDN also not return file', async () => {
+    it('should fail if no files are found for the network', async () => {
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
-        storageBackend: buildStorageBackend({
-          read: async (): Promise<any> => {
-            throw new Error('not found');
+        state: {
+          storageMetadata: [getFileData()],
+          fileStorage: {
+            [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: DUMMY_ARRAY_BUFFER_DATA_JSON,
           },
-        }),
+        },
         onNetworkChange: (func: any) => {
           callBack = func;
         },
@@ -424,9 +430,11 @@ describe('PPOMController', () => {
       callBack({ providerConfig: { chainId: '0x2' } });
       callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
+
       buildFetchSpy(undefined, {
         status: 500,
       });
+
       await expect(async () => {
         await ppomController.usePPOM(async () => {
           return Promise.resolve();
@@ -533,13 +541,7 @@ describe('PPOMController', () => {
     });
     it('should not re-throw error if file write fails', async () => {
       const spy = buildFetchSpy(undefined, undefined, 123);
-      const storageBackend = buildStorageBackend({
-        write: async (_key: any, _data: any): Promise<void> =>
-          Promise.reject(new Error('some error')),
-      });
-      ppomController = buildPPOMController({
-        storageBackend,
-      });
+      ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(1);
       await ppomController.updatePPOM();
