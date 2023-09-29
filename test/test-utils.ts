@@ -1,7 +1,8 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
+import { NetworkControllerGetNetworkClientByIdAction } from '@metamask/network-controller';
 
-import { PPOMController } from '../src/ppom-controller';
+import { PPOMController, PPOMControllerActions } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildStorageBackend = (obj = {}) => {
@@ -114,15 +115,23 @@ class PPOMClass {
 }
 
 export const buildPPOMController = (args?: any) => {
-  const controllerMessenger = new ControllerMessenger();
+  const controllerMessenger = new ControllerMessenger<
+    PPOMControllerActions | NetworkControllerGetNetworkClientByIdAction,
+    never
+  >();
+  const messenger = controllerMessenger.getRestricted<
+    'PPOMController',
+    never,
+    never
+  >({
+    name: 'PPOMController',
+  });
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,
     provider: () => undefined,
     chainId: '0x1',
     onNetworkChange: () => undefined,
-    messenger: controllerMessenger.getRestricted({
-      name: 'PPOMController',
-    }),
+    messenger,
     securityAlertsEnabled: true,
     onPreferencesChange: () => undefined,
     state: {},
