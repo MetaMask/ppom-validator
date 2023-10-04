@@ -424,13 +424,10 @@ export class PPOMController extends BaseControllerV2<
    * Syncs state and checks if cached files are stale
    */
   #onNetworkChange(networkControllerState: any): void {
-    const id = addHexPrefix(networkControllerState.providerConfig.chainId); // is this needed?
+    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     this.#chainId = id;
     this.#updateChainStatus(id);
 
-    // We plan on removing the reliance of onNetworkChange in the future.
-    // Can these two methods be triggered elsewhere?
-    this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
   }
 
