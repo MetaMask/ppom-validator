@@ -196,6 +196,9 @@ export class PPOMController extends BaseControllerV2<
   // true if user has enabled preference for blockaid security check
   #securityAlertsEnabled: boolean;
 
+  // Map of count of each provider request call
+  #providerRequestsCount: Record<string, number> = {};
+
   #blockaidPublicKey: string;
 
   /**
@@ -359,7 +362,9 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(callback: (ppom: any) => Promise<T>): Promise<T> {
+  async usePPOM<T>(
+    callback: (ppom: any) => Promise<T>,
+  ): Promise<T & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
@@ -372,7 +377,10 @@ export class PPOMController extends BaseControllerV2<
       this.#ppom = await this.#getPPOM();
 
       this.#providerRequests = 0;
-      return await callback(this.#ppom);
+      this.#providerRequestsCount = {};
+      const result = await callback(this.#ppom);
+
+      return { ...result, providerRequestsCount: this.#providerRequestsCount };
     });
   }
 
@@ -838,6 +846,11 @@ export class PPOMController extends BaseControllerV2<
         resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
+
+      this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
+        ? Number(this.#providerRequestsCount[method]) + 1
+        : 1;
+
       // Invoke provider and return result
       this.#provider.sendAsync(
         createPayload(method, params),

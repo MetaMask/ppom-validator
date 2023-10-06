@@ -4,6 +4,19 @@ import * as ControllerUtils from '@metamask/controller-utils';
 import { PPOMController } from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
+export const buildDummyResponse = (
+  resultType = 'DUMMY_RESULT_TYPE',
+  reason = 'DUMMY_REASON',
+) => {
+  return {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    result_type: resultType,
+    reason,
+    features: [],
+    providerRequestsCount: {},
+  };
+};
+
 export const buildStorageBackend = (obj = {}) => {
   return {
     read: async (_key: StorageKey): Promise<any> => Promise.resolve(),
@@ -111,6 +124,28 @@ class PPOMClass {
 
   testJsonRPCRequest = async (method: string, args2: any) =>
     await this.#jsonRpcRequest(method ?? 'eth_blockNumber', args2);
+
+  testCallRpcRequests = async () => {
+    const methods = [
+      'eth_getBalance', // call 1 time
+      'eth_getTransactionCount', // call 2 times
+      'trace_call', // call 3 times
+      'trace_callMany', // call 4 times
+      'debug_traceCall', // call 5 times
+      'trace_filter', // call 6 times
+    ];
+    const numberOfCalls = [1, 2, 3, 4, 5, 6];
+
+    const promises = [];
+
+    for (let i = 0; i < methods.length; i++) {
+      const limit = numberOfCalls[i] ?? 0;
+      for (let j = 0; j < limit; j++) {
+        promises.push(this.#jsonRpcRequest(methods[i]));
+      }
+    }
+    await Promise.all(promises);
+  };
 }
 
 export const buildPPOMController = (args?: any) => {
