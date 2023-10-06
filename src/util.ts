@@ -13,7 +13,7 @@ export const createPayload = (
   id: IdGenerator(),
   jsonrpc: '2.0',
   method,
-  params: params || {},
+  params: params || [],
 });
 
 export const PROVIDER_ERRORS = {
