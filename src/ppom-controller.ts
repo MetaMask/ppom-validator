@@ -196,6 +196,9 @@ export class PPOMController extends BaseControllerV2<
   // true if user has enabled preference for blockaid security check
   #securityAlertsEnabled: boolean;
 
+  // Map of count of each provider request call
+  #providerRequestsCount: Record<string, number> = {};
+
   #blockaidPublicKey: string;
 
   #ppomInitialised = false;
@@ -361,17 +364,19 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(callback: (ppom: any) => Promise<T>): Promise<T> {
-    if (!this.#ppomInitialised) {
-      const { ppomInit } = this.#ppomProvider;
-      await ppomInit('./ppom_bg.wasm');
-      this.#ppomInitialised = true;
-    }
+  async usePPOM<T>(
+    callback: (ppom: any) => Promise<T>,
+  ): Promise<T & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
     if (!this.#networkIsSupported(this.#chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
+    }
+    if (!this.#ppomInitialised) {
+      const { ppomInit } = this.#ppomProvider;
+      await ppomInit('./ppom_bg.wasm');
+      this.#ppomInitialised = true;
     }
     return await this.#ppomMutex.use(async () => {
       this.#resetPPOM();
@@ -379,7 +384,10 @@ export class PPOMController extends BaseControllerV2<
       this.#ppom = await this.#getPPOM();
 
       this.#providerRequests = 0;
-      return await callback(this.#ppom);
+      this.#providerRequestsCount = {};
+      const result = await callback(this.#ppom);
+
+      return { ...result, providerRequestsCount: this.#providerRequestsCount };
     });
   }
 
@@ -845,6 +853,11 @@ export class PPOMController extends BaseControllerV2<
         resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
+
+      this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
+        ? Number(this.#providerRequestsCount[method]) + 1
+        : 1;
+
       // Invoke provider and return result
       this.#provider.sendAsync(
         createPayload(method, params),
