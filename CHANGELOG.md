@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.6.0]
-### Uncategorized
+### Changed
 - RPC payload fix ([#61](https://github.com/MetaMask/ppom-validator/pull/61))
 - Using old data files for validation until new ones are fetched ([#51](https://github.com/MetaMask/ppom-validator/pull/51))
 - Fix prefixing of hex value on chain id ([#50](https://github.com/MetaMask/ppom-validator/pull/50))
