@@ -198,6 +198,8 @@ export class PPOMController extends BaseControllerV2<
 
   #blockaidPublicKey: string;
 
+  #ppomInitialised = false;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -360,6 +362,11 @@ export class PPOMController extends BaseControllerV2<
    * @param callback - Callback to be invoked with PPOM.
    */
   async usePPOM<T>(callback: (ppom: any) => Promise<T>): Promise<T> {
+    if (!this.#ppomInitialised) {
+      const { ppomInit } = this.#ppomProvider;
+      await ppomInit('./ppom_bg.wasm');
+      this.#ppomInitialised = true;
+    }
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
@@ -434,7 +441,6 @@ export class PPOMController extends BaseControllerV2<
   #resetPPOM(): void {
     if (this.#ppom) {
       this.#ppom.free();
-      this.#ppom = undefined;
     }
   }
 
@@ -912,8 +918,7 @@ export class PPOMController extends BaseControllerV2<
       );
     }
 
-    const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit('./ppom_bg.wasm');
+    const { PPOM } = this.#ppomProvider;
     return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 
