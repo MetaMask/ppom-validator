@@ -1,5 +1,6 @@
 import {
   VERSION_INFO,
+  buildDummyResponse,
   buildFetchSpy,
   buildPPOMController,
   buildStorageBackend,
@@ -32,6 +33,8 @@ async function flushPromises() {
 
 describe('PPOMController', () => {
   let ppomController: any;
+
+  const dummyResponse = buildDummyResponse();
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -88,9 +91,9 @@ describe('PPOMController', () => {
 
       const result = await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
-        return Promise.resolve('DUMMY_VALUE');
+        return Promise.resolve(buildDummyResponse());
       });
-      expect(result).toBe('DUMMY_VALUE');
+      expect(result).toStrictEqual(dummyResponse);
     });
 
     it('should fetch data for files in version info other than mainnet', async () => {
@@ -119,9 +122,9 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       const result = await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
-        return Promise.resolve('DUMMY_VALUE');
+        return Promise.resolve(buildDummyResponse());
       });
-      expect(result).toBe('DUMMY_VALUE');
+      expect(result).toStrictEqual(dummyResponse);
       expect(spy).toHaveBeenCalledTimes(5);
     });
 
@@ -248,6 +251,41 @@ describe('PPOMController', () => {
           Utils.PROVIDER_ERRORS.limitExceeded().error.code,
         );
       });
+    });
+
+    it('should record number of times each RPC method is called and return it in response', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2(undefined, 'DUMMY_VALUE');
+          },
+        },
+        providerRequestLimit: 25,
+      });
+      jest.runOnlyPendingTimers();
+
+      const result = await ppomController.usePPOM(async (ppom: any) => {
+        await ppom.testCallRpcRequests();
+        return Promise.resolve(buildDummyResponse());
+      });
+
+      const providerRequestsCount = {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        eth_getBalance: 1,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        eth_getTransactionCount: 2,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        trace_call: 3,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        trace_callMany: 4,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        debug_traceCall: 5,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        trace_filter: 6,
+      };
+
+      expect(result.providerRequestsCount).toStrictEqual(providerRequestsCount);
     });
 
     it('should throw error if the user has not enabled blockaid security check', async () => {
