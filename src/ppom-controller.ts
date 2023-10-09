@@ -441,6 +441,7 @@ export class PPOMController extends BaseControllerV2<
   #resetPPOM(): void {
     if (this.#ppom) {
       this.#ppom.free();
+      this.#ppom = undefined;
     }
   }
 
