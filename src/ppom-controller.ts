@@ -479,7 +479,6 @@ export class PPOMController extends BaseControllerV2<
   async #updatePPOM(): Promise<void> {
     const versionInfoUpdated = await this.#updateVersionInfo();
     if (versionInfoUpdated) {
-      await this.#storage.syncMetadata(this.state.versionInfo);
       await this.#getNewFilesForAllChains();
     }
   }
@@ -568,7 +567,7 @@ export class PPOMController extends BaseControllerV2<
    * As files for a chain are fetched this function set dataFetched
    * property for that chainId in chainStatus to true.
    */
-  #setChainIdDataFetched(chainId: string): void {
+  async #setChainIdDataFetched(chainId: string): Promise<void> {
     const { chainStatus, versionInfo } = this.state;
     const chainIdObject = chainStatus[chainId];
     const versionInfoForChain = versionInfo.filter(
@@ -585,6 +584,9 @@ export class PPOMController extends BaseControllerV2<
           },
         };
       });
+      if (chainId === this.#chainId) {
+        await this.#storage.syncMetadata(versionInfoForChain);
+      }
     }
   }
 
@@ -607,16 +609,18 @@ export class PPOMController extends BaseControllerV2<
         throw exp;
       });
     }
-    this.#setChainIdDataFetched(this.#chainId);
+    await this.#setChainIdDataFetched(this.#chainId);
   }
 
   /*
    * Function creates list of all files to be fetched for all chainIds in chainStatus.
    */
-  #getListOfFilesToBeFetched(): {
-    fileVersionInfo: PPOMFileVersion;
-    isLastFileOfNetwork: boolean;
-  }[] {
+  async #getListOfFilesToBeFetched(): Promise<
+    {
+      fileVersionInfo: PPOMFileVersion;
+      isLastFileOfNetwork: boolean;
+    }[]
+  > {
     const {
       chainStatus,
       storageMetadata,
@@ -641,7 +645,7 @@ export class PPOMController extends BaseControllerV2<
       fileVersionInfo: PPOMFileVersion;
       isLastFileOfNetwork: boolean;
     }[] = [];
-    chainIdsFileInfoList.forEach((chainIdFileInfo) => {
+    for (const chainIdFileInfo of chainIdsFileInfoList) {
       const { chainId, versionInfo } = chainIdFileInfo;
       versionInfo.forEach((fileVersionInfo, index) => {
         fileToBeFetchedList.push({
@@ -651,9 +655,9 @@ export class PPOMController extends BaseControllerV2<
       });
       if (versionInfo.length === 0) {
         // set dataFetched to true for chainId
-        this.#setChainIdDataFetched(chainId);
+        await this.#setChainIdDataFetched(chainId);
       }
-    });
+    }
 
     return fileToBeFetchedList;
   }
@@ -710,7 +714,7 @@ export class PPOMController extends BaseControllerV2<
     }
 
     // build a list of files to be fetched for all networks
-    const fileToBeFetchedList = this.#getListOfFilesToBeFetched();
+    const fileToBeFetchedList = await this.#getListOfFilesToBeFetched();
 
     // Get scheduled interval, if schedule interval is large so that not all files can be fetched in
     // this.#dataUpdateDuration, reduce schedule interval
@@ -734,10 +738,10 @@ export class PPOMController extends BaseControllerV2<
         if (chainStatus[fileVersionInfo.chainId]) {
           // get the file from CDN
           this.#getFile(fileVersionInfo)
-            .then(() => {
+            .then(async () => {
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
-                this.#setChainIdDataFetched(fileVersionInfo.chainId);
+                await this.#setChainIdDataFetched(fileVersionInfo.chainId);
               }
             })
             .catch((exp: Error) =>
