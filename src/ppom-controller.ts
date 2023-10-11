@@ -381,7 +381,6 @@ export class PPOMController extends BaseControllerV2<
         this.#ppomInitialised = true;
       }
       if (!this.#ppom) {
-        await this.#maybeUpdatePPOM();
         this.#ppom = await this.#getPPOM();
       }
 
@@ -462,7 +461,7 @@ export class PPOMController extends BaseControllerV2<
    * If the ppom configuration is out of date, this function will call `updatePPOM`
    * to update the configuration.
    */
-  async #maybeUpdatePPOM(): Promise<void> {
+  async #downloadNetworkFilesIfRequired(): Promise<void> {
     if (this.#isDataRequiredForCurrentChain()) {
       await this.#getNewFilesForCurrentChain();
     }
@@ -894,6 +893,7 @@ export class PPOMController extends BaseControllerV2<
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
   async #getPPOM(): Promise<any> {
+    await this.#downloadNetworkFilesIfRequired();
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[this.#chainId];
     if (!chainInfo?.versionInfo?.length) {
