@@ -17,13 +17,14 @@ import {
   addHexPrefix,
   constructURLHref,
   createPayload,
+  isDeepEqual,
   validateSignature,
 } from './util';
 
-export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
+export const REFRESH_TIME_INTERVAL = 60 * 5;
 
 const PROVIDER_REQUEST_LIMIT = 300;
-const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
+const FILE_FETCH_SCHEDULE_INTERVAL = 60;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
 const NETWORK_CACHE_LIMIT = {
@@ -373,15 +374,16 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#networkIsSupported(this.#chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
-    if (!this.#ppomInitialised) {
-      const { ppomInit } = this.#ppomProvider;
-      await ppomInit('./ppom_bg.wasm');
-      this.#ppomInitialised = true;
-    }
     return await this.#ppomMutex.use(async () => {
-      this.#resetPPOM();
-      await this.#maybeUpdatePPOM();
-      this.#ppom = await this.#getPPOM();
+      if (!this.#ppomInitialised) {
+        const { ppomInit } = this.#ppomProvider;
+        await ppomInit('./ppom_bg.wasm');
+        this.#ppomInitialised = true;
+      }
+      if (!this.#ppom) {
+        await this.#maybeUpdatePPOM();
+        this.#ppom = await this.#getPPOM();
+      }
 
       this.#providerRequests = 0;
       this.#providerRequestsCount = {};
@@ -413,6 +415,7 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
+    this.#resetPPOM();
   }
 
   /*
@@ -574,6 +577,7 @@ export class PPOMController extends BaseControllerV2<
       ({ chainId: id }) => id === chainId,
     );
     if (chainIdObject && !chainIdObject.dataFetched) {
+      const oldVersionInfo = chainIdObject.versionInfo;
       this.update((draftState) => {
         draftState.chainStatus = {
           ...chainStatus,
@@ -584,8 +588,11 @@ export class PPOMController extends BaseControllerV2<
           },
         };
       });
-      if (chainId === this.#chainId) {
-        await this.#storage.syncMetadata(versionInfoForChain);
+      if (
+        chainId === this.#chainId &&
+        !isDeepEqual(oldVersionInfo, versionInfoForChain)
+      ) {
+        this.#resetPPOM();
       }
     }
   }
