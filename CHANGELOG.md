@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0]
+### Uncategorized
+- Refactor ([#67](https://github.com/MetaMask/ppom-validator/pull/67))
+- PPOM init should be called only once ([#65](https://github.com/MetaMask/ppom-validator/pull/65))
+- Fix syncing file metadata ([#66](https://github.com/MetaMask/ppom-validator/pull/66))
+- Record the number of times each RPC call is made. ([#62](https://github.com/MetaMask/ppom-validator/pull/62))
+
 ## [0.6.0]
 ### Changed
 - RPC payload fix ([#61](https://github.com/MetaMask/ppom-validator/pull/61))
@@ -55,7 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/MetaMask/ppom-validator/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/MetaMask/ppom-validator/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/MetaMask/ppom-validator/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/MetaMask/ppom-validator/compare/v0.3.0...v0.4.0
