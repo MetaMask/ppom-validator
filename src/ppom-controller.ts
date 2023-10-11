@@ -17,6 +17,7 @@ import {
   addHexPrefix,
   constructURLHref,
   createPayload,
+  isDeepEqual,
   validateSignature,
 } from './util';
 
@@ -201,6 +202,8 @@ export class PPOMController extends BaseControllerV2<
 
   #blockaidPublicKey: string;
 
+  #ppomInitialised = false;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -372,9 +375,15 @@ export class PPOMController extends BaseControllerV2<
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {
-      this.#resetPPOM();
-      await this.#maybeUpdatePPOM();
-      this.#ppom = await this.#getPPOM();
+      if (!this.#ppomInitialised) {
+        const { ppomInit } = this.#ppomProvider;
+        await ppomInit('./ppom_bg.wasm');
+        this.#ppomInitialised = true;
+      }
+      if (!this.#ppom) {
+        await this.#maybeUpdatePPOM();
+        this.#ppom = await this.#getPPOM();
+      }
 
       this.#providerRequests = 0;
       this.#providerRequestsCount = {};
@@ -406,6 +415,7 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
+    this.#resetPPOM();
   }
 
   /*
@@ -567,6 +577,7 @@ export class PPOMController extends BaseControllerV2<
       ({ chainId: id }) => id === chainId,
     );
     if (chainIdObject && !chainIdObject.dataFetched) {
+      const oldVersionInfo = chainIdObject.versionInfo;
       this.update((draftState) => {
         draftState.chainStatus = {
           ...chainStatus,
@@ -577,6 +588,12 @@ export class PPOMController extends BaseControllerV2<
           },
         };
       });
+      if (
+        chainId === this.#chainId &&
+        !isDeepEqual(oldVersionInfo, versionInfoForChain)
+      ) {
+        this.#resetPPOM();
+      }
     }
   }
 
@@ -926,8 +943,7 @@ export class PPOMController extends BaseControllerV2<
       );
     }
 
-    const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit('./ppom_bg.wasm');
+    const { PPOM } = this.#ppomProvider;
     return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 

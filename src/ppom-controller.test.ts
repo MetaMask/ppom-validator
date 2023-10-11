@@ -128,49 +128,6 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(5);
     });
 
-    it('should re-initialise ppom to use files fetched with scheduled job', async () => {
-      buildFetchSpy();
-      const freeMock = jest.fn();
-      class PPOMClass {
-        #jsonRpcRequest: any;
-
-        constructor(freeM: any) {
-          this.free = freeM;
-        }
-
-        new = (jsonRpcRequest: any) => {
-          this.#jsonRpcRequest = jsonRpcRequest;
-          return this;
-        };
-
-        validateJsonRpc = async () => {
-          return Promise.resolve();
-        };
-
-        free = freeMock;
-
-        testJsonRPCRequest = async (
-          method = 'eth_blockNumber',
-          args2: any = {},
-        ) => await this.#jsonRpcRequest(method, ...args2);
-      }
-      ppomController = buildPPOMController({
-        ppomProvider: {
-          ppomInit: () => undefined,
-          PPOM: new PPOMClass(freeMock),
-        },
-      });
-      jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(freeMock).toHaveBeenCalledTimes(1);
-    });
-
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
@@ -430,19 +387,27 @@ describe('PPOMController', () => {
 
     it('should not fail even if local storage files are corrupted and CDN also not return file', async () => {
       buildFetchSpy();
+      let callBack: any;
       ppomController = buildPPOMController({
         storageBackend: buildStorageBackend({
           read: async (): Promise<any> => {
             throw new Error('not found');
           },
         }),
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+        chainId: '0x2',
       });
+      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
 
       await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
+      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
       buildFetchSpy(undefined, {
         status: 500,
@@ -689,6 +654,55 @@ describe('PPOMController', () => {
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
 
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
+    });
+
+    it('should reset PPOM when network is changed', async () => {
+      buildFetchSpy();
+      const newMock = jest.fn().mockReturnValue('abc');
+      class PPOMClass {
+        #jsonRpcRequest: any;
+
+        constructor(newM: any) {
+          this.new = newM;
+        }
+
+        new = (jsonRpcRequest: any) => {
+          this.#jsonRpcRequest = jsonRpcRequest;
+          return this;
+        };
+
+        validateJsonRpc = async () => {
+          return Promise.resolve();
+        };
+
+        free = () => undefined;
+
+        testJsonRPCRequest = async (
+          method = 'eth_blockNumber',
+          args2: any = {},
+        ) => await this.#jsonRpcRequest(method, ...args2);
+      }
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+        chainId: '0x2',
+        ppomProvider: {
+          ppomInit: () => undefined,
+          PPOM: new PPOMClass(newMock),
+        },
+      });
+
+      callBack({ providerConfig: { chainId: '0x1' } });
+      jest.runOnlyPendingTimers();
+      expect(newMock).toHaveBeenCalledTimes(0);
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        expect(newMock).toHaveBeenCalledTimes(1);
+        return Promise.resolve();
+      });
+      jest.runOnlyPendingTimers();
     });
   });
 
