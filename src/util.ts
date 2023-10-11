@@ -69,6 +69,9 @@ export const addHexPrefix = (str: string) => {
   return `0x${str}`;
 };
 
+/*
+ * Simplified implementation of deep equality check of objects in Javascript.
+ */
 export const isDeepEqual = (a: any, b: any) => {
   if (a === b) {
     return true;

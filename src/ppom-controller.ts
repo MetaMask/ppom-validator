@@ -21,10 +21,10 @@ import {
   validateSignature,
 } from './util';
 
-export const REFRESH_TIME_INTERVAL = 60 * 5;
+export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
 
 const PROVIDER_REQUEST_LIMIT = 300;
-const FILE_FETCH_SCHEDULE_INTERVAL = 60;
+const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
 
 const NETWORK_CACHE_LIMIT = {
@@ -570,7 +570,7 @@ export class PPOMController extends BaseControllerV2<
    * As files for a chain are fetched this function set dataFetched
    * property for that chainId in chainStatus to true.
    */
-  async #setChainIdDataFetched(chainId: string): Promise<void> {
+  #setChainIdDataFetched(chainId: string): void {
     const { chainStatus, versionInfo } = this.state;
     const chainIdObject = chainStatus[chainId];
     const versionInfoForChain = versionInfo.filter(
@@ -616,18 +616,16 @@ export class PPOMController extends BaseControllerV2<
         throw exp;
       });
     }
-    await this.#setChainIdDataFetched(this.#chainId);
+    this.#setChainIdDataFetched(this.#chainId);
   }
 
   /*
    * Function creates list of all files to be fetched for all chainIds in chainStatus.
    */
-  async #getListOfFilesToBeFetched(): Promise<
-    {
-      fileVersionInfo: PPOMFileVersion;
-      isLastFileOfNetwork: boolean;
-    }[]
-  > {
+  #getListOfFilesToBeFetched(): {
+    fileVersionInfo: PPOMFileVersion;
+    isLastFileOfNetwork: boolean;
+  }[] {
     const {
       chainStatus,
       storageMetadata,
@@ -652,7 +650,7 @@ export class PPOMController extends BaseControllerV2<
       fileVersionInfo: PPOMFileVersion;
       isLastFileOfNetwork: boolean;
     }[] = [];
-    for (const chainIdFileInfo of chainIdsFileInfoList) {
+    chainIdsFileInfoList.forEach((chainIdFileInfo) => {
       const { chainId, versionInfo } = chainIdFileInfo;
       versionInfo.forEach((fileVersionInfo, index) => {
         fileToBeFetchedList.push({
@@ -662,9 +660,9 @@ export class PPOMController extends BaseControllerV2<
       });
       if (versionInfo.length === 0) {
         // set dataFetched to true for chainId
-        await this.#setChainIdDataFetched(chainId);
+        this.#setChainIdDataFetched(chainId);
       }
-    }
+    });
 
     return fileToBeFetchedList;
   }
@@ -721,7 +719,7 @@ export class PPOMController extends BaseControllerV2<
     }
 
     // build a list of files to be fetched for all networks
-    const fileToBeFetchedList = await this.#getListOfFilesToBeFetched();
+    const fileToBeFetchedList = this.#getListOfFilesToBeFetched();
 
     // Get scheduled interval, if schedule interval is large so that not all files can be fetched in
     // this.#dataUpdateDuration, reduce schedule interval
@@ -748,7 +746,7 @@ export class PPOMController extends BaseControllerV2<
             .then(async () => {
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
-                await this.#setChainIdDataFetched(fileVersionInfo.chainId);
+                this.#setChainIdDataFetched(fileVersionInfo.chainId);
               }
             })
             .catch((exp: Error) =>
