@@ -7,11 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.7.0]
-### Uncategorized
-- Refactor ([#67](https://github.com/MetaMask/ppom-validator/pull/67))
-- PPOM init should be called only once ([#65](https://github.com/MetaMask/ppom-validator/pull/65))
-- Fix syncing file metadata ([#66](https://github.com/MetaMask/ppom-validator/pull/66))
-- Record the number of times each RPC call is made. ([#62](https://github.com/MetaMask/ppom-validator/pull/62))
+### Changed
+- PPOM init should be called only once during initialisation ([#65](https://github.com/MetaMask/ppom-validator/pull/65))
+- Fix syncing file metadata to remove old files ([#66](https://github.com/MetaMask/ppom-validator/pull/66))
+- Record the number of times each RPC call is made ([#62](https://github.com/MetaMask/ppom-validator/pull/62))
 
 ## [0.6.0]
 ### Changed
