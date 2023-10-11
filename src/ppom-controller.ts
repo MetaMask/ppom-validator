@@ -743,7 +743,7 @@ export class PPOMController extends BaseControllerV2<
         if (chainStatus[fileVersionInfo.chainId]) {
           // get the file from CDN
           this.#getFile(fileVersionInfo)
-            .then(async () => {
+            .then(() => {
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
                 this.#setChainIdDataFetched(fileVersionInfo.chainId);
