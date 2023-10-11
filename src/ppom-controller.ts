@@ -761,6 +761,8 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.#storage.syncMetadata(this.state.versionInfo);
       }
     }, scheduleInterval);
   }
@@ -951,8 +953,8 @@ export class PPOMController extends BaseControllerV2<
    * Functioned to be called to update PPOM.
    */
   #onDataUpdateDuration(): void {
-    this.updatePPOM().catch(() => {
-      // console.error(`Error while trying to update PPOM: ${exp.message}`);
+    this.updatePPOM().catch((exp: Error) => {
+      console.error(`Error while trying to update PPOM: ${exp.message}`);
     });
   }
 
