@@ -442,6 +442,7 @@ export class PPOMController extends BaseControllerV2<
     this.#chainId = id;
     this.#updateChainStatus(id);
 
+    this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
     this.#resetPPOM();
   }
