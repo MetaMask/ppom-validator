@@ -21,6 +21,7 @@ import {
   addHexPrefix,
   constructURLHref,
   createPayload,
+  isDeepEqual,
   validateSignature,
 } from './util';
 
@@ -205,7 +206,12 @@ export class PPOMController extends BaseControllerV2<
   // true if user has enabled preference for blockaid security check
   #securityAlertsEnabled: boolean;
 
+  // Map of count of each provider request call
+  #providerRequestsCount: Record<string, number> = {};
+
   #blockaidPublicKey: string;
+
+  #ppomInitialised = false;
 
   /**
    * Creates a PPOMController instance.
@@ -372,7 +378,7 @@ export class PPOMController extends BaseControllerV2<
   async usePPOM<T>(
     callback: (ppom: any) => Promise<T>,
     networkClientId?: NetworkClientId,
-  ): Promise<T> {
+  ): Promise<T & { providerRequestsCount: Record<string, number> }> {
     let chainId = this.#chainId;
     let provider = this.#provider;
     if (networkClientId) {
@@ -390,13 +396,21 @@ export class PPOMController extends BaseControllerV2<
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {
-      this.#resetPPOM();
       this.#updateChainStatus(chainId);
-      await this.#maybeUpdatePPOM(chainId);
-      this.#ppom = await this.#getPPOM(chainId, provider);
+      if (!this.#ppomInitialised) {
+        const { ppomInit } = this.#ppomProvider;
+        await ppomInit('./ppom_bg.wasm');
+        this.#ppomInitialised = true;
+      }
+      if (!this.#ppom) {
+        this.#ppom = await this.#getPPOM(chainId, provider);
+      }
 
       this.#providerRequests = 0;
-      return await callback(this.#ppom);
+      this.#providerRequestsCount = {};
+      const result = await callback(this.#ppom);
+
+      return { ...result, providerRequestsCount: this.#providerRequestsCount };
     });
   }
 
@@ -429,6 +443,7 @@ export class PPOMController extends BaseControllerV2<
     this.#updateChainStatus(id);
 
     this.#checkScheduleFileDownloadForAllChains();
+    this.#resetPPOM();
   }
 
   /*
@@ -477,7 +492,7 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param chainId - The chain ID to check for staleness.
    */
-  async #maybeUpdatePPOM(chainId: string): Promise<void> {
+  async #downloadNetworkFilesIfRequired(chainId: string): Promise<void> {
     if (this.#isDataRequiredForChain(chainId)) {
       await this.#getNewFilesForChain(chainId);
     }
@@ -497,7 +512,6 @@ export class PPOMController extends BaseControllerV2<
   async #updatePPOM(): Promise<void> {
     const versionInfoUpdated = await this.#updateVersionInfo();
     if (versionInfoUpdated) {
-      await this.#storage.syncMetadata(this.state.versionInfo);
       await this.#getNewFilesForAllChains();
     }
   }
@@ -593,6 +607,7 @@ export class PPOMController extends BaseControllerV2<
       ({ chainId: id }) => id === chainId,
     );
     if (chainIdObject && !chainIdObject.dataFetched) {
+      const oldVersionInfo = chainIdObject.versionInfo;
       this.update((draftState) => {
         draftState.chainStatus = {
           ...chainStatus,
@@ -603,6 +618,12 @@ export class PPOMController extends BaseControllerV2<
           },
         };
       });
+      if (
+        chainId === this.#chainId &&
+        !isDeepEqual(oldVersionInfo, versionInfoForChain)
+      ) {
+        this.#resetPPOM();
+      }
     }
   }
 
@@ -767,6 +788,8 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.#storage.syncMetadata(this.state.versionInfo);
       }
     }, scheduleInterval);
   }
@@ -871,6 +894,11 @@ export class PPOMController extends BaseControllerV2<
         resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
+
+      this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
+        ? Number(this.#providerRequestsCount[method]) + 1
+        : 1;
+
       // Invoke provider and return result
       provider.sendAsync(
         createPayload(method, params),
@@ -896,6 +924,7 @@ export class PPOMController extends BaseControllerV2<
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
   async #getPPOM(chainId: string, provider: any): Promise<any> {
+    await this.#downloadNetworkFilesIfRequired(chainId);
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[chainId];
     if (!chainInfo?.versionInfo?.length) {
@@ -941,8 +970,7 @@ export class PPOMController extends BaseControllerV2<
       );
     }
 
-    const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit('./ppom_bg.wasm');
+    const { PPOM } = this.#ppomProvider;
     return PPOM.new(this.#jsonRpcRequest.bind(this, provider), files);
   }
 
@@ -950,8 +978,8 @@ export class PPOMController extends BaseControllerV2<
    * Functioned to be called to update PPOM.
    */
   #onDataUpdateDuration(): void {
-    this.updatePPOM().catch(() => {
-      // console.error(`Error while trying to update PPOM: ${exp.message}`);
+    this.updatePPOM().catch((exp: Error) => {
+      console.error(`Error while trying to update PPOM: ${exp.message}`);
     });
   }
 

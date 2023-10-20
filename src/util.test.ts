@@ -1,6 +1,11 @@
 import fs from 'fs';
 
-import { addHexPrefix, constructURLHref, validateSignature } from './util';
+import {
+  addHexPrefix,
+  constructURLHref,
+  isDeepEqual,
+  validateSignature,
+} from './util';
 
 const TEST_PUBLIC_KEY =
   '821e94d60bf030d7f5c399f751324093363a229acc1aa77cfbd795a0e62ff947';
@@ -62,6 +67,17 @@ describe('Util', () => {
       expect(addHexPrefix('123')).toBe('0x123');
       expect(addHexPrefix('0X123')).toBe('0x123');
       expect(addHexPrefix('0x123')).toBe('0x123');
+    });
+  });
+  describe('isDeepEqual', () => {
+    it('should check equality correctly', () => {
+      const obj = { a: 'a' };
+      expect(isDeepEqual(obj, obj)).toBe(true);
+      expect(isDeepEqual(null, obj)).toBe(false);
+      expect(isDeepEqual(obj, null)).toBe(false);
+      expect(isDeepEqual(obj, { b: 'b' })).toBe(false);
+      expect(isDeepEqual({ b: 'b' }, { b: 'b' })).toBe(true);
+      expect(isDeepEqual({ b: 'b' }, { b: 'bc' })).toBe(false);
     });
   });
 });

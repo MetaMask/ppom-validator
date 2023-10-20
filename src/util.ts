@@ -13,7 +13,7 @@ export const createPayload = (
   id: IdGenerator(),
   jsonrpc: '2.0',
   method,
-  params: params || {},
+  params: params || [],
 });
 
 export const PROVIDER_ERRORS = {
@@ -67,4 +67,36 @@ export const addHexPrefix = (str: string) => {
   }
 
   return `0x${str}`;
+};
+
+/*
+ * Simplified implementation of deep equality check of objects in Javascript.
+ */
+export const isDeepEqual = (a: any, b: any) => {
+  if (a === b) {
+    return true;
+  }
+
+  if (typeof a !== 'object' || typeof b !== 'object' || !a || !b) {
+    return false;
+  }
+
+  const keysA = Object.keys(a);
+  const keysB = Object.keys(b);
+
+  if (keysA.length !== keysB.length) {
+    return false;
+  }
+
+  for (const key of keysA) {
+    if (!keysB.includes(key)) {
+      return false;
+    }
+
+    if (a[key].toString() !== b[key].toString()) {
+      return false;
+    }
+  }
+
+  return true;
 };

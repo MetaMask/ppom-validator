@@ -1,5 +1,6 @@
 import {
   VERSION_INFO,
+  buildDummyResponse,
   buildFetchSpy,
   buildPPOMController,
   buildStorageBackend,
@@ -32,6 +33,8 @@ async function flushPromises() {
 
 describe('PPOMController', () => {
   let ppomController: any;
+
+  const dummyResponse = buildDummyResponse();
 
   beforeEach(() => {
     jest.useFakeTimers();
@@ -88,9 +91,9 @@ describe('PPOMController', () => {
 
       const result = await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
-        return Promise.resolve('DUMMY_VALUE');
+        return Promise.resolve(buildDummyResponse());
       });
-      expect(result).toBe('DUMMY_VALUE');
+      expect(result).toStrictEqual(dummyResponse);
     });
 
     it('should fetch data for files in version info other than mainnet', async () => {
@@ -119,53 +122,10 @@ describe('PPOMController', () => {
       jest.runOnlyPendingTimers();
       const result = await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
-        return Promise.resolve('DUMMY_VALUE');
+        return Promise.resolve(buildDummyResponse());
       });
-      expect(result).toBe('DUMMY_VALUE');
+      expect(result).toStrictEqual(dummyResponse);
       expect(spy).toHaveBeenCalledTimes(5);
-    });
-
-    it('should re-initialise ppom to use files fetched with scheduled job', async () => {
-      buildFetchSpy();
-      const freeMock = jest.fn();
-      class PPOMClass {
-        #jsonRpcRequest: any;
-
-        constructor(freeM: any) {
-          this.free = freeM;
-        }
-
-        new = (jsonRpcRequest: any) => {
-          this.#jsonRpcRequest = jsonRpcRequest;
-          return this;
-        };
-
-        validateJsonRpc = async () => {
-          return Promise.resolve();
-        };
-
-        free = freeMock;
-
-        testJsonRPCRequest = async (
-          method = 'eth_blockNumber',
-          args2: any = {},
-        ) => await this.#jsonRpcRequest(method, ...args2);
-      }
-      ppomController = buildPPOMController({
-        ppomProvider: {
-          ppomInit: () => undefined,
-          PPOM: new PPOMClass(freeMock),
-        },
-      });
-      jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      jest.runOnlyPendingTimers();
-      await ppomController.usePPOM(async () => {
-        return Promise.resolve();
-      });
-      expect(freeMock).toHaveBeenCalledTimes(1);
     });
 
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
@@ -248,6 +208,41 @@ describe('PPOMController', () => {
           Utils.PROVIDER_ERRORS.limitExceeded().error.code,
         );
       });
+    });
+
+    it('should record number of times each RPC method is called and return it in response', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2(undefined, 'DUMMY_VALUE');
+          },
+        },
+        providerRequestLimit: 25,
+      });
+      jest.runOnlyPendingTimers();
+
+      const result = await ppomController.usePPOM(async (ppom: any) => {
+        await ppom.testCallRpcRequests();
+        return Promise.resolve(buildDummyResponse());
+      });
+
+      const providerRequestsCount = {
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        eth_getBalance: 1,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        eth_getTransactionCount: 2,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        trace_call: 3,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        trace_callMany: 4,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        debug_traceCall: 5,
+        // eslint-disable-next-line @typescript-eslint/naming-convention
+        trace_filter: 6,
+      };
+
+      expect(result.providerRequestsCount).toStrictEqual(providerRequestsCount);
     });
 
     it('should throw error if the user has not enabled blockaid security check', async () => {
@@ -392,19 +387,27 @@ describe('PPOMController', () => {
 
     it('should not fail even if local storage files are corrupted and CDN also not return file', async () => {
       buildFetchSpy();
+      let callBack: any;
       ppomController = buildPPOMController({
         storageBackend: buildStorageBackend({
           read: async (): Promise<any> => {
             throw new Error('not found');
           },
         }),
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+        chainId: '0x2',
       });
+      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
 
       await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
+      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
       buildFetchSpy(undefined, {
         status: 500,
@@ -705,6 +708,55 @@ describe('PPOMController', () => {
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
 
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
+    });
+
+    it('should reset PPOM when network is changed', async () => {
+      buildFetchSpy();
+      const newMock = jest.fn().mockReturnValue('abc');
+      class PPOMClass {
+        #jsonRpcRequest: any;
+
+        constructor(newM: any) {
+          this.new = newM;
+        }
+
+        new = (jsonRpcRequest: any) => {
+          this.#jsonRpcRequest = jsonRpcRequest;
+          return this;
+        };
+
+        validateJsonRpc = async () => {
+          return Promise.resolve();
+        };
+
+        free = () => undefined;
+
+        testJsonRPCRequest = async (
+          method = 'eth_blockNumber',
+          args2: any = {},
+        ) => await this.#jsonRpcRequest(method, ...args2);
+      }
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+        chainId: '0x2',
+        ppomProvider: {
+          ppomInit: () => undefined,
+          PPOM: new PPOMClass(newMock),
+        },
+      });
+
+      callBack({ providerConfig: { chainId: '0x1' } });
+      jest.runOnlyPendingTimers();
+      expect(newMock).toHaveBeenCalledTimes(0);
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        expect(newMock).toHaveBeenCalledTimes(1);
+        return Promise.resolve();
+      });
+      jest.runOnlyPendingTimers();
     });
   });
 
