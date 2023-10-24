@@ -318,33 +318,10 @@ export class PPOMController extends BaseControllerV2<
 
     // start scheduled task to fetch data files
     this.#checkScheduleFileDownloadForAllChains();
-  }
 
-  /*
-   * The function check if ethereum mainnet is in list of recent networks
-   */
-  #chainStatusIncludeSupportedNetworks() {
-    const networkIsSupported = this.#networkIsSupported.bind(this);
-    return (
-      this.state?.chainStatus &&
-      Object.keys(this.state?.chainStatus)?.some(networkIsSupported)
-    );
-  }
-
-  /*
-   * The function check if ethereum chainId is supported for validation
-   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
-   */
-  #networkIsSupported(chainId: string) {
-    return chainId === ETHEREUM_CHAIN_ID;
-  }
-
-  /*
-   * Reset intervals for data fetching
-   */
-  #resetDataFetchIntervals() {
-    clearInterval(this.#refreshDataInterval);
-    clearInterval(this.#fileScheduleInterval);
+    // Async initialisation of PPOM as soon as controller is constructed and not when transactions are received
+    // This helps to reduce the delay in validating transactions.
+    this.#initialisePPOM();
   }
 
   /**
@@ -397,11 +374,6 @@ export class PPOMController extends BaseControllerV2<
     }
     return await this.#ppomMutex.use(async () => {
       this.#updateChainStatus(chainId);
-      if (!this.#ppomInitialised) {
-        const { ppomInit } = this.#ppomProvider;
-        await ppomInit('./ppom_bg.wasm');
-        this.#ppomInitialised = true;
-      }
       if (!this.#ppom) {
         this.#ppom = await this.#getPPOM(chainId, provider);
       }
@@ -410,12 +382,62 @@ export class PPOMController extends BaseControllerV2<
       this.#providerRequestsCount = {};
       const result = await callback(this.#ppom);
 
-      return { ...result, providerRequestsCount: this.#providerRequestsCount };
+      return {
+        ...result,
+        // we are destructuring the object below as this will be used outside the controller
+        // we want to avoid possibility of outside code changing an instance variable.
+        providerRequestsCount: { ...this.#providerRequestsCount },
+      };
     });
   }
 
   /*
-   * Adds new chain to chainStatus list.
+   * Initialise PPOM loading wasm file.
+   * This is done only if user has enabled preference for PPOM Validation.
+   */
+  #initialisePPOM() {
+    if (this.#securityAlertsEnabled && !this.#ppomInitialised) {
+      this.#ppomMutex
+        .use(async () => {
+          const { ppomInit } = this.#ppomProvider;
+          await ppomInit('./ppom_bg.wasm');
+          this.#ppomInitialised = true;
+        })
+        .catch(() => {
+          console.error('Error in trying to initialize PPOM');
+        });
+    }
+  }
+
+  /*
+   * The function check if ethereum mainnet is in list of recent networks
+   */
+  #chainStatusIncludeSupportedNetworks() {
+    const networkIsSupported = this.#networkIsSupported.bind(this);
+    return (
+      this.state?.chainStatus &&
+      Object.keys(this.state?.chainStatus)?.some(networkIsSupported)
+    );
+  }
+
+  /*
+   * The function check if ethereum chainId is supported for validation
+   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
+   */
+  #networkIsSupported(chainId: string) {
+    return chainId === ETHEREUM_CHAIN_ID;
+  }
+
+  /*
+   * Reset intervals for data fetching
+   */
+  #resetDataFetchIntervals() {
+    clearInterval(this.#refreshDataInterval);
+    clearInterval(this.#fileScheduleInterval);
+  }
+
+  /*
+   * The function adds new network to chainStatus list.
    */
   #updateChainStatus(chainId: string) {
     let chainStatus = { ...this.state.chainStatus };
@@ -457,6 +479,7 @@ export class PPOMController extends BaseControllerV2<
     }
     this.#securityAlertsEnabled = blockaidEnabled;
     this.#checkScheduleFileDownloadForAllChains();
+    this.#initialisePPOM();
   }
 
   /*
