@@ -202,6 +202,8 @@ export class PPOMController extends BaseControllerV2<
 
   #blockaidPublicKey: string;
 
+  #ppomInitialised = false;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -362,12 +364,17 @@ export class PPOMController extends BaseControllerV2<
     });
   }
 
+  /*
+   * Initialise PPOM loading wasm file.
+   * This is done only if user has enabled preference for PPOM Validation.
+   */
   #initialisePPOM() {
-    if (this.#securityAlertsEnabled) {
+    if (this.#securityAlertsEnabled && !this.#ppomInitialised) {
       this.#ppomMutex
         .use(async () => {
           const { ppomInit } = this.#ppomProvider;
           await ppomInit('./ppom_bg.wasm');
+          this.#ppomInitialised = true;
         })
         .catch(() => {
           console.error('Error in trying to initialize PPOM');
