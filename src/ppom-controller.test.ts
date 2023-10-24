@@ -89,8 +89,8 @@ describe('PPOMController', () => {
 
   describe('usePPOM', () => {
     afterEach(async () => {
-      await flushPromises()
-    })
+      await flushPromises();
+    });
 
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
