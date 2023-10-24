@@ -391,7 +391,7 @@ export class PPOMController extends BaseControllerV2<
       return {
         ...result,
         // we are destructuring the object below as this will be used outside the controller
-        // we want to avoid possibility of outside code changing an inctance variable.
+        // we want to avoid possibility of outside code changing an instance variable.
         providerRequestsCount: { ...this.#providerRequestsCount },
       };
     });
