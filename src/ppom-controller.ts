@@ -308,6 +308,8 @@ export class PPOMController extends BaseControllerV2<
     // start scheduled task to fetch data files
     this.#checkScheduleFileDownloadForAllChains();
 
+    // Async initialisation of PPOM as soon as controller is constructed and not when transactions are received
+    // This helps to reduce the delay in validating transactions.
     this.#ppomMutex
       .use(async () => {
         const { ppomInit } = this.#ppomProvider;
