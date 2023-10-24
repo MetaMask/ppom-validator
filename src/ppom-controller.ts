@@ -388,7 +388,12 @@ export class PPOMController extends BaseControllerV2<
       this.#providerRequestsCount = {};
       const result = await callback(this.#ppom);
 
-      return { ...result, providerRequestsCount: this.#providerRequestsCount };
+      return {
+        ...result,
+        // we are destructuring the object below as this will be used outside the controller
+        // we want to avoid possibility of outside code changing an inctance variable.
+        providerRequestsCount: { ...this.#providerRequestsCount },
+      };
     });
   }
 
