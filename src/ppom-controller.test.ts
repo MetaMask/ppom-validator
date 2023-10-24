@@ -88,6 +88,10 @@ describe('PPOMController', () => {
   });
 
   describe('usePPOM', () => {
+    afterEach(async () => {
+      await flushPromises()
+    })
+
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController();
@@ -772,7 +776,6 @@ describe('PPOMController', () => {
         return Promise.resolve();
       });
       jest.runOnlyPendingTimers();
-      await flushPromises();
     });
   });
 
