@@ -772,6 +772,7 @@ describe('PPOMController', () => {
         return Promise.resolve();
       });
       jest.runOnlyPendingTimers();
+      await flushPromises();
     });
   });
 
