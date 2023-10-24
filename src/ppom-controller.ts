@@ -313,46 +313,6 @@ export class PPOMController extends BaseControllerV2<
     this.#initialisePPOM();
   }
 
-  #initialisePPOM() {
-    if (this.#securityAlertsEnabled) {
-      this.#ppomMutex
-        .use(async () => {
-          const { ppomInit } = this.#ppomProvider;
-          await ppomInit('./ppom_bg.wasm');
-        })
-        .catch(() => {
-          console.error('Error in trying to initialize PPOM');
-        });
-    }
-  }
-
-  /*
-   * The function check if ethereum mainnet is in list of recent networks
-   */
-  #chainStatusIncludeSupportedNetworks() {
-    const networkIsSupported = this.#networkIsSupported.bind(this);
-    return (
-      this.state?.chainStatus &&
-      Object.keys(this.state?.chainStatus)?.some(networkIsSupported)
-    );
-  }
-
-  /*
-   * The function check if ethereum chainId is supported for validation
-   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
-   */
-  #networkIsSupported(chainId: string) {
-    return chainId === ETHEREUM_CHAIN_ID;
-  }
-
-  /*
-   * Reset intervals for data fetching
-   */
-  #resetDataFetchIntervals() {
-    clearInterval(this.#refreshDataInterval);
-    clearInterval(this.#fileScheduleInterval);
-  }
-
   /**
    * Update the PPOM.
    * This function will acquire mutex lock and invoke internal method #updatePPOM.
@@ -400,6 +360,46 @@ export class PPOMController extends BaseControllerV2<
 
       return { ...result, providerRequestsCount: this.#providerRequestsCount };
     });
+  }
+
+  #initialisePPOM() {
+    if (this.#securityAlertsEnabled) {
+      this.#ppomMutex
+        .use(async () => {
+          const { ppomInit } = this.#ppomProvider;
+          await ppomInit('./ppom_bg.wasm');
+        })
+        .catch(() => {
+          console.error('Error in trying to initialize PPOM');
+        });
+    }
+  }
+
+  /*
+   * The function check if ethereum mainnet is in list of recent networks
+   */
+  #chainStatusIncludeSupportedNetworks() {
+    const networkIsSupported = this.#networkIsSupported.bind(this);
+    return (
+      this.state?.chainStatus &&
+      Object.keys(this.state?.chainStatus)?.some(networkIsSupported)
+    );
+  }
+
+  /*
+   * The function check if ethereum chainId is supported for validation
+   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
+   */
+  #networkIsSupported(chainId: string) {
+    return chainId === ETHEREUM_CHAIN_ID;
+  }
+
+  /*
+   * Reset intervals for data fetching
+   */
+  #resetDataFetchIntervals() {
+    clearInterval(this.#refreshDataInterval);
+    clearInterval(this.#fileScheduleInterval);
   }
 
   /*
