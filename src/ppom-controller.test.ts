@@ -70,6 +70,21 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(6);
     });
+
+    it('should not fail if there is error in initializing PPOM', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        ppomProvider: {
+          ppomInit: async () => {
+            throw Error('Error initializing PPOM');
+          },
+        },
+      });
+      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
+      await flushPromises();
+
+      expect(ppomController).toBeDefined();
+    });
   });
 
   describe('usePPOM', () => {

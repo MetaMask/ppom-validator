@@ -202,8 +202,6 @@ export class PPOMController extends BaseControllerV2<
 
   #blockaidPublicKey: string;
 
-  #ppomInitialised = false;
-
   /**
    * Creates a PPOMController instance.
    *
@@ -309,6 +307,15 @@ export class PPOMController extends BaseControllerV2<
 
     // start scheduled task to fetch data files
     this.#checkScheduleFileDownloadForAllChains();
+
+    this.#ppomMutex
+      .use(async () => {
+        const { ppomInit } = this.#ppomProvider;
+        await ppomInit('./ppom_bg.wasm');
+      })
+      .catch(() => {
+        console.error('Error in trying to initialize PPOM');
+      });
   }
 
   /*
@@ -375,11 +382,6 @@ export class PPOMController extends BaseControllerV2<
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
     return await this.#ppomMutex.use(async () => {
-      if (!this.#ppomInitialised) {
-        const { ppomInit } = this.#ppomProvider;
-        await ppomInit('./ppom_bg.wasm');
-        this.#ppomInitialised = true;
-      }
       if (!this.#ppom) {
         this.#ppom = await this.#getPPOM();
       }
