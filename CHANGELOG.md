@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0]
+### Uncategorized
+- Create copy of providerRequestsCount object before returning ([#72](https://github.com/MetaMask/ppom-validator/pull/72))
+
 ## [0.7.0]
 ### Changed
 - PPOM init should be called only once during initialisation ([#65](https://github.com/MetaMask/ppom-validator/pull/65))
@@ -61,7 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/MetaMask/ppom-validator/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/MetaMask/ppom-validator/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/MetaMask/ppom-validator/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/MetaMask/ppom-validator/compare/v0.4.0...v0.5.0
