@@ -320,20 +320,6 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /**
-   * Private method to read internal state.
-   *
-   * @param key - Optional key to use to read a partial state.
-   * @returns Partial state (if key is supplied) or full state (otherwise).
-   */
-  #readState(key?: keyof PPOMState): Partial<PPOMState> {
-    if (key) {
-      return this.state[key] as Partial<PPOMState>;
-    }
-
-    return this.state;
-  }
-
-  /**
    * Update the PPOM.
    * This function will acquire mutex lock and invoke internal method #updatePPOM.
    */
@@ -490,7 +476,7 @@ export class PPOMController extends BaseControllerV2<
    * The function resets PPOM.
    */
   #resetPPOM(): void {
-    if (this.#ppom) {
+    if (this.#ppom) {      
       this.#ppom.free();
       this.#ppom = undefined;
     }
@@ -524,10 +510,13 @@ export class PPOMController extends BaseControllerV2<
     if (versionInfoUpdated) {
       await this.#getNewFilesForAllChains();
 
-      await syncMetadata(
-        this.#readState.bind(this),
-        this.#updateState.bind(this),
-      );
+      const { versionInfo, storageMetadata, fileStorage } = this.state;
+      await syncMetadata({
+        storageMetadata,
+        versionInfo,
+        fileStorage,
+        updateState: this.#updateState.bind(this),
+      });
     }
   }
 
@@ -580,7 +569,7 @@ export class PPOMController extends BaseControllerV2<
     fileVersionInfo: PPOMFileVersion,
     overrideStorage = false,
   ): Promise<ArrayBuffer | undefined> {
-    const { storageMetadata } = this.state;
+    const { fileStorage, storageMetadata } = this.state;
     // do not fetch file if the storage version is latest
     if (
       !overrideStorage &&
@@ -605,8 +594,9 @@ export class PPOMController extends BaseControllerV2<
 
     await writeFile({
       data: fileData,
-      ...fileVersionInfo,
-      readState: this.#readState.bind(this),
+      fileVersionInfo,
+      fileStorage,
+      storageMetadata,
       updateState: this.#updateState.bind(this),
     });
 
@@ -949,17 +939,19 @@ export class PPOMController extends BaseControllerV2<
         }`,
       );
     }
-    // Get all the files for  the chainId
+    // Get all the files for  the chainId    
     let files = await Promise.all(
       chainInfo.versionInfo.map(async (file) => {
         let data: ArrayBuffer | undefined;
         try {
+          const { fileStorage, storageMetadata } = this.state;
           // First try to get file from storage
-          data = await readFile(
-            file.name,
-            file.chainId,
-            this.#readState.bind(this),
-          );
+          data = await readFile({
+            name: file.name,
+            chainId: file.chainId,
+            fileStorage,
+            storageMetadata,
+          });
         } catch {
           try {
             // Get the file from CDN if it is not found in storage

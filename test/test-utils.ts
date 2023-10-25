@@ -54,7 +54,7 @@ export const DUMMY_CHECKSUM2 =
 export const VERSION_INFO = [
   {
     name: DUMMY_NAME,
-    chainId: '0x1',
+    chainId: DUMMY_CHAINID,
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
@@ -64,7 +64,7 @@ export const VERSION_INFO = [
   },
   {
     name: DUMMY_DATANAME,
-    chainId: '0x1',
+    chainId: DUMMY_CHAINID,
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',

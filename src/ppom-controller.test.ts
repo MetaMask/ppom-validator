@@ -1,20 +1,17 @@
 import crypto from 'crypto';
 
 import {
-  DUMMY_ARRAY_BUFFER_DATA_JSON,
-  DUMMY_CHAINID,
-  DUMMY_NAME,
   VERSION_INFO,
   buildDummyResponse,
   buildFetchSpy,
   buildPPOMController,
-  getFileData,
 } from '../test/test-utils';
 import {
   NETWORK_CACHE_DURATION,
   REFRESH_TIME_INTERVAL,
 } from './ppom-controller';
 import * as Utils from './util';
+import * as PPOMStorage from './ppom-storage';
 
 Object.defineProperty(globalThis, 'crypto', {
   value: {
@@ -150,7 +147,7 @@ describe('PPOMController', () => {
         return Promise.resolve(buildDummyResponse());
       });
       expect(result).toStrictEqual(dummyResponse);
-      expect(spy).toHaveBeenCalledTimes(7);
+      expect(spy).toHaveBeenCalledTimes(5);
     });
 
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
@@ -300,9 +297,10 @@ describe('PPOMController', () => {
     });
 
     it('should throw error if no files are present for the network', async () => {
-      buildFetchSpy({
-        status: 200,
-        json: () => [],
+      buildFetchSpy();
+      jest.spyOn(PPOMStorage, 'readFile' as any).mockImplementation(() => {
+        console.log('Calling Read File');
+        throw new Error('File metadata (blob, 0x1) not found');
       });
       ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
@@ -394,7 +392,7 @@ describe('PPOMController', () => {
       }).rejects.toThrow('Invalid file path for data file: test~123$.2*()');
     });
 
-    it('should not fail even if local storage files are corrupted', async () => {
+    it('should not fail even if files are corrupted', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController();
       jest.runOnlyPendingTimers();
@@ -403,45 +401,6 @@ describe('PPOMController', () => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
-    });
-
-    it('should fail if no files are found for the network', async () => {
-      buildFetchSpy();
-      let callBack: any;
-      ppomController = buildPPOMController({
-        state: {
-          storageMetadata: [getFileData()],
-          fileStorage: {
-            [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: DUMMY_ARRAY_BUFFER_DATA_JSON,
-          },
-        },
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-        chainId: '0x2',
-      });
-      callBack({ providerConfig: { chainId: '0x1' } });
-      jest.runOnlyPendingTimers();
-
-      await ppomController.usePPOM(async (ppom: any) => {
-        expect(ppom).toBeDefined();
-        return Promise.resolve();
-      });
-      callBack({ providerConfig: { chainId: '0x2' } });
-      callBack({ providerConfig: { chainId: '0x1' } });
-      jest.runOnlyPendingTimers();
-
-      buildFetchSpy(undefined, {
-        status: 500,
-      });
-
-      await expect(async () => {
-        await ppomController.usePPOM(async () => {
-          return Promise.resolve();
-        });
-      }).rejects.toThrow(
-        'Aborting validation as no files are found for the network with chainId: 0x1',
-      );
     });
   });
 
@@ -675,13 +634,11 @@ describe('PPOMController', () => {
 
     it('should reset PPOM when network is changed', async () => {
       buildFetchSpy();
-      const newMock = jest.fn().mockReturnValue('abc');
+      const freeMock = jest.fn();
       class PPOMClass {
         #jsonRpcRequest: any;
 
-        constructor(newM: any) {
-          this.new = newM;
-        }
+        constructor() {}
 
         new = (jsonRpcRequest: any) => {
           this.#jsonRpcRequest = jsonRpcRequest;
@@ -692,7 +649,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         };
 
-        free = () => undefined;
+        free = () => freeMock();
 
         testJsonRPCRequest = async (
           method = 'eth_blockNumber',
@@ -704,22 +661,22 @@ describe('PPOMController', () => {
         onNetworkChange: (func: any) => {
           callBack = func;
         },
-        chainId: '0x2',
+        chainId: '0x1',
         ppomProvider: {
           ppomInit: () => undefined,
-          PPOM: new PPOMClass(newMock),
+          PPOM: new PPOMClass(),
         },
       });
 
-      callBack({ providerConfig: { chainId: '0x1' } });
       jest.runOnlyPendingTimers();
-      expect(newMock).toHaveBeenCalledTimes(0);
       await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
-        expect(newMock).toHaveBeenCalledTimes(1);
         return Promise.resolve();
       });
       jest.runOnlyPendingTimers();
+      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({ providerConfig: { chainId: '0x1' } });
+      expect(freeMock).toHaveBeenCalledTimes(1);
     });
   });
 

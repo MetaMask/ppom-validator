@@ -1,4 +1,4 @@
-import { PPOMState } from './ppom-controller';
+import { PPOMState, PPOMVersionResponse } from './ppom-controller';
 
 /**
  * @type FileMetadata
@@ -91,21 +91,29 @@ const jsonStringToArrayBuffer = (json: string | undefined) => {
 };
 
 /**
- * Read the file from the local storage.
- * 1. Check if the file exists in the local storage.
+ * Read the file from the state.
+ * 1. Check if the file exists in the state.
  * 2. Check if the file exists in the metadata.
  *
- * @param name - Name assigned to storage.
- * @param chainId - ChainId for which file is queried.
- * @param readState - Controller read state function.
+ * @param options - Object passed to read file.
+ * @param options.name - name of the file.
+ * @param options.chainId - chainId of the file.
+ * @param options.fileStorage - File data saved in state.
+ * @param options.storageMetadata - Metadata about files saved in storage.
+ * @returns ArrayBuffer of file data.
+ * @throws Exception if file is not found or checksum can not be validated.
  */
-export const readFile = async (
-  name: string,
-  chainId: string,
-  readState: (key?: keyof PPOMState) => Partial<PPOMState>,
-): Promise<ArrayBuffer> => {
-  const { storageMetadata, fileStorage } = readState();
-
+export const readFile = async ({
+  name,
+  chainId,
+  fileStorage,
+  storageMetadata,
+}: {
+  name: string;
+  chainId: string;
+  fileStorage: Record<string, string>;
+  storageMetadata: FileMetadataList;
+}): Promise<ArrayBuffer> => {
   const fileMetadata = storageMetadata?.find(
     (file: any) => file.name === name && file.chainId === chainId,
   );
@@ -134,28 +142,40 @@ export const readFile = async (
  * 1. Remove the files that are not readable (e.g. corrupted or deleted).
  * 2. Remove the files that are not in the cdn anymore.
  * 3. Remove the files that are not up to date in the cdn.
- * 4. Remove the files that are not in the local storage from the metadata.
- * 5. Delete the files that are not in the metadata from the local storage.
+ * 4. Remove the files that are not in the state from the metadata.
+ * 5. Delete the files that are not in the metadata from the state.
  *
- * @param readState - Controller read state function.
- * @param updateState - Controller update state function.
+ * @param options - Object passed to sync metadata.
+ * @param options.fileStorage - File data saved in state.
+ * @param options.storageMetadata - Metadata about files saved in storage.
+ * @param options.versionInfo - Version information about files saved in cdn.
+ * @param options.updateState - Controller update state function.
  * @returns The metadata after it was synchronized.
+ * @throws Exception if file is not found or checksum can not be validated.
  */
-export const syncMetadata = async (
-  readState: (key?: keyof PPOMState) => Partial<PPOMState>,
-  updateState: (newState: Partial<PPOMState>) => void,
-): Promise<FileMetadataList> => {
-  const { storageMetadata, versionInfo, fileStorage } = readState();
-
-  const stateFileStorage = fileStorage as Record<string, string>;
-
+export const syncMetadata = async ({
+  fileStorage,
+  storageMetadata,
+  versionInfo,
+  updateState,
+}: {
+  storageMetadata: FileMetadataList;
+  versionInfo: PPOMVersionResponse;
+  fileStorage: Record<string, string>;
+  updateState: (newState: Partial<PPOMState>) => void;
+}): Promise<FileMetadataList> => {
   const syncedMetadata: FileMetadataList = [];
 
   if (storageMetadata) {
     for (const fileMetadata of storageMetadata) {
       // check if the file is readable (e.g. corrupted or deleted)
       try {
-        await readFile(fileMetadata.name, fileMetadata.chainId, readState);
+        await readFile({
+          name: fileMetadata.name,
+          chainId: fileMetadata.chainId,
+          fileStorage,
+          storageMetadata,
+        });
       } catch (exp: any) {
         console.error('Error: ', exp);
         continue;
@@ -178,7 +198,7 @@ export const syncMetadata = async (
     }
   }
 
-  const filesInState = Object.keys(stateFileStorage).map((key) => {
+  const filesInState = Object.keys(fileStorage).map((key) => {
     const [name, chainId] = key.split('_');
     return { name, chainId };
   });
@@ -209,36 +229,29 @@ export const syncMetadata = async (
 };
 
 /**
- * Write the file to the local storage.
- * 1. Write the file to the local storage.
+ * Write the file to the state.
+ * 1. Write the file to the state.
  * 2. Update the metadata.
  *
  * @param options - Object passed to write to storage.
  * @param options.data - File data to be written.
- * @param options.name - Name to be assigned to the storage.
- * @param options.chainId - Current ChainId.
- * @param options.version - Version of file.
- * @param options.checksum - Checksum of file.
- * @param options.readState - Controller read state function.
+ * @param options.fileVersionInfo - File Metadata with version information.
  * @param options.updateState - Controller function to update state.
  */
 export const writeFile = async ({
   data,
-  name,
-  chainId,
-  version,
-  checksum,
-  readState,
+  fileVersionInfo,
+  fileStorage,
+  storageMetadata,
   updateState,
 }: {
   data: ArrayBuffer;
-  name: string;
-  chainId: string;
-  version: string;
-  checksum: string;
-  readState: (key?: keyof PPOMState) => Partial<PPOMState>;
+  fileVersionInfo: FileMetadata;
+  fileStorage: Record<string, string>;
+  storageMetadata: FileMetadataList;
   updateState: (newState: Partial<PPOMState>) => void;
 }) => {
+  const { name, chainId, version, checksum } = fileVersionInfo;
   await validateChecksum(
     {
       name,
@@ -247,8 +260,6 @@ export const writeFile = async ({
     checksum,
     data,
   );
-
-  const { fileStorage } = readState('fileStorage');
 
   const draftFile = arrayBufferToJson(data);
 
@@ -261,13 +272,11 @@ export const writeFile = async ({
     });
   }
 
-  const { storageMetadata } = readState('storageMetadata');
-
-  const metadata = storageMetadata as FileMetadataList;
+  const metadata = [...storageMetadata];
 
   if (metadata) {
     const fileMetadata = metadata.find(
-      (file: any) => file.name === name && file.chainId === chainId,
+      (file: FileMetadata) => file.name === name && file.chainId === chainId,
     );
 
     if (fileMetadata) {
