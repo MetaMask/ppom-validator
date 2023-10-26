@@ -10,8 +10,8 @@ import {
   NETWORK_CACHE_DURATION,
   REFRESH_TIME_INTERVAL,
 } from './ppom-controller';
-import * as Utils from './util';
 import * as PPOMStorage from './ppom-storage';
+import * as Utils from './util';
 
 Object.defineProperty(globalThis, 'crypto', {
   value: {
@@ -637,8 +637,6 @@ describe('PPOMController', () => {
       const freeMock = jest.fn();
       class PPOMClass {
         #jsonRpcRequest: any;
-
-        constructor() {}
 
         new = (jsonRpcRequest: any) => {
           this.#jsonRpcRequest = jsonRpcRequest;

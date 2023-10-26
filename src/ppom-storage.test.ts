@@ -48,13 +48,6 @@ describe('PPOMStorage', () => {
     });
 
     it('should throw error if file metadata not found', async () => {
-      const mockReadState = jest.fn().mockReturnValue({
-        storageMetadata: [],
-        versionInfo: VERSION_INFO,
-        fileStorage: {
-          [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: DUMMY_ARRAY_BUFFER_DATA_JSON,
-        },
-      });
       await expect(async () => {
         await readFile({
           name: DUMMY_NAME,
@@ -70,13 +63,6 @@ describe('PPOMStorage', () => {
     });
 
     it('should throw error if file is not found in storage', async () => {
-      const mockReadState = jest.fn().mockReturnValue({
-        storageMetadata: [simpleFileData],
-        versionInfo: VERSION_INFO,
-        fileStorage: {
-          [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: undefined,
-        },
-      });
       await expect(async () => {
         await readFile({
           name: DUMMY_NAME,
@@ -163,40 +149,6 @@ describe('PPOMStorage', () => {
       expect(mockUpdateState).toHaveBeenCalledTimes(1);
       expect(result).toStrictEqual([simpleFileData]);
     });
-
-    // it('should not return data if file is not found in storage', async () => {
-    //   const mockUpdateState = jest.fn().mockResolvedValue(undefined);
-    //   const mockReadState = jest.fn().mockReturnValue({
-    //     storageMetadata: [simpleFileData],
-    //     versionInfo: VERSION_INFO,
-    //     fileStorage: {
-    //       [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: undefined,
-    //     },
-    //   });
-
-    //   const result = await syncMetadata({
-    //     storageMetadata: [simpleFileData],
-    //     versionInfo: VERSION_INFO,
-    //     fileStorage: {
-    //       [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: undefined,
-    //     },
-    //     readState: mockReadState,
-    //     updateState: mockUpdateState,
-    //   });
-
-    //   expect(mockUpdateState).toHaveBeenCalledWith({
-    //     fileStorage: {
-    //       [`${DUMMY_NAME}_${DUMMY_CHAINID}`]: undefined,
-    //     },
-    //   });
-    //   expect(mockUpdateState).toHaveBeenCalledWith({
-    //     storageMetadata: [],
-    //   });
-
-    //   expect(mockUpdateState).toHaveBeenCalledTimes(2);
-    //   expect(mockReadState).toHaveBeenCalledTimes(1);
-    //   expect(result).toStrictEqual([]);
-    // });
 
     it('should not return metadata of file if file version in storage is outdated', async () => {
       const mockUpdateState = jest.fn().mockResolvedValue(undefined);

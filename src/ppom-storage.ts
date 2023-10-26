@@ -96,12 +96,11 @@ const jsonStringToArrayBuffer = (json: string | undefined) => {
  * 2. Check if the file exists in the metadata.
  *
  * @param options - Object passed to read file.
- * @param options.name - name of the file.
- * @param options.chainId - chainId of the file.
+ * @param options.name - Name of the file.
+ * @param options.chainId - ChainId of the file.
  * @param options.fileStorage - File data saved in state.
  * @param options.storageMetadata - Metadata about files saved in storage.
  * @returns ArrayBuffer of file data.
- * @throws Exception if file is not found or checksum can not be validated.
  */
 export const readFile = async ({
   name,
@@ -121,7 +120,7 @@ export const readFile = async ({
     throw new Error(`File metadata (${name}, ${chainId}) not found`);
   }
 
-  const stateFileStorage = fileStorage as Record<string, string>;
+  const stateFileStorage = fileStorage;
 
   const data = jsonStringToArrayBuffer(stateFileStorage[`${name}_${chainId}`]);
 

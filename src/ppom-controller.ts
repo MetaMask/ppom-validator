@@ -311,12 +311,10 @@ export class PPOMController extends BaseControllerV2<
    * @param newState - The partial state to update.
    */
   #updateState(newState: Partial<PPOMState>): void {
-    this.update((draftState) => {
-      return {
-        ...draftState,
-        ...newState,
-      };
-    });
+    this.update((draftState) => ({
+      ...draftState,
+      ...newState,
+    }));
   }
 
   /**
@@ -476,7 +474,7 @@ export class PPOMController extends BaseControllerV2<
    * The function resets PPOM.
    */
   #resetPPOM(): void {
-    if (this.#ppom) {      
+    if (this.#ppom) {
       this.#ppom.free();
       this.#ppom = undefined;
     }
@@ -509,14 +507,6 @@ export class PPOMController extends BaseControllerV2<
     const versionInfoUpdated = await this.#updateVersionInfo();
     if (versionInfoUpdated) {
       await this.#getNewFilesForAllChains();
-
-      const { versionInfo, storageMetadata, fileStorage } = this.state;
-      await syncMetadata({
-        storageMetadata,
-        versionInfo,
-        fileStorage,
-        updateState: this.#updateState.bind(this),
-      });
     }
   }
 
@@ -796,6 +786,15 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
+        const { versionInfo, storageMetadata, fileStorage } = this.state;
+        syncMetadata({
+          storageMetadata,
+          versionInfo,
+          fileStorage,
+          updateState: this.#updateState.bind(this),
+        }).catch((exp: Error) => {
+          console.error(`Error in syncing metadata: ${exp.message}`);
+        });
       }
     }, scheduleInterval);
   }
@@ -939,7 +938,7 @@ export class PPOMController extends BaseControllerV2<
         }`,
       );
     }
-    // Get all the files for  the chainId    
+    // Get all the files for  the chainId
     let files = await Promise.all(
       chainInfo.versionInfo.map(async (file) => {
         let data: ArrayBuffer | undefined;
