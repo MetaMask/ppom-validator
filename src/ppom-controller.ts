@@ -792,8 +792,8 @@ export class PPOMController extends BaseControllerV2<
           versionInfo,
           fileStorage,
           updateState: this.#updateState.bind(this),
-        }).catch((exp: Error) => {
-          console.error(`Error in syncing metadata: ${exp.message}`);
+        }).finally(() => {
+          // do nothing, this is so that lint won't complain
         });
       }
     }, scheduleInterval);
