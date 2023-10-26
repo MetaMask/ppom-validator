@@ -236,6 +236,8 @@ export const syncMetadata = async ({
  * @param options - Object passed to write to storage.
  * @param options.data - File data to be written.
  * @param options.fileVersionInfo - File Metadata with version information.
+ * @param options.fileStorage - File data saved in state.
+ * @param options.storageMetadata - Metadata about files saved in storage.
  * @param options.updateState - Controller function to update state.
  */
 export const writeFile = async ({
