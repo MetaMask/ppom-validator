@@ -299,7 +299,6 @@ describe('PPOMController', () => {
     it('should throw error if no files are present for the network', async () => {
       buildFetchSpy();
       jest.spyOn(PPOMStorage, 'readFile' as any).mockImplementation(() => {
-        console.log('Calling Read File');
         throw new Error('File metadata (blob, 0x1) not found');
       });
       ppomController = buildPPOMController();
