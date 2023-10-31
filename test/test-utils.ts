@@ -2,7 +2,7 @@ import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
 
 import { PPOMController } from '../src/ppom-controller';
-import { StorageKey } from '../src/ppom-storage';
+import { StorageKey, arrayBufferToJson } from '../src/ppom-storage';
 
 export const buildDummyResponse = (
   resultType = 'DUMMY_RESULT_TYPE',
@@ -31,32 +31,46 @@ export const buildStorageBackend = (obj = {}) => {
 export const simpleStorageBackend = buildStorageBackend();
 
 export const DUMMY_ARRAY_BUFFER_DATA = new ArrayBuffer(123);
+export const DUMMY_ARRAY_BUFFER_DATA2 = new ArrayBuffer(234);
+export const DUMMY_ARRAY_BUFFER_DATA_JSON = arrayBufferToJson(
+  DUMMY_ARRAY_BUFFER_DATA,
+);
 
-export const storageBackendReturningData = buildStorageBackend({
-  read: async (_key: StorageKey): Promise<any> =>
-    Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
-});
+export const DUMMY_ARRAY_BUFFER_DATA_JSON2 = arrayBufferToJson(
+  DUMMY_ARRAY_BUFFER_DATA2,
+);
+
+export const DUMMY_NAME = 'blob';
+export const DUMMY_NAME2 = 'blob2';
+export const DUMMY_DATANAME = 'data';
+export const DUMMY_CHAINID = '0x1';
+export const DUMMY_CHAINID2 = '0x2';
+
+const DUMMY_CHECKSUM =
+  '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49';
+export const DUMMY_CHECKSUM2 =
+  '0479688f99e8cbc70291ce272876ff8e0db71a0889daf2752884b0996056b4a0';
 
 export const VERSION_INFO = [
   {
-    name: 'blob',
-    chainId: '0x1',
+    name: DUMMY_NAME,
+    chainId: DUMMY_CHAINID,
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
     signature:
       '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
-    filePath: 'blob',
+    filePath: DUMMY_NAME,
   },
   {
-    name: 'data',
-    chainId: '0x1',
+    name: DUMMY_DATANAME,
+    chainId: DUMMY_CHAINID,
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
     signature:
       '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
-    filePath: 'data',
+    filePath: DUMMY_DATANAME,
   },
 ];
 
@@ -148,10 +162,17 @@ class PPOMClass {
   };
 }
 
+export const getFileData = (data = {}) => ({
+  chainId: DUMMY_CHAINID,
+  name: DUMMY_NAME,
+  checksum: DUMMY_CHECKSUM,
+  version: '1.0.0',
+  ...data,
+});
+
 export const buildPPOMController = (args?: any) => {
   const controllerMessenger = new ControllerMessenger();
   const ppomController = new PPOMController({
-    storageBackend: storageBackendReturningData,
     provider: () => undefined,
     chainId: '0x1',
     onNetworkChange: () => undefined,
