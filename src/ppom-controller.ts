@@ -6,11 +6,10 @@ import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import { Mutex } from 'await-semaphore';
 
 import {
+  StorageBackend,
+  PPOMStorage,
   FileMetadataList,
   FileMetadata,
-  writeFile,
-  syncMetadata,
-  readFile,
 } from './ppom-storage';
 import {
   IdGenerator,
@@ -69,7 +68,7 @@ type PPOMFileVersion = FileMetadata & {
 /**
  * @type PPOMVersionResponse - array of objects of type PPOMFileVersion
  */
-export type PPOMVersionResponse = PPOMFileVersion[];
+type PPOMVersionResponse = PPOMFileVersion[];
 
 type ChainType = Record<
   string,
@@ -99,8 +98,6 @@ export type PPOMState = {
   storageMetadata: FileMetadataList;
   // ETag obtained using HEAD request on version file
   versionFileETag?: string;
-  // Where the downloaded files are stored
-  fileStorage: Record<string, string>;
 };
 
 const stateMetaData = {
@@ -108,7 +105,6 @@ const stateMetaData = {
   chainStatus: { persist: false, anonymous: false },
   storageMetadata: { persist: false, anonymous: false },
   versionFileETag: { persist: false, anonymous: false },
-  fileStorage: { persist: false, anonymous: false },
 };
 
 const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
@@ -166,6 +162,8 @@ export class PPOMController extends BaseControllerV2<
 
   #provider: any;
 
+  #storage: PPOMStorage;
+
   #refreshDataInterval: any;
 
   #fileScheduleInterval: any;
@@ -214,6 +212,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.messenger - Controller messenger.
    * @param options.onNetworkChange - Callback tobe invoked when network changes.
    * @param options.provider - The provider used to create the PPOM instance.
+   * @param options.storageBackend - The storage backend to use for storing PPOM data.
    * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
    * @param options.onPreferencesChange - Callback invoked when user changes preferences.
    * @param options.ppomProvider - Object wrapping PPOM.
@@ -230,6 +229,7 @@ export class PPOMController extends BaseControllerV2<
     messenger,
     onNetworkChange,
     provider,
+    storageBackend,
     securityAlertsEnabled,
     onPreferencesChange,
     ppomProvider,
@@ -244,6 +244,7 @@ export class PPOMController extends BaseControllerV2<
     onNetworkChange: (callback: (networkState: any) => void) => void;
     messenger: PPOMControllerMessenger;
     provider: any;
+    storageBackend: StorageBackend;
     securityAlertsEnabled: boolean;
     onPreferencesChange: (callback: (perferenceState: any) => void) => void;
     ppomProvider: PPOMProvider;
@@ -266,9 +267,7 @@ export class PPOMController extends BaseControllerV2<
           versionInfo: [],
         },
       },
-      fileStorage: state?.fileStorage ?? {},
     };
-
     super({
       name: controllerName,
       metadata: stateMetaData,
@@ -279,6 +278,17 @@ export class PPOMController extends BaseControllerV2<
     this.#chainId = currentChainId;
     this.#provider = provider;
     this.#ppomProvider = ppomProvider;
+    this.#storage = new PPOMStorage({
+      storageBackend,
+      readMetadata: () => {
+        return JSON.parse(JSON.stringify(this.state.storageMetadata));
+      },
+      writeMetadata: (metadata) => {
+        this.update((draftState) => {
+          draftState.storageMetadata = metadata;
+        });
+      },
+    });
     this.#ppomMutex = new Mutex();
     this.#cdnBaseUrl = cdnBaseUrl;
     this.#providerRequestLimit = providerRequestLimit ?? PROVIDER_REQUEST_LIMIT;
@@ -303,18 +313,6 @@ export class PPOMController extends BaseControllerV2<
     // Async initialisation of PPOM as soon as controller is constructed and not when transactions are received
     // This helps to reduce the delay in validating transactions.
     this.#initialisePPOM();
-  }
-
-  /**
-   * Private method to update internal state.
-   *
-   * @param newState - The partial state to update.
-   */
-  #updateState(newState: Partial<PPOMState>): void {
-    this.update((draftState) => ({
-      ...draftState,
-      ...newState,
-    }));
   }
 
   /**
@@ -559,7 +557,7 @@ export class PPOMController extends BaseControllerV2<
     fileVersionInfo: PPOMFileVersion,
     overrideStorage = false,
   ): Promise<ArrayBuffer | undefined> {
-    const { fileStorage, storageMetadata } = this.state;
+    const { storageMetadata } = this.state;
     // do not fetch file if the storage version is latest
     if (
       !overrideStorage &&
@@ -582,12 +580,9 @@ export class PPOMController extends BaseControllerV2<
       fileVersionInfo.filePath,
     );
 
-    await writeFile({
+    await this.#storage.writeFile({
       data: fileData,
-      fileVersionInfo,
-      fileStorage,
-      storageMetadata,
-      updateState: this.#updateState.bind(this),
+      ...fileVersionInfo,
     });
 
     return fileData;
@@ -786,15 +781,8 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
-        const { versionInfo, storageMetadata, fileStorage } = this.state;
-        syncMetadata({
-          storageMetadata,
-          versionInfo,
-          fileStorage,
-          updateState: this.#updateState.bind(this),
-        }).finally(() => {
-          // do nothing, this is so that lint won't complain
-        });
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.#storage.syncMetadata(this.state.versionInfo);
       }
     }, scheduleInterval);
   }
@@ -943,14 +931,8 @@ export class PPOMController extends BaseControllerV2<
       chainInfo.versionInfo.map(async (file) => {
         let data: ArrayBuffer | undefined;
         try {
-          const { fileStorage, storageMetadata } = this.state;
           // First try to get file from storage
-          data = await readFile({
-            name: file.name,
-            chainId: file.chainId,
-            fileStorage,
-            storageMetadata,
-          });
+          data = await this.#storage.readFile(file.name, file.chainId);
         } catch {
           try {
             // Get the file from CDN if it is not found in storage
