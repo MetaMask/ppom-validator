@@ -974,6 +974,9 @@ export class PPOMController extends BaseControllerV2<
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
   async #getPPOM(): Promise<any> {
+    // For some reason ppom initialisation in contrructor fails for react native
+    // thus it is added here to prevent validation from failing.
+    this.#initialisePPOM();
     this.#ppomInitError = undefined;
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[this.#chainId];
