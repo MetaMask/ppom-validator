@@ -108,8 +108,17 @@ export const buildFetchSpy = (
     });
 };
 
-class PPOMClass {
+export class PPOMClass {
   #jsonRpcRequest: any;
+
+  constructor(newMock?: any, freeMock?: any) {
+    if (newMock) {
+      this.new = newMock;
+    }
+    if (freeMock) {
+      this.free = freeMock;
+    }
+  }
 
   new = (jsonRpcRequest: any) => {
     this.#jsonRpcRequest = jsonRpcRequest;
@@ -122,8 +131,8 @@ class PPOMClass {
 
   free = () => undefined;
 
-  testJsonRPCRequest = async (method: string, args2: any) =>
-    await this.#jsonRpcRequest(method ?? 'eth_blockNumber', args2);
+  testJsonRPCRequest = async (method: string) =>
+    await this.#jsonRpcRequest(method ?? 'eth_blockNumber');
 
   testCallRpcRequests = async () => {
     const methods = [
