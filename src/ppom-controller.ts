@@ -182,12 +182,6 @@ export class PPOMController extends BaseControllerV2<
 
   #fileScheduleInterval: any;
 
-  /*
-   * This mutex is used to prevent concurrent usage of the PPOM instance
-   * and protect the PPOM instance from being used while it is being initialized/updated
-   */
-  #ppomMutex: Mutex;
-
   #ppomProvider: PPOMProvider;
 
   // base URL of the CDN
@@ -301,7 +295,6 @@ export class PPOMController extends BaseControllerV2<
         });
       },
     });
-    this.#ppomMutex = new Mutex();
     this.#cdnBaseUrl = cdnBaseUrl;
     this.#providerRequestLimit = providerRequestLimit ?? PROVIDER_REQUEST_LIMIT;
     this.#dataUpdateDuration = dataUpdateDuration ?? REFRESH_TIME_INTERVAL;
@@ -396,7 +389,7 @@ export class PPOMController extends BaseControllerV2<
 
     this.#ppomConfigurations[ppomId]!.providerRequests = 0;
     this.#ppomConfigurations[ppomId]!.providerRequestsCount = {};
-    return await this.#ppomMutex.use(async () => {
+    return await this.#ppomConfigurations[ppomId]!.ppomMutex.use(async () => {
       const result = await callback(this.#ppomConfigurations[ppomId]!.ppom);
 
       return {
@@ -414,17 +407,15 @@ export class PPOMController extends BaseControllerV2<
    * Initialisation is done as soon as controller is constructed
    * or as user enables preference for blcokaid validation.
    */
-  #initialisePPOM() {
+  async #initialisePPOM() {
     if (this.#securityAlertsEnabled && !this.#ppomInitialised) {
-      this.#ppomMutex
-        .use(async () => {
-          const { ppomInit } = this.#ppomProvider;
-          await ppomInit('./ppom_bg.wasm');
-          this.#ppomInitialised = true;
-        })
-        .catch(() => {
-          console.error('Error in trying to initialize PPOM');
-        });
+      try {
+        const { ppomInit } = this.#ppomProvider;
+        await ppomInit('./ppom_bg.wasm');
+        this.#ppomInitialised = true;
+      } catch {
+        console.error('Error in trying to initialize PPOM');
+      }
     }
   }
 
@@ -1021,7 +1012,7 @@ export class PPOMController extends BaseControllerV2<
 
     // For some reason ppom initialisation in contrructor fails for react native
     // thus it is added here to prevent validation from failing.
-    this.#initialisePPOM();
+    await this.#initialisePPOM();
     this.#ppomConfigurations[ppomId]!.ppomInitError = undefined;
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[chainId];
@@ -1070,10 +1061,8 @@ export class PPOMController extends BaseControllerV2<
       return undefined;
     }
 
-    return await this.#ppomMutex.use(async () => {
-      const { PPOM } = this.#ppomProvider;
-      return PPOM.new(this.#jsonRpcRequest.bind(this, provider), files);
-    });
+    const { PPOM } = this.#ppomProvider;
+    return PPOM.new(this.#jsonRpcRequest.bind(this, provider), files);
   }
 
   /**
