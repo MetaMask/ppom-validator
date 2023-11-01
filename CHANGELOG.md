@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0]
+### Uncategorized
+- Async initialization on ppom after PPOMController is constructed ([#77](https://github.com/MetaMask/ppom-validator/pull/77))
+- Revert "Use controller state to save files instead of indexed db (#56)" ([#56](https://github.com/MetaMask/ppom-validator/pull/56))
+- Use controller state to save files instead of indexed db ([#56](https://github.com/MetaMask/ppom-validator/pull/56))
+- Ping metamask-npm-publishers properly ([#75](https://github.com/MetaMask/ppom-validator/pull/75))
+- Async initialization on ppom after PPOMController is constructed ([#73](https://github.com/MetaMask/ppom-validator/pull/73))
+
 ## [0.8.0]
 ### Changed
 - Create copy of providerRequestsCount to avoid returning instance variable from PPOMController ([#72](https://github.com/MetaMask/ppom-validator/pull/72))
@@ -65,7 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/MetaMask/ppom-validator/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/MetaMask/ppom-validator/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/MetaMask/ppom-validator/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/MetaMask/ppom-validator/compare/v0.5.0...v0.6.0
