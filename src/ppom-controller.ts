@@ -419,6 +419,8 @@ export class PPOMController extends BaseControllerV2<
   #clearDataFetchIntervals() {
     clearInterval(this.#refreshDataInterval);
     clearInterval(this.#fileScheduleInterval);
+    this.#refreshDataInterval = undefined;
+    this.#fileScheduleInterval = undefined;
   }
 
   /*
@@ -1035,7 +1037,7 @@ export class PPOMController extends BaseControllerV2<
     });
   }
 
-  /**
+  /*
    * The function invokes the task to fetch files of all the chains and then
    * starts the scheduled periodic task to fetch files for all the chains.
    */
