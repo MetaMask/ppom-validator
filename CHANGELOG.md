@@ -7,12 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.9.0]
-### Uncategorized
-- Async initialization on ppom after PPOMController is constructed ([#77](https://github.com/MetaMask/ppom-validator/pull/77))
-- Revert "Use controller state to save files instead of indexed db (#56)" ([#56](https://github.com/MetaMask/ppom-validator/pull/56))
-- Use controller state to save files instead of indexed db ([#56](https://github.com/MetaMask/ppom-validator/pull/56))
-- Ping metamask-npm-publishers properly ([#75](https://github.com/MetaMask/ppom-validator/pull/75))
-- Async initialization on ppom after PPOMController is constructed ([#73](https://github.com/MetaMask/ppom-validator/pull/73))
+### Changed
+- Performance Improvement: async instantation of PPOM instance by passing data files ([#77](https://github.com/MetaMask/ppom-validator/pull/77))
+- Performance Improvement: async initialization on ppom padding wasm file after PPOMController is constructed ([#73](https://github.com/MetaMask/ppom-validator/pull/73))
 
 ## [0.8.0]
 ### Changed
