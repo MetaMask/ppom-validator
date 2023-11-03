@@ -352,6 +352,7 @@ export class PPOMController extends BaseControllerV2<
     }
 
     await this.#reinitPPOMForNetworkIfRequired();
+    const ppom = await this.#getPPOM();
     if (this.#ppomInitError) {
       throw new Error(this.#ppomInitError);
     }
@@ -359,7 +360,9 @@ export class PPOMController extends BaseControllerV2<
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
     return await this.#ppomMutex.use(async () => {
-      const result = await callback(this.#ppom);
+      const result = await callback(ppom);
+
+      ppom.free();
 
       return {
         ...result,
@@ -430,7 +433,6 @@ export class PPOMController extends BaseControllerV2<
    * 3. clears version information of data files
    */
   #resetToInactiveState() {
-    this.#resetPPOM();
     this.#clearDataFetchIntervals();
     this.update((draftState) => {
       draftState.versionInfo = [];
@@ -459,7 +461,6 @@ export class PPOMController extends BaseControllerV2<
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     let chainStatus = { ...this.state.chainStatus };
     const existingNetworkObject = chainStatus[id];
-    const oldChainId = this.#chainId;
     this.#chainId = id;
     chainStatus = {
       ...chainStatus,
@@ -475,15 +476,6 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
-    if (oldChainId !== id) {
-      if (chainStatus[id]?.dataFetched) {
-        this.#reinitPPOM().catch(() => {
-          console.error('Error in re-init of PPOM');
-        });
-      } else {
-        this.#resetPPOM();
-      }
-    }
   }
 
   /*
@@ -517,24 +509,6 @@ export class PPOMController extends BaseControllerV2<
       `${controllerName}:updatePPOM` as const,
       this.updatePPOM.bind(this),
     );
-  }
-
-  /*
-   * The function resets PPOM.
-   */
-  #resetPPOM(): void {
-    if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
-    }
-  }
-
-  /*
-   * The function initialises PPOM.
-   */
-  async #reinitPPOM(): Promise<void> {
-    this.#resetPPOM();
-    this.#ppom = await this.#getPPOM();
   }
 
   /**
@@ -693,7 +667,6 @@ export class PPOMController extends BaseControllerV2<
       });
     }
     await this.#setChainIdDataFetched(this.#chainId);
-    await this.#reinitPPOM();
   }
 
   /*
@@ -824,9 +797,6 @@ export class PPOMController extends BaseControllerV2<
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
                 await this.#setChainIdDataFetched(fileVersionInfo.chainId);
-                if (fileVersionInfo.chainId === this.#chainId) {
-                  await this.#reinitPPOM();
-                }
               }
             })
             .catch((exp: Error) =>
