@@ -155,10 +155,6 @@ export class PPOMController extends BaseControllerV2<
   PPOMState,
   PPOMControllerMessenger
 > {
-  #ppom: any;
-
-  #ppomInitError: any;
-
   #provider: any;
 
   #storage: PPOMStorage;
@@ -351,15 +347,13 @@ export class PPOMController extends BaseControllerV2<
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
 
-    await this.#reinitPPOMForNetworkIfRequired();
-    const ppom = await this.#getPPOM();
-    if (this.#ppomInitError) {
-      throw new Error(this.#ppomInitError);
-    }
+    await this.#getNewFilesForCurrentChainIfNeeded();
 
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
+
     return await this.#ppomMutex.use(async () => {
+      const ppom = await this.#getPPOM();
       const result = await callback(ppom);
 
       ppom.free();
@@ -511,18 +505,6 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 
-  /**
-   * Conditionally update the ppom configuration.
-   *
-   * The function will check if files are required to be downloaded and
-   * if needed will re-initialise PPOM passing new network files to it.
-   */
-  async #reinitPPOMForNetworkIfRequired(): Promise<void> {
-    if (this.#isDataRequiredForCurrentChain()) {
-      await this.#getNewFilesForCurrentChain();
-    }
-  }
-
   /*
    * The function will return true if data is not already fetched for current chain.
    */
@@ -654,7 +636,10 @@ export class PPOMController extends BaseControllerV2<
    * The function is invoked if user if attempting transaction for current network,
    * for which data is not previously fetched.
    */
-  async #getNewFilesForCurrentChain(): Promise<void> {
+  async #getNewFilesForCurrentChainIfNeeded(): Promise<void> {
+    if (!this.#isDataRequiredForCurrentChain()) {
+      return;
+    }
     for (const fileVersionInfo of this.state.versionInfo) {
       if (fileVersionInfo.chainId !== this.#chainId) {
         continue;
@@ -947,14 +932,14 @@ export class PPOMController extends BaseControllerV2<
     // For some reason ppom initialisation in contrructor fails for react native
     // thus it is added here to prevent validation from failing.
     this.#initialisePPOM();
-    this.#ppomInitError = undefined;
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[this.#chainId];
     if (!chainInfo?.versionInfo?.length) {
-      this.#ppomInitError = `Aborting validation as no files are found for the network with chainId: ${
-        this.#chainId
-      }`;
-      return undefined;
+      throw new Error(
+        `Aborting validation as no files are found for the network with chainId: ${
+          this.#chainId
+        }`,
+      );
     }
     // Get all the files for  the chainId
     let files = await Promise.all(
@@ -989,16 +974,15 @@ export class PPOMController extends BaseControllerV2<
     // If we want to disable ppom validation on all instances of Metamask,
     // this can be achieved by returning empty data from version file.
     if (files.length !== chainInfo?.versionInfo?.length) {
-      this.#ppomInitError = `Aborting validation as not all files could not be downloaded for the network with chainId: ${
-        this.#chainId
-      }`;
-      return undefined;
+      throw new Error(
+        `Aborting validation as not all files could not be downloaded for the network with chainId: ${
+          this.#chainId
+        }`,
+      );
     }
 
-    return await this.#ppomMutex.use(async () => {
-      const { PPOM } = this.#ppomProvider;
-      return PPOM.new(this.#jsonRpcRequest.bind(this), files);
-    });
+    const { PPOM } = this.#ppomProvider;
+    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 
   /**
