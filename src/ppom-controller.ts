@@ -3,6 +3,10 @@ import {
   RestrictedControllerMessenger,
 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
+import {
+  NetworkClientId,
+  NetworkControllerGetNetworkClientByIdAction,
+} from '@metamask/network-controller';
 import { Mutex } from 'await-semaphore';
 
 import {
@@ -115,7 +119,10 @@ const versionInfoFileHeaders = {
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
-  handler: (callback: (ppom: any) => Promise<any>) => Promise<any>;
+  handler: (
+    callback: (ppom: any) => Promise<any>,
+    networkClientId?: NetworkClientId,
+  ) => Promise<any>;
 };
 
 export type UpdatePPOM = {
@@ -125,11 +132,13 @@ export type UpdatePPOM = {
 
 export type PPOMControllerActions = UsePPOM | UpdatePPOM;
 
+type AllowedActions = NetworkControllerGetNetworkClientByIdAction;
+
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
-  PPOMControllerActions,
+  PPOMControllerActions | AllowedActions,
   never,
-  never,
+  AllowedActions['type'],
   never
 >;
 
@@ -337,25 +346,40 @@ export class PPOMController extends BaseControllerV2<
    * This function receives a callback that will be called with the PPOM.
    *
    * @param callback - Callback to be invoked with PPOM.
+   * @param networkClientId - Optional network client ID to use for the PPOM requests.
    */
   async usePPOM<T>(
     callback: (ppom: any) => Promise<T>,
+    networkClientId?: NetworkClientId,
   ): Promise<T & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
-    if (!this.#networkIsSupported(this.#chainId)) {
+
+    let chainId = this.#chainId;
+    let provider = this.#provider;
+    if (networkClientId) {
+      const networkClient = this.messagingSystem.call(
+        'NetworkController:getNetworkClientById',
+        networkClientId,
+      );
+      chainId = networkClient.configuration.chainId;
+      provider = networkClient.provider;
+    }
+
+    if (!this.#networkIsSupported(chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
 
-    await this.#getNewFilesForCurrentChainIfNeeded();
-
-    this.#providerRequests = 0;
-    this.#providerRequestsCount = {};
+    this.#updateChainStatus(chainId);
+    await this.#getNewFilesForChainIfNeeded(chainId);
 
     await this.#initialisePPOM();
     return await this.#ppomMutex.use(async () => {
-      const ppom = await this.#getPPOM();
+      const ppom = await this.#getPPOM(chainId, provider);
+
+      this.#providerRequests = 0;
+      this.#providerRequestsCount = {};
       const result = await callback(ppom);
 
       ppom.free();
@@ -453,15 +477,13 @@ export class PPOMController extends BaseControllerV2<
   /*
    * The function adds new network to chainStatus list.
    */
-  #onNetworkChange(networkControllerState: any): void {
-    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
+  #updateChainStatus(chainId: string) {
     let chainStatus = { ...this.state.chainStatus };
-    const existingNetworkObject = chainStatus[id];
-    this.#chainId = id;
+    const existingNetworkObject = chainStatus[chainId];
     chainStatus = {
       ...chainStatus,
-      [id]: {
-        chainId: id,
+      [chainId]: {
+        chainId,
         lastVisited: new Date().getTime(),
         dataFetched: existingNetworkObject?.dataFetched ?? false,
         versionInfo: existingNetworkObject?.versionInfo ?? [],
@@ -470,6 +492,15 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.chainStatus = chainStatus;
     });
+  }
+
+  /*
+   * The function adds new network to chainStatus list.
+   */
+  #onNetworkChange(networkControllerState: any): void {
+    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
+    this.#chainId = id;
+    this.#updateChainStatus(id);
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
   }
@@ -511,9 +542,9 @@ export class PPOMController extends BaseControllerV2<
   /*
    * The function will return true if data is not already fetched for current chain.
    */
-  #isDataRequiredForCurrentChain(): boolean {
+  #isDataRequiredForChain(chainId: string): boolean {
     const { chainStatus } = this.state;
-    return !chainStatus[this.#chainId]?.dataFetched;
+    return !chainStatus[chainId]?.dataFetched;
   }
 
   /*
@@ -635,19 +666,19 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * Fetches new files for current network and save them to storage.
-   * The function is invoked if user if attempting transaction for current network,
+   * Fetches new files for a network and save them to storage.
+   * The function is invoked if user if attempting transaction for a network,
    * for which data is not previously fetched.
    */
-  async #getNewFilesForCurrentChainIfNeeded(): Promise<void> {
-    if (!this.#isDataRequiredForCurrentChain()) {
+  async #getNewFilesForChainIfNeeded(chainId: string): Promise<void> {
+    if (!this.#isDataRequiredForChain(chainId)) {
       return;
     }
-    const versionInfoForCurrentChain = this.state.versionInfo.filter(
-      ({ chainId }) => chainId === this.#chainId,
+    const versionInfoForChain = this.state.versionInfo.filter(
+      (fileVersionInfo) => fileVersionInfo.chainId === chainId,
     );
     await Promise.all(
-      versionInfoForCurrentChain.map(async (fileVersionInfo) => {
+      versionInfoForChain.map(async (fileVersionInfo) => {
         await this.#getFile(fileVersionInfo).catch((exp: Error) => {
           console.error(
             `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
@@ -655,7 +686,7 @@ export class PPOMController extends BaseControllerV2<
         });
       }),
     );
-    await this.#setChainIdDataFetched(this.#chainId);
+    await this.#setChainIdDataFetched(chainId);
   }
 
   /*
@@ -888,6 +919,7 @@ export class PPOMController extends BaseControllerV2<
    * This method is used by the PPOM to make requests to the provider.
    */
   async #jsonRpcRequest(
+    provider: any,
     method: string,
     params: Record<string, unknown>,
   ): Promise<any> {
@@ -909,7 +941,7 @@ export class PPOMController extends BaseControllerV2<
         : 1;
 
       // Invoke provider and return result
-      this.#provider.sendAsync(
+      provider.sendAsync(
         createPayload(method, params),
         (error: Error, res: any) => {
           if (error) {
@@ -932,16 +964,11 @@ export class PPOMController extends BaseControllerV2<
    *
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
-  async #getPPOM(): Promise<any> {
-    // For some reason ppom initialisation in contrructor fails for react native
-    // thus it is added here to prevent validation from failing.
-    const { chainStatus } = this.state;
-    const chainInfo = chainStatus[this.#chainId];
+  async #getPPOM(chainId: string, provider: any): Promise<any> {
+    const chainInfo = this.state.chainStatus[chainId];
     if (!chainInfo?.versionInfo?.length) {
       throw new Error(
-        `Aborting validation as no files are found for the network with chainId: ${
-          this.#chainId
-        }`,
+        `Aborting validation as no files are found for the network with chainId: ${chainId}`,
       );
     }
     // Get all the files for  the chainId
@@ -978,14 +1005,12 @@ export class PPOMController extends BaseControllerV2<
     // this can be achieved by returning empty data from version file.
     if (files.length !== chainInfo?.versionInfo?.length) {
       throw new Error(
-        `Aborting validation as not all files could not be downloaded for the network with chainId: ${
-          this.#chainId
-        }`,
+        `Aborting validation as not all files could not be downloaded for the network with chainId: ${chainId}`,
       );
     }
 
     const { PPOM } = this.#ppomProvider;
-    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
+    return PPOM.new(this.#jsonRpcRequest.bind(this, provider), files);
   }
 
   /**

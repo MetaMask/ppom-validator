@@ -364,6 +364,60 @@ describe('PPOMController', () => {
         'Aborting validation as not all files could not be downloaded for the network with chainId: 0x1',
       );
     });
+
+    it('should pass instance of provider to ppom from the network registry if networkClientId is provided', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController({
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2(undefined, 'DUMMY_VALUE_FROM_PROVIDER_PROXY');
+          },
+        },
+      });
+      jest.spyOn(ppomController.messagingSystem, 'call').mockReturnValue({
+        configuration: {
+          chainId: '0x1',
+        },
+        provider: {
+          sendAsync: (_arg1: any, arg2: any) => {
+            arg2(undefined, 'DUMMY_VALUE_FROM_NETWORK_REGISTRY');
+          },
+        },
+      });
+      jest.runOnlyPendingTimers();
+
+      await ppomController.usePPOM(async (ppom: any) => {
+        const result = await ppom.testJsonRPCRequest();
+        expect(result).toBe('DUMMY_VALUE_FROM_NETWORK_REGISTRY');
+      }, 'networkClientId1');
+      expect(ppomController.messagingSystem.call).toHaveBeenCalledWith(
+        'NetworkController:getNetworkClientById',
+        'networkClientId1',
+      );
+    });
+
+    it('should use chain ID from the network registry if networkClientId is provided', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController();
+      jest.spyOn(ppomController.messagingSystem, 'call').mockReturnValue({
+        configuration: {
+          chainId: '0x5',
+        },
+      });
+      jest.runOnlyPendingTimers();
+
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        }, 'networkClientId1');
+      }).rejects.toThrow(
+        'Blockaid validation is available only on ethereum mainnet',
+      );
+      expect(ppomController.messagingSystem.call).toHaveBeenCalledWith(
+        'NetworkController:getNetworkClientById',
+        'networkClientId1',
+      );
+    });
   });
 
   describe('updatePPOM', () => {
