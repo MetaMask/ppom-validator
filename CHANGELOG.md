@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.10.0]
-### Uncategorized
-- Mobile ppom init fix ([#83](https://github.com/MetaMask/ppom-validator/pull/83))
+### Changed
+- Fix PPOM initialisation in mobile ([#83](https://github.com/MetaMask/ppom-validator/pull/83))
 - Instantiate PPOM per request ([#81](https://github.com/MetaMask/ppom-validator/pull/81))
 
 ## [0.9.0]
