@@ -155,10 +155,6 @@ export class PPOMController extends BaseControllerV2<
   PPOMState,
   PPOMControllerMessenger
 > {
-  #ppom: any;
-
-  #ppomInitError: any;
-
   #provider: any;
 
   #storage: PPOMStorage;
@@ -351,15 +347,16 @@ export class PPOMController extends BaseControllerV2<
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
 
-    await this.#reinitPPOMForNetworkIfRequired();
-    if (this.#ppomInitError) {
-      throw new Error(this.#ppomInitError);
-    }
+    await this.#getNewFilesForCurrentChainIfNeeded();
 
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
+
     return await this.#ppomMutex.use(async () => {
-      const result = await callback(this.#ppom);
+      const ppom = await this.#getPPOM();
+      const result = await callback(ppom);
+
+      ppom.free();
 
       return {
         ...result,
@@ -430,7 +427,6 @@ export class PPOMController extends BaseControllerV2<
    * 3. clears version information of data files
    */
   #resetToInactiveState() {
-    this.#resetPPOM();
     this.#clearDataFetchIntervals();
     this.update((draftState) => {
       draftState.versionInfo = [];
@@ -459,7 +455,6 @@ export class PPOMController extends BaseControllerV2<
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     let chainStatus = { ...this.state.chainStatus };
     const existingNetworkObject = chainStatus[id];
-    const oldChainId = this.#chainId;
     this.#chainId = id;
     chainStatus = {
       ...chainStatus,
@@ -475,15 +470,6 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
-    if (oldChainId !== id) {
-      if (chainStatus[id]?.dataFetched) {
-        this.#reinitPPOM().catch(() => {
-          console.error('Error in re-init of PPOM');
-        });
-      } else {
-        this.#resetPPOM();
-      }
-    }
   }
 
   /*
@@ -517,36 +503,6 @@ export class PPOMController extends BaseControllerV2<
       `${controllerName}:updatePPOM` as const,
       this.updatePPOM.bind(this),
     );
-  }
-
-  /*
-   * The function resets PPOM.
-   */
-  #resetPPOM(): void {
-    if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
-    }
-  }
-
-  /*
-   * The function initialises PPOM.
-   */
-  async #reinitPPOM(): Promise<void> {
-    this.#resetPPOM();
-    this.#ppom = await this.#getPPOM();
-  }
-
-  /**
-   * Conditionally update the ppom configuration.
-   *
-   * The function will check if files are required to be downloaded and
-   * if needed will re-initialise PPOM passing new network files to it.
-   */
-  async #reinitPPOMForNetworkIfRequired(): Promise<void> {
-    if (this.#isDataRequiredForCurrentChain()) {
-      await this.#getNewFilesForCurrentChain();
-    }
   }
 
   /*
@@ -680,20 +636,23 @@ export class PPOMController extends BaseControllerV2<
    * The function is invoked if user if attempting transaction for current network,
    * for which data is not previously fetched.
    */
-  async #getNewFilesForCurrentChain(): Promise<void> {
-    for (const fileVersionInfo of this.state.versionInfo) {
-      if (fileVersionInfo.chainId !== this.#chainId) {
-        continue;
-      }
-
-      await this.#getFile(fileVersionInfo).catch((exp: Error) => {
-        console.error(
-          `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-        );
-      });
+  async #getNewFilesForCurrentChainIfNeeded(): Promise<void> {
+    if (!this.#isDataRequiredForCurrentChain()) {
+      return;
     }
+    const versionInfoForCurrentChain = this.state.versionInfo.filter(
+      ({ chainId }) => chainId === this.#chainId,
+    );
+    await Promise.all(
+      versionInfoForCurrentChain.map(async (fileVersionInfo) => {
+        await this.#getFile(fileVersionInfo).catch((exp: Error) => {
+          console.error(
+            `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+          );
+        });
+      }),
+    );
     await this.#setChainIdDataFetched(this.#chainId);
-    await this.#reinitPPOM();
   }
 
   /*
@@ -824,9 +783,6 @@ export class PPOMController extends BaseControllerV2<
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
                 await this.#setChainIdDataFetched(fileVersionInfo.chainId);
-                if (fileVersionInfo.chainId === this.#chainId) {
-                  await this.#reinitPPOM();
-                }
               }
             })
             .catch((exp: Error) =>
@@ -977,14 +933,14 @@ export class PPOMController extends BaseControllerV2<
     // For some reason ppom initialisation in contrructor fails for react native
     // thus it is added here to prevent validation from failing.
     this.#initialisePPOM();
-    this.#ppomInitError = undefined;
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[this.#chainId];
     if (!chainInfo?.versionInfo?.length) {
-      this.#ppomInitError = `Aborting validation as no files are found for the network with chainId: ${
-        this.#chainId
-      }`;
-      return undefined;
+      throw new Error(
+        `Aborting validation as no files are found for the network with chainId: ${
+          this.#chainId
+        }`,
+      );
     }
     // Get all the files for  the chainId
     let files = await Promise.all(
@@ -1019,16 +975,15 @@ export class PPOMController extends BaseControllerV2<
     // If we want to disable ppom validation on all instances of Metamask,
     // this can be achieved by returning empty data from version file.
     if (files.length !== chainInfo?.versionInfo?.length) {
-      this.#ppomInitError = `Aborting validation as not all files could not be downloaded for the network with chainId: ${
-        this.#chainId
-      }`;
-      return undefined;
+      throw new Error(
+        `Aborting validation as not all files could not be downloaded for the network with chainId: ${
+          this.#chainId
+        }`,
+      );
     }
 
-    return await this.#ppomMutex.use(async () => {
-      const { PPOM } = this.#ppomProvider;
-      return PPOM.new(this.#jsonRpcRequest.bind(this), files);
-    });
+    const { PPOM } = this.#ppomProvider;
+    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 
   /**
