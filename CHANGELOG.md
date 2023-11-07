@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0]
+### Uncategorized
+- Mobile ppom init fix ([#83](https://github.com/MetaMask/ppom-validator/pull/83))
+- Instantiate PPOM per request ([#81](https://github.com/MetaMask/ppom-validator/pull/81))
+
 ## [0.9.0]
 ### Changed
 - Performance Improvement: async instantation of PPOM instance by passing data files ([#77](https://github.com/MetaMask/ppom-validator/pull/77))
@@ -70,7 +75,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/MetaMask/ppom-validator/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/MetaMask/ppom-validator/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/MetaMask/ppom-validator/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/MetaMask/ppom-validator/compare/v0.6.0...v0.7.0
