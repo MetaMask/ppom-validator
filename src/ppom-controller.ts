@@ -640,17 +640,18 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#isDataRequiredForCurrentChain()) {
       return;
     }
-    for (const fileVersionInfo of this.state.versionInfo) {
-      if (fileVersionInfo.chainId !== this.#chainId) {
-        continue;
-      }
-
-      await this.#getFile(fileVersionInfo).catch((exp: Error) => {
-        console.error(
-          `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-        );
-      });
-    }
+    const versionInfoForCurrentChain = this.state.versionInfo.filter(
+      ({ chainId }) => chainId === this.#chainId,
+    );
+    await Promise.all(
+      versionInfoForCurrentChain.map(async (fileVersionInfo) => {
+        await this.#getFile(fileVersionInfo).catch((exp: Error) => {
+          console.error(
+            `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
+          );
+        });
+      }),
+    );
     await this.#setChainIdDataFetched(this.#chainId);
   }
 
