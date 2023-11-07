@@ -309,6 +309,7 @@ export class PPOMController extends BaseControllerV2<
 
     // Async initialisation of PPOM as soon as controller is constructed and not when transactions are received
     // This helps to reduce the delay in validating transactions.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.#initialisePPOM();
   }
 
@@ -352,6 +353,7 @@ export class PPOMController extends BaseControllerV2<
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
 
+    await this.#initialisePPOM();
     return await this.#ppomMutex.use(async () => {
       const ppom = await this.#getPPOM();
       const result = await callback(ppom);
@@ -373,9 +375,9 @@ export class PPOMController extends BaseControllerV2<
    * Initialisation is done as soon as controller is constructed
    * or as user enables preference for blcokaid validation.
    */
-  #initialisePPOM() {
+  async #initialisePPOM() {
     if (this.#securityAlertsEnabled && !this.#ppomInitialised) {
-      this.#ppomMutex
+      await this.#ppomMutex
         .use(async () => {
           const { ppomInit } = this.#ppomProvider;
           await ppomInit('./ppom_bg.wasm');
@@ -482,6 +484,7 @@ export class PPOMController extends BaseControllerV2<
     }
     this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.#initialisePPOM();
       this.#checkScheduleFileDownloadForAllChains();
     } else {
@@ -932,7 +935,6 @@ export class PPOMController extends BaseControllerV2<
   async #getPPOM(): Promise<any> {
     // For some reason ppom initialisation in contrructor fails for react native
     // thus it is added here to prevent validation from failing.
-    this.#initialisePPOM();
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[this.#chainId];
     if (!chainInfo?.versionInfo?.length) {
