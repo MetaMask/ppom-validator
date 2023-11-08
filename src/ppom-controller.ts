@@ -6,6 +6,7 @@ import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import {
   NetworkClientId,
   NetworkControllerGetNetworkClientByIdAction,
+  NetworkState,
 } from '@metamask/network-controller';
 import { Mutex } from 'await-semaphore';
 
@@ -371,10 +372,11 @@ export class PPOMController extends BaseControllerV2<
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
 
-    this.#updateChainStatus(chainId);
-    await this.#getNewFilesForChainIfNeeded(chainId);
+    await Promise.all([
+      this.#getNewFilesForChainIfNeeded(chainId),
+      this.#initialisePPOM(),
+    ])
 
-    await this.#initialisePPOM();
     return await this.#ppomMutex.use(async () => {
       const ppom = await this.#getPPOM(chainId, provider);
 
@@ -497,10 +499,12 @@ export class PPOMController extends BaseControllerV2<
   /*
    * The function adds new network to chainStatus list.
    */
-  #onNetworkChange(networkControllerState: any): void {
-    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
-    this.#chainId = id;
-    this.#updateChainStatus(id);
+  #onNetworkChange(networkControllerState: NetworkState): void {
+    this.#chainId = addHexPrefix(networkControllerState.providerConfig.chainId);
+    Object.values(networkControllerState.networkConfigurations).forEach(networkConfig => {
+      const chainId = addHexPrefix(networkConfig.chainId)
+      this.#updateChainStatus(chainId);
+    });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
   }
