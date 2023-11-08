@@ -350,7 +350,7 @@ export class PPOMController extends BaseControllerV2<
    * @param networkClientId - Optional network client ID to use for the PPOM requests.
    */
   async usePPOM<T>(
-    callback: (ppom: any) => Promise<T>,
+    callback: (ppom: unknown) => Promise<T>,
     networkClientId?: NetworkClientId,
   ): Promise<T & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
