@@ -391,6 +391,7 @@ describe('PPOMController', () => {
         },
       });
       jest.runOnlyPendingTimers();
+      await flushPromises();
 
       await ppomController.usePPOM(async (ppom: any) => {
         const result = await ppom.testJsonRPCRequest();
@@ -411,6 +412,7 @@ describe('PPOMController', () => {
         },
       });
       jest.runOnlyPendingTimers();
+      await flushPromises();
 
       await expect(async () => {
         await ppomController.usePPOM(async () => {
