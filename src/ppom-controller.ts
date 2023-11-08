@@ -375,7 +375,7 @@ export class PPOMController extends BaseControllerV2<
     await Promise.all([
       this.#getNewFilesForChainIfNeeded(chainId),
       this.#initialisePPOM(),
-    ])
+    ]);
 
     return await this.#ppomMutex.use(async () => {
       const ppom = await this.#getPPOM(chainId, provider);
@@ -501,10 +501,13 @@ export class PPOMController extends BaseControllerV2<
    */
   #onNetworkChange(networkControllerState: NetworkState): void {
     this.#chainId = addHexPrefix(networkControllerState.providerConfig.chainId);
-    Object.values(networkControllerState.networkConfigurations).forEach(networkConfig => {
-      const chainId = addHexPrefix(networkConfig.chainId)
-      this.#updateChainStatus(chainId);
-    });
+    this.#updateChainStatus(this.#chainId);
+    Object.values(networkControllerState.networkConfigurations).forEach(
+      (networkConfig) => {
+        const chainId = addHexPrefix(networkConfig.chainId);
+        this.#updateChainStatus(chainId);
+      },
+    );
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
   }

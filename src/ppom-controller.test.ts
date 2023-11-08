@@ -343,8 +343,14 @@ describe('PPOMController', () => {
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      callBack({ providerConfig: { chainId: '0x2' } });
-      callBack({ providerConfig: { chainId: '0x1' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x1' },
+      });
       buildFetchSpy(
         undefined,
         {
@@ -484,7 +490,10 @@ describe('PPOMController', () => {
         },
       });
       jest.runOnlyPendingTimers();
-      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       await flushPromises();
@@ -518,7 +527,10 @@ describe('PPOMController', () => {
         },
       });
       jest.runOnlyPendingTimers();
-      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(2);
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
@@ -570,8 +582,14 @@ describe('PPOMController', () => {
       await flushPromises();
       const chainIdData1 = ppomController.state.chainStatus['0x1'];
       expect(chainIdData1).toBeDefined();
-      callBack({ providerConfig: { chainId: '0x2' } });
-      callBack({ providerConfig: { chainId: '0x3' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x3' },
+      });
       jest.advanceTimersByTime(NETWORK_CACHE_DURATION);
       jest.runOnlyPendingTimers();
       await flushPromises();
@@ -598,7 +616,7 @@ describe('PPOMController', () => {
   });
 
   describe('onNetworkChange', () => {
-    it('should add network to chainStatus if not already added', () => {
+    it('should add current network to chainStatus if not already added', () => {
       buildFetchSpy();
       let callBack: any;
       ppomController = buildPPOMController({
@@ -609,9 +627,36 @@ describe('PPOMController', () => {
 
       const chainIdData1 = ppomController.state.chainStatus['0x1'];
       expect(chainIdData1).toBeDefined();
-      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
       const chainIdData2 = ppomController.state.chainStatus['0x2'];
       expect(chainIdData2).toBeDefined();
+    });
+
+    it('should add new network from configs to chainStatus if not already added', () => {
+      buildFetchSpy();
+      let callBack: any;
+      ppomController = buildPPOMController({
+        onNetworkChange: (func: any) => {
+          callBack = func;
+        },
+      });
+
+      const chainIdData1 = ppomController.state.chainStatus['0x1'];
+      expect(chainIdData1).toBeDefined();
+      callBack({
+        providerConfig: { chainId: '0x1' },
+        networkConfigurations: {
+          id1: { chainId: '0x3' },
+          id2: { chainId: '0x4' },
+        },
+      });
+      const chainIdData3 = ppomController.state.chainStatus['0x3'];
+      expect(chainIdData3).toBeDefined();
+      const chainIdData4 = ppomController.state.chainStatus['0x4'];
+      expect(chainIdData4).toBeDefined();
     });
 
     it('should update lastVisited time in chainStatus if network is already added', async () => {
@@ -629,8 +674,14 @@ describe('PPOMController', () => {
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
 
-      callBack({ providerConfig: { chainId: '0x2' } });
-      callBack({ providerConfig: { chainId: '0x1' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x1' },
+      });
       const lastVisitedAfter =
         ppomController.state.chainStatus['0x1'].lastVisited;
       expect(lastVisitedBefore !== lastVisitedAfter).toBe(true);
@@ -649,21 +700,36 @@ describe('PPOMController', () => {
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(1);
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-02'));
-      callBack({ providerConfig: { chainId: '0x2' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x2' },
+      });
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-05'));
-      callBack({ providerConfig: { chainId: '0x5' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x5' },
+      });
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-03'));
-      callBack({ providerConfig: { chainId: '0x3' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x3' },
+      });
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-04'));
-      callBack({ providerConfig: { chainId: '0x4' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x4' },
+      });
 
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-06'));
-      callBack({ providerConfig: { chainId: '0x6' } });
+      callBack({
+        networkConfigurations: {},
+        providerConfig: { chainId: '0x6' },
+      });
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
 
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
