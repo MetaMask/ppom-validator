@@ -121,9 +121,9 @@ const versionInfoFileHeaders = {
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
   handler: (
-    callback: (ppom: any) => Promise<any>,
+    callback: (ppom: unknown) => Promise<unknown>,
     networkClientId?: NetworkClientId,
-  ) => Promise<any>;
+  ) => Promise<unknown>;
 };
 
 export type UpdatePPOM = {
