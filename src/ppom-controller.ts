@@ -550,12 +550,20 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
+   * The function will return true if data is not already fetched for all chains.
+   */
+  #isDataRequiredForAllChains(): boolean {
+    const isDataRequiredForChain = this.#isDataRequiredForChain.bind(this);
+    return Object.keys(this.state.chainStatus).some(isDataRequiredForChain);
+  }
+
+  /*
    * Update the PPOM configuration for all chainId.
    * If new version info file is available the function will update data files for all chains.
    */
   async #updatePPOM(): Promise<void> {
     const versionInfoUpdated = await this.#updateVersionInfo();
-    if (versionInfoUpdated) {
+    if (versionInfoUpdated || this.#isDataRequiredForAllChains()) {
       await this.#getNewFilesForAllChains();
     }
   }
