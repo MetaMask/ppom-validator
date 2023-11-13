@@ -503,12 +503,6 @@ export class PPOMController extends BaseControllerV2<
   #onNetworkChange(networkControllerState: NetworkState): void {
     this.#chainId = addHexPrefix(networkControllerState.providerConfig.chainId);
     this.#updateChainStatus(this.#chainId);
-    Object.values(networkControllerState.networkConfigurations).forEach(
-      (networkConfig) => {
-        const chainId = addHexPrefix(networkConfig.chainId);
-        this.#updateChainStatus(chainId);
-      },
-    );
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
   }

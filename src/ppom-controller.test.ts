@@ -637,30 +637,6 @@ describe('PPOMController', () => {
       expect(chainIdData2).toBeDefined();
     });
 
-    it('should add new network from configs to chainStatus if not already added', () => {
-      buildFetchSpy();
-      let callBack: any;
-      ppomController = buildPPOMController({
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-      });
-
-      const chainIdData1 = ppomController.state.chainStatus['0x1'];
-      expect(chainIdData1).toBeDefined();
-      callBack({
-        providerConfig: { chainId: '0x1' },
-        networkConfigurations: {
-          id1: { chainId: '0x3' },
-          id2: { chainId: '0x4' },
-        },
-      });
-      const chainIdData3 = ppomController.state.chainStatus['0x3'];
-      expect(chainIdData3).toBeDefined();
-      const chainIdData4 = ppomController.state.chainStatus['0x4'];
-      expect(chainIdData4).toBeDefined();
-    });
-
     it('should update lastVisited time in chainStatus if network is already added', async () => {
       buildFetchSpy();
       let callBack: any;
