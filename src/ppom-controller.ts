@@ -378,8 +378,9 @@ export class PPOMController extends BaseControllerV2<
           await ppomInit('./ppom_bg.wasm');
           this.#ppomInitialised = true;
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           console.error('Error in trying to initialize PPOM');
+          throw error;
         });
     }
   }
