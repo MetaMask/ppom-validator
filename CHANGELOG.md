@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.11.0]
-### Uncategorized
+### Changed
 - Remove floating promise from constructor ([#86](https://github.com/MetaMask/ppom-validator/pull/86))
 
 ## [0.10.0]
