@@ -82,8 +82,10 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(6);
     });
+  });
 
-    it('should create instance of PPOMController even if there is an error in initialising PPOM', async () => {
+  describe('usePPOM', () => {
+    it('should throw error if there is an error in initialising PPOM', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
         ppomProvider: {
@@ -95,11 +97,13 @@ describe('PPOMController', () => {
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
 
-      expect(ppomController).toBeDefined();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow('Error initializing PPOM');
     });
-  });
 
-  describe('usePPOM', () => {
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController();
