@@ -498,7 +498,7 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * The function adds new network to chainStatus list.
+   * Update chainStatus list and perform scheduled checks on network state changes
    */
   #onNetworkChange(networkControllerState: NetworkState): void {
     this.#chainId = addHexPrefix(networkControllerState.providerConfig.chainId);
