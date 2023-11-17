@@ -546,9 +546,9 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * The function will return true if data is not already fetched for all chains.
+   * The function will return true if data is not already fetched for any chain.
    */
-  #isDataRequiredForAllChains(): boolean {
+  #isDataRequiredForAnyChain(): boolean {
     const isDataRequiredForChain = this.#isDataRequiredForChain.bind(this);
     return Object.keys(this.state.chainStatus).some(isDataRequiredForChain);
   }
@@ -559,7 +559,7 @@ export class PPOMController extends BaseControllerV2<
    */
   async #updatePPOM(): Promise<void> {
     const versionInfoUpdated = await this.#updateVersionInfo();
-    if (versionInfoUpdated || this.#isDataRequiredForAllChains()) {
+    if (versionInfoUpdated || this.#isDataRequiredForAnyChain()) {
       await this.#getNewFilesForAllChains();
     }
   }
