@@ -51,7 +51,15 @@ const ALLOWED_PROVIDER_CALLS = [
   'trace_filter',
 ];
 
-const ETHEREUM_CHAIN_ID = '0x1';
+export const SUPPORTED_CHAIN_IDS = [
+  '0x1', // mainnet chain id
+  '0x38', // bnb chain id
+  '0x89', // polygon chain id
+  '0xa4b1', // arbitrum chain id
+  '0xa', // optimism chain id
+  '0xa86a', // avalanche chain id
+  '0xe708', // Linea chain id
+];
 
 /**
  * @type PPOMFileVersion
@@ -321,7 +329,7 @@ export class PPOMController extends BaseControllerV2<
     if (securityAlertsEnabled) {
       this.#updateVersionInfo()
         .then(async () => {
-          await this.#getNewFilesForChain(ETHEREUM_CHAIN_ID);
+          await this.#getNewFilesForChain(this.#chainId);
           // start scheduled task to fetch data files
           this.#checkScheduleFileDownloadForAllChains();
         })
@@ -361,7 +369,7 @@ export class PPOMController extends BaseControllerV2<
       throw Error('User has securityAlertsEnabled set to false');
     }
     if (!this.#networkIsSupported(this.#chainId)) {
-      throw Error('Blockaid validation is available only on ethereum mainnet');
+      throw Error('Blockaid validation is not available on selected network');
     }
 
     await this.#reinitPPOMForNetworkIfRequired();
@@ -407,11 +415,10 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * The function check if ethereum chainId is supported for validation
-   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
+   * The function check if chainId is supported for validation
    */
   #networkIsSupported(chainId: string) {
-    return chainId === ETHEREUM_CHAIN_ID;
+    return SUPPORTED_CHAIN_IDS.includes(chainId);
   }
 
   /*
@@ -494,7 +501,7 @@ export class PPOMController extends BaseControllerV2<
       this.#updateVersionInfo()
         .then(async () => {
           this.#checkScheduleFileDownloadForAllChains();
-          await this.#getNewFilesForChain(ETHEREUM_CHAIN_ID);
+          await this.#getNewFilesForChain(this.#chainId);
         })
         .catch((error: Error) => {
           console.error(`Error in initialising: ${error.message}`);
@@ -774,8 +781,9 @@ export class PPOMController extends BaseControllerV2<
     const currentTimestamp = new Date().getTime();
 
     const chainIds = Object.keys(this.state.chainStatus).filter(
-      (id) => id !== ETHEREUM_CHAIN_ID,
+      (id) => id !== this.#chainId,
     );
+
     const oldChaninIds: any[] = chainIds.filter(
       (chainId) =>
         (this.state.chainStatus[chainId] as any).lastVisited <
@@ -843,8 +851,8 @@ export class PPOMController extends BaseControllerV2<
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
                 await this.#setChainIdDataFetched(fileVersionInfo.chainId);
-                if (fileVersionInfo.chainId === ETHEREUM_CHAIN_ID) {
-                  await this.#reinitPPOM(ETHEREUM_CHAIN_ID);
+                if (fileVersionInfo.chainId === this.#chainId) {
+                  await this.#reinitPPOM(this.#chainId);
                 }
               }
             })
@@ -1000,9 +1008,11 @@ export class PPOMController extends BaseControllerV2<
       // thus it is added here to prevent validation from failing.
       await this.#initialisePPOM();
       const { chainStatus } = this.state;
-      const versionInfo =
-        chainStatus[chainId]?.versionInfo ??
-        this.state.versionInfo.filter(({ chainId: id }) => id === chainId);
+      console.log('chainStatus 1008', chainStatus);
+      const hasVersionInfo = chainStatus[chainId]?.versionInfo?.length;
+      const versionInfo = hasVersionInfo
+        ? chainStatus[chainId]?.versionInfo
+        : this.state.versionInfo.filter(({ chainId: id }) => id === chainId);
       if (!versionInfo?.length) {
         this.#ppomInitError = `Aborting validation as no files are found for the network with chainId: ${chainId}`;
         return undefined;
