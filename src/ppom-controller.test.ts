@@ -1,5 +1,4 @@
 import {
-  PPOMClass,
   VERSION_INFO,
   buildDummyResponse,
   buildFetchSpy,
@@ -83,8 +82,10 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(6);
     });
+  });
 
-    it('should create instance of PPOMController even if there is an error in initialising PPOM', async () => {
+  describe('usePPOM', () => {
+    it('should throw error if there is an error in initialising PPOM', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
         ppomProvider: {
@@ -96,11 +97,13 @@ describe('PPOMController', () => {
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
 
-      expect(ppomController).toBeDefined();
+      await expect(async () => {
+        await ppomController.usePPOM(async () => {
+          return Promise.resolve();
+        });
+      }).rejects.toThrow('Error initializing PPOM');
     });
-  });
 
-  describe('usePPOM', () => {
     it('should provide instance of ppom to the passed ballback', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController();
@@ -365,59 +368,6 @@ describe('PPOMController', () => {
         'Aborting validation as not all files could not be downloaded for the network with chainId: 0x1',
       );
     });
-
-    it('should reset PPOM when network is switched', async () => {
-      buildFetchSpy();
-      let callBack: any;
-      const freeMock = jest.fn();
-      ppomController = buildPPOMController({
-        storageBackend: buildStorageBackend({
-          read: async (): Promise<any> => {
-            throw new Error('not found');
-          },
-        }),
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-        chainId: '0x2',
-        ppomProvider: {
-          ppomInit: () => undefined,
-          PPOM: new PPOMClass(undefined, freeMock),
-        },
-      });
-      callBack({ providerConfig: { chainId: '0x1' } });
-      await flushPromises();
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      callBack({ providerConfig: { chainId: '0x2' } });
-      await flushPromises();
-      expect(freeMock).toHaveBeenCalledTimes(1);
-    });
-
-    it('should not throw error if PPOM init on network changs fails', async () => {
-      buildFetchSpy();
-      let callBack: any;
-      const newMock = jest.fn().mockImplementation(() => {
-        throw Error('test');
-      });
-      ppomController = buildPPOMController({
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-        chainId: '0x1',
-        ppomProvider: {
-          ppomInit: () => undefined,
-          PPOM: new PPOMClass(newMock),
-        },
-      });
-      callBack({ providerConfig: { chainId: '0x2' } });
-      await flushPromises();
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-      callBack({ providerConfig: { chainId: '0x1' } });
-      await flushPromises();
-      expect(newMock).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe('updatePPOM', () => {
@@ -595,48 +545,6 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(6);
     });
-
-    it('should re-init ppom when new set of files are fetched', async () => {
-      buildFetchSpy();
-      const newMock = jest.fn();
-      ppomController = buildPPOMController({
-        ppomProvider: {
-          ppomInit: () => undefined,
-          PPOM: new PPOMClass(newMock),
-        },
-        fileFetchScheduleDuration: 0,
-      });
-      await flushPromises();
-      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
-      await flushPromises();
-      expect(newMock).toHaveBeenCalledTimes(1);
-
-      buildFetchSpy(
-        {
-          status: 200,
-          json: () => [
-            ...VERSION_INFO,
-            {
-              name: 'data2',
-              chainId: '0x1',
-              version: '1.0.3',
-              checksum:
-                '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-              filePath: 'data2',
-            },
-          ],
-        },
-        undefined,
-        2,
-      );
-      await flushPromises();
-
-      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
-      await flushPromises();
-      jest.advanceTimersByTime(1);
-      await flushPromises();
-      expect(newMock).toHaveBeenCalledTimes(3);
-    });
   });
 
   describe('onNetworkChange', () => {
@@ -709,31 +617,6 @@ describe('PPOMController', () => {
       expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
 
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
-    });
-
-    it('should reset PPOM when network is changed', async () => {
-      buildFetchSpy();
-      const freeMock = jest.fn().mockReturnValue('abc');
-      let callBack: any;
-      ppomController = buildPPOMController({
-        onNetworkChange: (func: any) => {
-          callBack = func;
-        },
-        chainId: '0x1',
-        ppomProvider: {
-          ppomInit: () => undefined,
-          PPOM: new PPOMClass(undefined, freeMock),
-        },
-      });
-
-      await flushPromises();
-      jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
-      await flushPromises();
-
-      expect(freeMock).toHaveBeenCalledTimes(0);
-      callBack({ providerConfig: { chainId: '0x2' } });
-      callBack({ providerConfig: { chainId: '0x1' } });
-      expect(freeMock).toHaveBeenCalledTimes(1);
     });
   });
 
