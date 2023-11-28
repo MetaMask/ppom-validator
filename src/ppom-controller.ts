@@ -362,11 +362,12 @@ export class PPOMController extends BaseControllerV2<
       chainId = networkClient.configuration.chainId;
       provider = networkClient.provider;
     }
-    this.#updateChainStatus(chainId);
 
     if (!this.#networkIsSupported(chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
+
+    this.#updateChainStatus(chainId);
 
     await Promise.all([
       this.#getNewFilesForChainIfNeeded(chainId),
