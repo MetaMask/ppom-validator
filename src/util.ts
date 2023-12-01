@@ -1,3 +1,4 @@
+import CryptoJS, { SHA256 } from 'crypto-js';
 import elliptic from 'elliptic';
 import IdIterator from 'json-rpc-random-id';
 
@@ -37,14 +38,17 @@ export const PROVIDER_ERRORS = {
 
 export const validateSignature = async (
   data: any,
-  signature: string,
+  hashSignature: string,
   key: string,
   filePath: string,
 ) => {
+  const hash = SHA256(CryptoJS.lib.WordArray.create(data));
+  const hashString = hash.toString();
+
   const ec = new EdDSA('ed25519');
   const ecKey = ec.keyFromPublic(key);
   // eslint-disable-next-line no-restricted-globals
-  const result = ecKey.verify(Buffer.from(data), signature);
+  const result = ecKey.verify(Buffer.from(hashString), hashSignature);
   if (!result) {
     throw Error(`Signature verification failed for file path: ${filePath}`);
   }
