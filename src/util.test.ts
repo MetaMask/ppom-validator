@@ -3,10 +3,11 @@ import fs from 'fs';
 import { addHexPrefix, constructURLHref, validateSignature } from './util';
 
 const TEST_PUBLIC_KEY =
-  '821e94d60bf030d7f5c399f751324093363a229acc1aa77cfbd795a0e62ff947';
+  '066ad3e8af5583385e312c156d238055215d5f25247c1e91055afa756cb98a88';
 const CORRECT_SIGNATURE =
-  'd56e247e6f5d5033c36ae65f70aa7b0c4a42385eeef63da3af1ca8da28dce0788f45491771acea46fcb1242297231ff9aa59687c53a2b86d498496351b170004';
-const INCORRECT_SIGNATURE = 'd56e247e6f5d50a59687c53a2b86d498496351b170004';
+  '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c';
+const INCORRECT_SIGNATURE =
+  '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c123';
 
 describe('Util', () => {
   describe('validateSignature', () => {
