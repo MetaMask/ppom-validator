@@ -24,7 +24,7 @@ describe('Util', () => {
       );
     });
 
-    it('should validate correct signature', async () => {
+    it('should validate correct signature - failing', async () => {
       expect(async () => {
         const blobData = await fs.promises.readFile('./test/stale_tags.bin');
         await validateSignature(
@@ -38,7 +38,6 @@ describe('Util', () => {
       );
     });
   });
-
   describe('constructURLHref', () => {
     it('should create correct URL', () => {
       expect(constructURLHref('https://www.base.com', 'test')).toBe(
