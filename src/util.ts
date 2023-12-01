@@ -36,15 +36,30 @@ export const PROVIDER_ERRORS = {
   }),
 };
 
+const getHash = async (data: ArrayBuffer): Promise<any> => {
+  if (
+    'crypto' in globalThis &&
+    typeof globalThis.crypto === 'object' &&
+    globalThis.crypto.subtle?.digest
+  ) {
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hash = hashArray
+      .map((item) => item.toString(16).padStart(2, '0'))
+      .join('');
+    return hash;
+  }
+  return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
+};
+
 export const validateSignature = async (
-  data: any,
+  data: ArrayBuffer,
   hashSignature: string,
   key: string,
   filePath: string,
 ) => {
-  const hash = SHA256(CryptoJS.lib.WordArray.create(data));
-  const hashString = hash.toString();
-
+  const hashString = await getHash(data);
+  // const hashString = hash.toString();
   const ec = new EdDSA('ed25519');
   const ecKey = ec.keyFromPublic(key);
   // eslint-disable-next-line no-restricted-globals
