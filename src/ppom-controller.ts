@@ -974,6 +974,7 @@ export class PPOMController extends BaseControllerV2<
   async #getPPOM(): Promise<any> {
     // For some reason ppom initialisation in contrructor fails for react native
     // thus it is added here to prevent validation from failing.
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.#initialisePPOM();
     this.#ppomInitError = undefined;
     const { chainStatus } = this.state;
