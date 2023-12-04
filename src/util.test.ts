@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import fs from 'fs';
 
 import { addHexPrefix, constructURLHref, validateSignature } from './util';
@@ -9,9 +10,14 @@ const CORRECT_SIGNATURE =
 const INCORRECT_SIGNATURE =
   '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c123';
 
+Object.defineProperty(globalThis, 'crypto', {
+  value: crypto.webcrypto,
+  writable: true,
+});
+
 describe('Util', () => {
   describe('validateSignature', () => {
-    it('should throw error for incorrect signature', async () => {
+    it('should throw error for incorrect signature - using native implementation', async () => {
       await expect(async () => {
         const blobData = await fs.promises.readFile('./test/stale_tags.bin');
         await validateSignature(
@@ -19,6 +25,21 @@ describe('Util', () => {
           INCORRECT_SIGNATURE,
           TEST_PUBLIC_KEY,
           'invalid_data_file',
+        );
+      }).rejects.toThrow(
+        'Signature verification failed for file path: invalid_data_file',
+      );
+    });
+
+    it('should throw error for incorrect signature - using library crypto-js', async () => {
+      await expect(async () => {
+        const blobData = await fs.promises.readFile('./test/stale_tags.bin');
+        await validateSignature(
+          blobData,
+          INCORRECT_SIGNATURE,
+          TEST_PUBLIC_KEY,
+          'invalid_data_file',
+          false,
         );
       }).rejects.toThrow(
         'Signature verification failed for file path: invalid_data_file',
@@ -33,6 +54,7 @@ describe('Util', () => {
           CORRECT_SIGNATURE,
           TEST_PUBLIC_KEY,
           'valid_data_file',
+          false,
         );
       }).not.toThrow(
         'Signature verification failed for file path: valid_data_file',

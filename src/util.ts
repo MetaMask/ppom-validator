@@ -36,11 +36,12 @@ export const PROVIDER_ERRORS = {
   }),
 };
 
-const getHash = async (data: ArrayBuffer): Promise<any> => {
+const getHash = async (data: ArrayBuffer, useNative: boolean): Promise<any> => {
   if (
     'crypto' in globalThis &&
     typeof globalThis.crypto === 'object' &&
-    globalThis.crypto.subtle?.digest
+    globalThis.crypto.subtle?.digest &&
+    useNative
   ) {
     const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -57,8 +58,9 @@ export const validateSignature = async (
   hashSignature: string,
   key: string,
   filePath: string,
+  useNative = true,
 ) => {
-  const hashString = await getHash(data);
+  const hashString = await getHash(data, useNative);
   // const hashString = hash.toString();
   const ec = new EdDSA('ed25519');
   const ecKey = ec.keyFromPublic(key);
