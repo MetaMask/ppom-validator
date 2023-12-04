@@ -53,6 +53,9 @@ const getHash = async (data: ArrayBuffer, useNative: boolean): Promise<any> => {
   return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
 };
 
+// useNative argument is added for testing purpose, without it test cases are breaking in Node-20 and above
+// Reason being that in node 20 crypto is always present in globalThis
+// and it is not possible to reset it due to security reasons
 export const validateSignature = async (
   data: ArrayBuffer,
   hashSignature: string,
