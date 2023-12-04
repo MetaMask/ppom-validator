@@ -203,6 +203,8 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
+  #ppomInitialisationCallback: (() => undefined) | undefined;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -221,6 +223,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
    * @param options.blockaidPublicKey - Public key of blockaid for verifying signatures of data files.
+   * @param options.ppomInitialisationCallback - Callback to be invoked as ppom initialisation completes.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -238,6 +241,7 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration,
     state,
     blockaidPublicKey,
+    ppomInitialisationCallback,
   }: {
     chainId: string;
     onNetworkChange: (callback: (networkState: any) => void) => void;
@@ -253,6 +257,7 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration?: number;
     state?: PPOMState;
     blockaidPublicKey: string;
+    ppomInitialisationCallback?: () => undefined;
   }) {
     const currentChainId = addHexPrefix(chainId);
     const initialState = {
@@ -298,6 +303,7 @@ export class PPOMController extends BaseControllerV2<
         : fileFetchScheduleDuration;
     this.#securityAlertsEnabled = securityAlertsEnabled;
     this.#blockaidPublicKey = blockaidPublicKey;
+    this.#ppomInitialisationCallback = ppomInitialisationCallback;
 
     // add new network to chainStatus list
     onNetworkChange(this.#onNetworkChange.bind(this));
@@ -383,6 +389,11 @@ export class PPOMController extends BaseControllerV2<
         .catch((error: unknown) => {
           console.error('Error in trying to initialize PPOM', error);
           throw error;
+        })
+        .finally(() => {
+          if (this.#ppomInitialisationCallback) {
+            this.#ppomInitialisationCallback();
+          }
         });
     }
   }

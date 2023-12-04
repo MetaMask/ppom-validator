@@ -920,4 +920,30 @@ describe('PPOMController', () => {
       expect(result.providerRequestsCount).toStrictEqual(providerRequestsCount);
     });
   });
+
+  describe('initialisePPOM', () => {
+    it('should invoke ppomInitialisationCallback once initialisation is complete', async () => {
+      buildFetchSpy();
+      let callBack: any;
+      const ppomInitialisationCallbackMock = jest.fn();
+      ppomController = buildPPOMController({
+        ppomProvider: {
+          ppomInit: async () => {
+            return Promise.resolve('123');
+          },
+        },
+        securityAlertsEnabled: false,
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+        ppomInitialisationCallback: ppomInitialisationCallbackMock,
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      callBack({ securityAlertsEnabled: true });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(1);
+    });
+  });
 });
