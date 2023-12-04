@@ -171,7 +171,7 @@ export const buildPPOMController = (args?: any) => {
     onPreferencesChange: () => undefined,
     state: {},
     ppomProvider: {
-      ppomInit: () => undefined,
+      ppomInit: () => 123,
       PPOM: new PPOMClass(),
     },
     cdnBaseUrl: 'ppom_cdn_base_url',

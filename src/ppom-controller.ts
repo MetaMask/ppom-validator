@@ -349,7 +349,7 @@ export class PPOMController extends BaseControllerV2<
 
     await this.#reinitPPOMForNetworkIfRequired();
     if (this.#ppomInitError) {
-      throw new Error(this.#ppomInitError);
+      throw Error(this.#ppomInitError);
     }
 
     this.#providerRequests = 0;
@@ -381,7 +381,7 @@ export class PPOMController extends BaseControllerV2<
           this.#ppomInitialised = true;
         })
         .catch((error: unknown) => {
-          console.error('Error in trying to initialize PPOM');
+          console.error('Error in trying to initialize PPOM', error);
           throw error;
         });
     }
@@ -975,7 +975,7 @@ export class PPOMController extends BaseControllerV2<
     // For some reason ppom initialisation in contrructor fails for react native
     // thus it is added here to prevent validation from failing.
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    this.#initialisePPOM();
+    await this.#initialisePPOM();
     this.#ppomInitError = undefined;
     const { chainStatus } = this.state;
     const chainInfo = chainStatus[this.#chainId];

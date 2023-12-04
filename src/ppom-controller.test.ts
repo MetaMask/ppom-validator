@@ -86,6 +86,18 @@ describe('PPOMController', () => {
   });
 
   describe('usePPOM', () => {
+    it('should provide instance of ppom to the passed ballback', async () => {
+      buildFetchSpy();
+      ppomController = buildPPOMController();
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+
+      await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve();
+      });
+    });
+
     it('should throw error if there is an error in initialising PPOM', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
@@ -103,18 +115,6 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow('Error initializing PPOM');
-    });
-
-    it('should provide instance of ppom to the passed ballback', async () => {
-      buildFetchSpy();
-      ppomController = buildPPOMController();
-      jest.runOnlyPendingTimers();
-      await flushPromises();
-
-      await ppomController.usePPOM(async (ppom: any) => {
-        expect(ppom).toBeDefined();
-        return Promise.resolve();
-      });
     });
 
     it('should return the value returned by callback', async () => {
