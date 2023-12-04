@@ -60,7 +60,7 @@ const ETHEREUM_CHAIN_ID = '0x1';
  */
 type PPOMFileVersion = FileMetadata & {
   filePath: string;
-  signature: string;
+  hashSignature: string;
 };
 
 /**
@@ -591,7 +591,7 @@ export class PPOMController extends BaseControllerV2<
 
     await validateSignature(
       fileData,
-      fileVersionInfo.signature,
+      fileVersionInfo.hashSignature,
       this.#blockaidPublicKey,
       fileVersionInfo.filePath,
     );
