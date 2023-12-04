@@ -7,11 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.12.0]
-### Uncategorized
-- Adding to constructor ppom_init_callback to be invoked once ppom intialisation completes ([#98](https://github.com/MetaMask/ppom-validator/pull/98))
+### Changed
+- Adding to callback to be invoked once ppom intialisation completes ([#98](https://github.com/MetaMask/ppom-validator/pull/98))
 - PPOM instance should be kept in memory ([#96](https://github.com/MetaMask/ppom-validator/pull/96))
 - Optimise validate signature ([#95](https://github.com/MetaMask/ppom-validator/pull/95))
-- Bump postcss from 8.4.20 to 8.4.31 ([#64](https://github.com/MetaMask/ppom-validator/pull/64))
 
 ## [0.11.0]
 ### Changed
