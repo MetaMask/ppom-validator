@@ -382,11 +382,6 @@ export class PPOMController extends BaseControllerV2<
         .catch((error: unknown) => {
           console.error('Error in trying to initialize PPOM', error);
           throw error;
-        })
-        .finally(() => {
-          if (this.#ppomInitialisationCallback) {
-            this.#ppomInitialisationCallback();
-          }
         });
     }
   }
@@ -479,6 +474,11 @@ export class PPOMController extends BaseControllerV2<
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
       this.#initialisePPOM();
       this.#checkScheduleFileDownloadForAllChains();
+      this.#getNewFilesForChain(ETHEREUM_CHAIN_ID).finally(() => {
+        if (this.#ppomInitialisationCallback) {
+          this.#ppomInitialisationCallback();
+        }
+      });
     } else {
       this.#resetToInactiveState();
     }
@@ -526,7 +526,7 @@ export class PPOMController extends BaseControllerV2<
    */
   async #reinitPPOMForNetworkIfRequired(): Promise<void> {
     if (this.#isDataRequiredForCurrentChain()) {
-      await this.#getNewFilesForCurrentChain();
+      await this.#getNewFilesForChain(this.#chainId);
     }
   }
 
@@ -661,9 +661,9 @@ export class PPOMController extends BaseControllerV2<
    * The function is invoked if user if attempting transaction for current network,
    * for which data is not previously fetched.
    */
-  async #getNewFilesForCurrentChain(): Promise<void> {
+  async #getNewFilesForChain(chainId: string): Promise<void> {
     for (const fileVersionInfo of this.state.versionInfo) {
-      if (fileVersionInfo.chainId !== this.#chainId) {
+      if (fileVersionInfo.chainId !== chainId) {
         continue;
       }
 
@@ -673,7 +673,7 @@ export class PPOMController extends BaseControllerV2<
         );
       });
     }
-    await this.#setChainIdDataFetched(this.#chainId);
+    await this.#setChainIdDataFetched(chainId);
     await this.#reinitPPOM();
   }
 
