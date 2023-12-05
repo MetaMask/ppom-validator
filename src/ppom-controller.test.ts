@@ -1,5 +1,4 @@
 import {
-  PPOMClass,
   VERSION_INFO,
   buildDummyResponse,
   buildFetchSpy,
