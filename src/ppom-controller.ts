@@ -807,7 +807,6 @@ export class PPOMController extends BaseControllerV2<
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
                 await this.#setChainIdDataFetched(fileVersionInfo.chainId);
-                // if (fileVersionInfo.chainId === this.#chainId) {
                 if (fileVersionInfo.chainId === ETHEREUM_CHAIN_ID) {
                   await this.#reinitPPOM();
                 }
