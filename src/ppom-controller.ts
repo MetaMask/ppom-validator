@@ -327,13 +327,6 @@ export class PPOMController extends BaseControllerV2<
     }
     // delete chains more than a week old
     this.#deleteOldChainIds();
-    // If none of the networks in chainStatus are supported we stop fetching data files
-    // and inactivate functionality by reseting PPOM
-    if (!this.#chainStatusIncludeSupportedNetworks()) {
-      this.#resetToInactiveState();
-      return;
-    }
-
     await this.#updatePPOM();
   }
 
@@ -399,17 +392,6 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * The function check if ethereum mainnet is in list of recent networks
-   */
-  #chainStatusIncludeSupportedNetworks() {
-    const networkIsSupported = this.#networkIsSupported.bind(this);
-    return (
-      this.state?.chainStatus &&
-      Object.keys(this.state?.chainStatus)?.some(networkIsSupported)
-    );
-  }
-
-  /*
    * The function check if ethereum chainId is supported for validation
    * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
    */
@@ -467,7 +449,6 @@ export class PPOMController extends BaseControllerV2<
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     let chainStatus = { ...this.state.chainStatus };
     const existingNetworkObject = chainStatus[id];
-    const oldChainId = this.#chainId;
     this.#chainId = id;
     chainStatus = {
       ...chainStatus,
@@ -483,15 +464,6 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
-    if (oldChainId !== id) {
-      if (chainStatus[id]?.dataFetched) {
-        this.#reinitPPOM().catch(() => {
-          console.error('Error in re-init of PPOM');
-        });
-      } else {
-        this.#resetPPOM();
-      }
-    }
   }
 
   /*
@@ -765,7 +737,9 @@ export class PPOMController extends BaseControllerV2<
     }
     const currentTimestamp = new Date().getTime();
 
-    const chainIds = Object.keys(this.state.chainStatus);
+    const chainIds = Object.keys(this.state.chainStatus).filter(
+      (id) => id !== ETHEREUM_CHAIN_ID,
+    );
     const oldChaninIds: any[] = chainIds.filter(
       (chainId) =>
         (this.state.chainStatus[chainId] as any).lastVisited <
@@ -833,7 +807,8 @@ export class PPOMController extends BaseControllerV2<
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
                 await this.#setChainIdDataFetched(fileVersionInfo.chainId);
-                if (fileVersionInfo.chainId === this.#chainId) {
+                // if (fileVersionInfo.chainId === this.#chainId) {
+                if (fileVersionInfo.chainId === ETHEREUM_CHAIN_ID) {
                   await this.#reinitPPOM();
                 }
               }
@@ -1055,10 +1030,7 @@ export class PPOMController extends BaseControllerV2<
    * starts the scheduled periodic task to fetch files for all the chains.
    */
   #checkScheduleFileDownloadForAllChains(): void {
-    if (
-      this.#securityAlertsEnabled &&
-      this.#chainStatusIncludeSupportedNetworks()
-    ) {
+    if (this.#securityAlertsEnabled) {
       if (!this.#refreshDataInterval) {
         this.#onDataUpdateDuration();
         this.#refreshDataInterval = setInterval(
