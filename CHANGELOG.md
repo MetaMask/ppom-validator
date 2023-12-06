@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.13.0]
-### Uncategorized
+### Changed
 - Refactoring and code cleanup in PPOMController ([#103](https://github.com/MetaMask/ppom-validator/pull/103))
 - Start fetching files for mainnet as blockaid preference is enabled ([#102](https://github.com/MetaMask/ppom-validator/pull/102))
 - PPOM instance to stay when user switch the network ([#101](https://github.com/MetaMask/ppom-validator/pull/101))
