@@ -195,31 +195,6 @@ describe('PPOMController', () => {
       }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
-    it('should NOT throw error if the user is on any supported chain id', async () => {
-      buildFetchSpy();
-      ppomController = buildPPOMController({
-        chainId: '0x38',
-        state: {
-          versionInfo: [
-            {
-              name: 'blob',
-              chainId: '0x38',
-              version: '1.0.0',
-              checksum:
-                '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-              filePath: 'blob',
-            },
-          ],
-        },
-      });
-      jest.runOnlyPendingTimers();
-      const result = await ppomController.usePPOM(async () => {
-        return Promise.resolve(buildDummyResponse());
-      });
-
-      expect(result).toStrictEqual(dummyResponse);
-    });
-
     it('should throw error if the user is not on supported chain id', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({

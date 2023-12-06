@@ -1008,7 +1008,6 @@ export class PPOMController extends BaseControllerV2<
       // thus it is added here to prevent validation from failing.
       await this.#initialisePPOM();
       const { chainStatus } = this.state;
-      console.log('chainStatus 1008', chainStatus);
       const hasVersionInfo = chainStatus[chainId]?.versionInfo?.length;
       const versionInfo = hasVersionInfo
         ? chainStatus[chainId]?.versionInfo
