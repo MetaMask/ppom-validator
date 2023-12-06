@@ -52,7 +52,7 @@ const ALLOWED_PROVIDER_CALLS = [
 ];
 
 export const SUPPORTED_CHAIN_IDS = [
-  '0x1', // mainnet chain id
+  '0x1', // ethereum mainnet chain id
   '0x38', // bnb chain id
   '0x89', // polygon chain id
   '0xa4b1', // arbitrum chain id
