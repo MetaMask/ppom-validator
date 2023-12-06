@@ -394,6 +394,21 @@ describe('PPOMController', () => {
       );
     });
 
+    it('should not throw error if fetch for blob return 500', async () => {
+      buildFetchSpy(undefined, {
+        status: 500,
+      });
+      ppomController = buildPPOMController();
+      jest.runOnlyPendingTimers();
+      expect(async () => {
+        await ppomController.updatePPOM();
+        jest.runOnlyPendingTimers();
+      }).not.toThrow(
+        'Failed to fetch file with url: https://ppom_cdn_base_url/blob',
+      );
+      await flushPromises();
+    });
+
     it('should not fetch data for network if network data is already fetched', async () => {
       const spy = buildFetchSpy(undefined, undefined, 123);
       ppomController = buildPPOMController();
@@ -410,21 +425,6 @@ describe('PPOMController', () => {
       await flushPromises();
       // 2 additional call this time is to version info HEAD
       expect(spy).toHaveBeenCalledTimes(9);
-    });
-
-    it('should not throw error if fetch for blob return 500', async () => {
-      buildFetchSpy(undefined, {
-        status: 500,
-      });
-      ppomController = buildPPOMController();
-      jest.runOnlyPendingTimers();
-      expect(async () => {
-        await ppomController.updatePPOM();
-        jest.runOnlyPendingTimers();
-      }).not.toThrow(
-        'Failed to fetch file with url: https://ppom_cdn_base_url/blob',
-      );
-      await flushPromises();
     });
 
     it('should get files for only supported chains in chainStatus', async () => {
