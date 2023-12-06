@@ -77,6 +77,9 @@ type ChainInfo = {
 
 type ChainType = Record<string, ChainInfo>;
 
+type SingleFile = [string, Uint8Array | undefined] | undefined;
+type FileArray = SingleFile[];
+
 /**
  * @type PPOMState
  *
@@ -271,6 +274,7 @@ export class PPOMController extends BaseControllerV2<
           versionInfo: [],
         },
       },
+      versionFileETag: state?.versionFileETag ?? '',
     };
     super({
       name: controllerName,
@@ -314,8 +318,22 @@ export class PPOMController extends BaseControllerV2<
     // register message handlers
     this.#registerMessageHandlers();
 
-    // start scheduled task to fetch data files
-    this.#checkScheduleFileDownloadForAllChains();
+    if (securityAlertsEnabled) {
+      this.#updateVersionInfo()
+        .then(async () => {
+          await this.#getNewFilesForChain(ETHEREUM_CHAIN_ID);
+          // start scheduled task to fetch data files
+          this.#checkScheduleFileDownloadForAllChains();
+        })
+        .catch((error: Error) => {
+          console.error(`Error in initialising: ${error.message}`);
+        })
+        .finally(() => {
+          if (this.#ppomInitialisationCallback) {
+            this.#ppomInitialisationCallback();
+          }
+        });
+    }
   }
 
   /**
@@ -379,7 +397,7 @@ export class PPOMController extends BaseControllerV2<
           await ppomInit('./ppom_bg.wasm');
           this.#ppomInitialised = true;
         })
-        .catch((error: unknown) => {
+        .catch((error: Error) => {
           console.error('Error in trying to initialize PPOM', error);
           throw error;
         });
@@ -471,14 +489,18 @@ export class PPOMController extends BaseControllerV2<
     }
     this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      this.#initialisePPOM();
-      this.#checkScheduleFileDownloadForAllChains();
-      this.#getNewFilesForChain(ETHEREUM_CHAIN_ID).finally(() => {
-        if (this.#ppomInitialisationCallback) {
-          this.#ppomInitialisationCallback();
-        }
-      });
+      this.#updateVersionInfo()
+        .then(() => {
+          this.#checkScheduleFileDownloadForAllChains();
+          this.#getNewFilesForChain(ETHEREUM_CHAIN_ID).finally(() => {
+            if (this.#ppomInitialisationCallback) {
+              this.#ppomInitialisationCallback();
+            }
+          });
+        })
+        .catch((error: Error) => {
+          console.error(`Error in initialising: ${error.message}`);
+        });
     } else {
       this.#resetToInactiveState();
     }
@@ -513,9 +535,9 @@ export class PPOMController extends BaseControllerV2<
   /*
    * The function initialises PPOM.
    */
-  async #reinitPPOM(): Promise<void> {
+  async #reinitPPOM(chainId: string, files?: FileArray): Promise<void> {
     this.#resetPPOM();
-    this.#ppom = await this.#getPPOM();
+    this.#ppom = await this.#getPPOM(chainId, files);
   }
 
   /**
@@ -597,15 +619,14 @@ export class PPOMController extends BaseControllerV2<
    */
   async #getFile(
     fileVersionInfo: PPOMFileVersion,
-    storageFoundCorrupted?: boolean,
   ): Promise<ArrayBuffer | undefined> {
     const { storageMetadata } = this.state;
     // do not fetch file if the storage version is latest
-    if (
-      !storageFoundCorrupted &&
-      this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)
-    ) {
-      return undefined;
+    if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
+      return await this.#storage.readFile(
+        fileVersionInfo.name,
+        fileVersionInfo.chainId,
+      );
     }
     // validate file path for valid characters
     this.#checkFilePath(fileVersionInfo.filePath);
@@ -662,19 +683,29 @@ export class PPOMController extends BaseControllerV2<
    * for which data is not previously fetched.
    */
   async #getNewFilesForChain(chainId: string): Promise<void> {
-    for (const fileVersionInfo of this.state.versionInfo) {
-      if (fileVersionInfo.chainId !== chainId) {
-        continue;
-      }
+    const versionInfoForCurrentChain = this.state.versionInfo.filter(
+      ({ chainId: id }) => id === chainId,
+    );
+    let files: FileArray = await Promise.all(
+      versionInfoForCurrentChain.map(async (fileVersionInfo) => {
+        let data: ArrayBuffer | undefined;
+        try {
+          data = await this.#getFile(fileVersionInfo);
+        } catch (exp: unknown) {
+          console.error(
+            `Error in getting file ${fileVersionInfo.filePath}: ${
+              (exp as Error).message
+            }`,
+          );
+        }
+        return [fileVersionInfo.name, data ? new Uint8Array(data) : undefined];
+      }),
+    );
+    files = files.filter((data: SingleFile) => data?.[1] !== undefined);
 
-      await this.#getFile(fileVersionInfo).catch((exp: Error) => {
-        console.error(
-          `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-        );
-      });
-    }
     await this.#setChainIdDataFetched(chainId);
-    await this.#reinitPPOM();
+
+    await this.#reinitPPOM(chainId, files);
   }
 
   /*
@@ -808,7 +839,7 @@ export class PPOMController extends BaseControllerV2<
                 // if this was last file for the chainId set dataFetched for chainId to true
                 await this.#setChainIdDataFetched(fileVersionInfo.chainId);
                 if (fileVersionInfo.chainId === ETHEREUM_CHAIN_ID) {
-                  await this.#reinitPPOM();
+                  await this.#reinitPPOM(ETHEREUM_CHAIN_ID);
                 }
               }
             })
@@ -956,63 +987,64 @@ export class PPOMController extends BaseControllerV2<
    *
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
-  async #getPPOM(): Promise<any> {
-    // For some reason ppom initialisation in contrructor fails for react native
-    // thus it is added here to prevent validation from failing.
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    await this.#initialisePPOM();
-    this.#ppomInitError = undefined;
-    const { chainStatus } = this.state;
-    const chainInfo = chainStatus[this.#chainId];
-    if (!chainInfo?.versionInfo?.length) {
-      this.#ppomInitError = `Aborting validation as no files are found for the network with chainId: ${
-        this.#chainId
-      }`;
-      return undefined;
-    }
-    // Get all the files for  the chainId
-    let files = await Promise.all(
-      chainInfo.versionInfo.map(async (file) => {
-        let data: ArrayBuffer | undefined;
-        try {
-          // First try to get file from storage
-          data = await this.#storage.readFile(file.name, file.chainId);
-        } catch {
-          try {
-            // Get the file from CDN if it is not found in storage
-            data = await this.#getFile(file, true);
-          } catch (exp: unknown) {
-            console.error(
-              `Error in getting file ${file.filePath}: ${
-                (exp as Error).message
-              }`,
-            );
-          }
-        }
-        if (data) {
-          return [file.name, new Uint8Array(data)];
-        }
+  async #getPPOM(chainId: string, newFiles?: FileArray): Promise<any> {
+    try {
+      let files: FileArray;
+      this.#ppomInitError = undefined;
+      // For some reason ppom initialisation in contrructor fails for react native
+      // thus it is added here to prevent validation from failing.
+      await this.#initialisePPOM();
+      const { chainStatus } = this.state;
+      const versionInfo =
+        chainStatus[chainId]?.versionInfo ??
+        this.state.versionInfo.filter(({ chainId: id }) => id === chainId);
+      if (!versionInfo?.length) {
+        this.#ppomInitError = `Aborting validation as no files are found for the network with chainId: ${chainId}`;
         return undefined;
-      }),
-    );
+      }
+      if (newFiles?.length) {
+        files = newFiles;
+      } else {
+        // Get all the files for  the chainId
+        files = await Promise.all(
+          versionInfo.map(async (file) => {
+            let data: ArrayBuffer | undefined;
+            try {
+              data = await this.#getFile(file);
+            } catch (exp: unknown) {
+              console.error(
+                `Error in getting file ${file.filePath}: ${
+                  (exp as Error).message
+                }`,
+              );
+            }
+            if (data) {
+              return [file.name, new Uint8Array(data)];
+            }
+            return undefined;
+          }),
+        );
+      }
 
-    files = files.filter((data: unknown) => data !== undefined);
+      files = files?.filter((data: SingleFile) => data?.[1] !== undefined);
 
-    // The following code throw error if no data files are found for the chainId.
-    // This check has been put in place after suggestion of security team.
-    // If we want to disable ppom validation on all instances of Metamask,
-    // this can be achieved by returning empty data from version file.
-    if (files.length !== chainInfo?.versionInfo?.length) {
-      this.#ppomInitError = `Aborting validation as not all files could not be downloaded for the network with chainId: ${
-        this.#chainId
-      }`;
+      // The following code throw error if no data files are found for the chainId.
+      // This check has been put in place after suggestion of security team.
+      // If we want to disable ppom validation on all instances of Metamask,
+      // this can be achieved by returning empty data from version file.
+      if (files?.length !== versionInfo?.length) {
+        this.#ppomInitError = `Aborting validation as not all files could not be downloaded for the network with chainId: ${chainId}`;
+        return undefined;
+      }
+
+      return await this.#ppomMutex.use(async () => {
+        const { PPOM } = this.#ppomProvider;
+        return PPOM.new(this.#jsonRpcRequest.bind(this), files);
+      });
+    } catch (error: any) {
+      this.#ppomInitError = error?.message;
       return undefined;
     }
-
-    return await this.#ppomMutex.use(async () => {
-      const { PPOM } = this.#ppomProvider;
-      return PPOM.new(this.#jsonRpcRequest.bind(this), files);
-    });
   }
 
   /**
