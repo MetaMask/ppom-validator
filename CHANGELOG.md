@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0]
+### Uncategorized
+- Refactoring and code cleanup in PPOMController ([#103](https://github.com/MetaMask/ppom-validator/pull/103))
+- Start fetching files for mainnet as blockaid preference is enabled ([#102](https://github.com/MetaMask/ppom-validator/pull/102))
+- PPOM instance to stay when user switch the network ([#101](https://github.com/MetaMask/ppom-validator/pull/101))
+
 ## [0.12.0]
 ### Changed
 - Adding to callback to be invoked once ppom intialisation completes ([#98](https://github.com/MetaMask/ppom-validator/pull/98))
@@ -85,7 +91,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/MetaMask/ppom-validator/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/MetaMask/ppom-validator/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/MetaMask/ppom-validator/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/MetaMask/ppom-validator/compare/v0.9.0...v0.10.0
