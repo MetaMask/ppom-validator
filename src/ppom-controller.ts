@@ -490,16 +490,17 @@ export class PPOMController extends BaseControllerV2<
     this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
       this.#updateVersionInfo()
-        .then(() => {
+        .then(async () => {
           this.#checkScheduleFileDownloadForAllChains();
-          this.#getNewFilesForChain(ETHEREUM_CHAIN_ID).finally(() => {
-            if (this.#ppomInitialisationCallback) {
-              this.#ppomInitialisationCallback();
-            }
-          });
+          await this.#getNewFilesForChain(ETHEREUM_CHAIN_ID);
         })
         .catch((error: Error) => {
           console.error(`Error in initialising: ${error.message}`);
+        })
+        .finally(() => {
+          if (this.#ppomInitialisationCallback) {
+            this.#ppomInitialisationCallback();
+          }
         });
     } else {
       this.#resetToInactiveState();
