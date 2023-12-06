@@ -663,18 +663,16 @@ export class PPOMController extends BaseControllerV2<
       ({ chainId: id }) => id === chainId,
     );
     if (chainIdObject) {
-      if (!chainIdObject.dataFetched) {
-        this.update((draftState) => {
-          draftState.chainStatus = {
-            ...chainStatus,
-            [chainId]: {
-              ...chainIdObject,
-              dataFetched: true,
-              versionInfo: versionInfoForChain,
-            },
-          };
-        });
-      }
+      this.update((draftState) => {
+        draftState.chainStatus = {
+          ...chainStatus,
+          [chainId]: {
+            ...chainIdObject,
+            dataFetched: true,
+            versionInfo: versionInfoForChain,
+          },
+        };
+      });
     }
   }
 
