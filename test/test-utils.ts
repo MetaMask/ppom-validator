@@ -28,22 +28,25 @@ export const buildStorageBackend = (obj = {}) => {
   };
 };
 
-export const StorageMetadata = [
-  {
-    name: 'data',
-    chainId: '0x1',
+export const StorageMetadata: FileMetadata[] = [];
+
+SUPPORTED_CHAIN_IDS.forEach((chainId) => {
+  const data = {
+    name: `${chainId}_data`,
+    chainId,
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-  },
-  {
-    name: 'blob',
-    chainId: '0x1',
+  };
+  const blob = {
+    name: `${chainId}_blob`,
+    chainId,
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-  },
-];
+  };
+  StorageMetadata.push(data, blob);
+});
 
 export const simpleStorageBackend = buildStorageBackend();
 
