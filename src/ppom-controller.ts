@@ -206,7 +206,7 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
-  #ppomInitialisationCallback: (() => undefined) | undefined;
+  #ppomInitialisationCallback: (() => void) | undefined;
 
   /**
    * Creates a PPOMController instance.
@@ -366,7 +366,9 @@ export class PPOMController extends BaseControllerV2<
 
     await this.#reinitPPOMForNetworkIfRequired();
     if (this.#ppomInitError) {
-      throw Error(this.#ppomInitError);
+      const errorText = this.#ppomInitError;
+      this.#ppomInitError = undefined;
+      throw Error(errorText);
     }
 
     this.#providerRequests = 0;
@@ -548,7 +550,7 @@ export class PPOMController extends BaseControllerV2<
    * if needed will re-initialise PPOM passing new network files to it.
    */
   async #reinitPPOMForNetworkIfRequired(): Promise<void> {
-    if (this.#isDataRequiredForCurrentChain()) {
+    if (this.#isDataRequiredForCurrentChain() || this.#ppom === undefined) {
       await this.#getNewFilesForChain(this.#chainId);
     }
   }
@@ -624,10 +626,14 @@ export class PPOMController extends BaseControllerV2<
     const { storageMetadata } = this.state;
     // do not fetch file if the storage version is latest
     if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
-      return await this.#storage.readFile(
-        fileVersionInfo.name,
-        fileVersionInfo.chainId,
-      );
+      try {
+        return await this.#storage.readFile(
+          fileVersionInfo.name,
+          fileVersionInfo.chainId,
+        );
+      } catch (error: unknown) {
+        console.error(`Error in reading file: ${(error as Error).message}`);
+      }
     }
     // validate file path for valid characters
     this.#checkFilePath(fileVersionInfo.filePath);
@@ -919,7 +925,7 @@ export class PPOMController extends BaseControllerV2<
 
     // If ETag is same it is not required to fetch data files again
     const eTagChanged = await this.#checkIfVersionInfoETagChanged(url);
-    if (!eTagChanged) {
+    if (!eTagChanged && this.state.versionInfo?.length) {
       return undefined;
     }
 
