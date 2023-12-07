@@ -1,8 +1,8 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
 
-import { PPOMController } from '../src/ppom-controller';
-import { StorageKey } from '../src/ppom-storage';
+import { PPOMController, SUPPORTED_CHAIN_IDS } from '../src/ppom-controller';
+import { FileMetadata, StorageKey } from '../src/ppom-storage';
 
 export const buildDummyResponse = (
   resultType = 'DUMMY_RESULT_TYPE',
@@ -28,22 +28,25 @@ export const buildStorageBackend = (obj = {}) => {
   };
 };
 
-export const StorageMetadata = [
-  {
-    name: 'data',
-    chainId: '0x1',
+export const StorageMetadata: FileMetadata[] = [];
+
+SUPPORTED_CHAIN_IDS.forEach((chainId) => {
+  const data = {
+    name: `${chainId}_data`,
+    chainId,
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-  },
-  {
-    name: 'blob',
-    chainId: '0x1',
+  };
+  const blob = {
+    name: `${chainId}_blob`,
+    chainId,
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-  },
-];
+  };
+  StorageMetadata.push(data, blob);
+});
 
 export const simpleStorageBackend = buildStorageBackend();
 
@@ -54,28 +57,35 @@ export const storageBackendReturningData = buildStorageBackend({
     Promise.resolve(DUMMY_ARRAY_BUFFER_DATA),
 });
 
-export const VERSION_INFO = [
-  {
-    name: 'blob',
-    chainId: '0x1',
-    version: '1.0.0',
-    checksum:
-      '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-    signature:
-      '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
-    filePath: 'blob',
-  },
-  {
-    name: 'data',
-    chainId: '0x1',
-    version: '1.0.3',
-    checksum:
-      '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
-    signature:
-      '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
-    filePath: 'data',
-  },
-];
+export const VERSION_INFO: (FileMetadata & {
+  signature: string;
+  filePath: string;
+})[] = [];
+
+SUPPORTED_CHAIN_IDS.forEach((chainId) => {
+  VERSION_INFO.push(
+    {
+      name: `${chainId}_blob`,
+      chainId,
+      version: '1.0.0',
+      checksum:
+        '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+      signature:
+        '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
+      filePath: `${chainId}_blob`,
+    },
+    {
+      name: `${chainId}_blob`,
+      chainId,
+      version: '1.0.3',
+      checksum:
+        '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+      signature:
+        '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
+      filePath: `${chainId}_data`,
+    },
+  );
+});
 
 const PPOM_VERSION_PATH = 'https://ppom_cdn_base_url/ppom_version.json';
 

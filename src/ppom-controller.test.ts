@@ -195,7 +195,7 @@ describe('PPOMController', () => {
       }).rejects.toThrow('User has securityAlertsEnabled set to false');
     });
 
-    it('should throw error if the user is not on ethereum mainnet', async () => {
+    it('should throw error if the user is not on supported chain id', async () => {
       buildFetchSpy();
       ppomController = buildPPOMController({
         chainId: '0x2',
@@ -206,7 +206,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow(
-        'Blockaid validation is available only on ethereum mainnet',
+        'Blockaid validation is not available on selected network',
       );
     });
 
@@ -460,7 +460,7 @@ describe('PPOMController', () => {
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(13);
+      expect(spy).toHaveBeenCalledTimes(12);
     });
 
     it('should not re-throw error if file write fails', async () => {
@@ -493,7 +493,7 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(6);
       jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(10);
     });
 
     it('should delete network more than a week old from chainStatus', async () => {
@@ -638,11 +638,14 @@ describe('PPOMController', () => {
       jest.useFakeTimers().setSystemTime(new Date('2023-01-04'));
       callBack({ providerConfig: { chainId: '0x6' } });
 
-      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
+      jest.useFakeTimers().setSystemTime(new Date('2023-01-04'));
+      callBack({ providerConfig: { chainId: '0x8' } });
+
+      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(6);
 
       jest.useFakeTimers().setSystemTime(new Date('2023-01-06'));
       callBack({ providerConfig: { chainId: '0x7' } });
-      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(5);
+      expect(Object.keys(ppomController.state.chainStatus)).toHaveLength(6);
 
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
     });
