@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.14.0]
-### Uncategorized
+### Changed
 - Add code changes to handle memory corruption ([#105](https://github.com/MetaMask/ppom-validator/pull/105))
 
 ## [0.13.0]
