@@ -1,5 +1,6 @@
 import {
   PPOMClass,
+  StorageMetadata,
   VERSION_INFO,
   buildDummyResponse,
   buildFetchSpy,
@@ -238,7 +239,7 @@ describe('PPOMController', () => {
       ppomController = buildPPOMController();
       jest.runAllTicks();
       await flushPromises();
-      expect(spyEmptyResponse).toHaveBeenCalledTimes(3);
+      expect(spyEmptyResponse).toHaveBeenCalledTimes(4);
 
       buildFetchSpy();
 
@@ -320,6 +321,9 @@ describe('PPOMController', () => {
             throw new Error('not found');
           },
         }),
+        state: {
+          storageMetadata: StorageMetadata,
+        },
       });
       jest.runOnlyPendingTimers();
       await flushPromises();
@@ -473,7 +477,7 @@ describe('PPOMController', () => {
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(8);
+      expect(spy).toHaveBeenCalledTimes(10);
     });
 
     it('should decrease scheduleInterval if its set very high', async () => {

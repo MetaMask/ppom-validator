@@ -28,6 +28,23 @@ export const buildStorageBackend = (obj = {}) => {
   };
 };
 
+export const StorageMetadata = [
+  {
+    name: 'data',
+    chainId: '0x1',
+    version: '1.0.3',
+    checksum:
+      '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+  },
+  {
+    name: 'blob',
+    chainId: '0x1',
+    version: '1.0.0',
+    checksum:
+      '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+  },
+];
+
 export const simpleStorageBackend = buildStorageBackend();
 
 export const DUMMY_ARRAY_BUFFER_DATA = new ArrayBuffer(123);
