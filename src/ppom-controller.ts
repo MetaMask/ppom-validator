@@ -550,7 +550,7 @@ export class PPOMController extends BaseControllerV2<
    * if needed will re-initialise PPOM passing new network files to it.
    */
   async #reinitPPOMForNetworkIfRequired(): Promise<void> {
-    if (!this.#ppom || this.#isDataRequiredForCurrentChain()) {
+    if (this.#isDataRequiredForCurrentChain() || this.#ppom === undefined) {
       await this.#getNewFilesForChain(this.#chainId);
     }
   }
