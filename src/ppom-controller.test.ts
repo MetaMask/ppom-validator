@@ -239,7 +239,7 @@ describe('PPOMController', () => {
       ppomController = buildPPOMController();
       jest.runAllTicks();
       await flushPromises();
-      expect(spyEmptyResponse).toHaveBeenCalledTimes(4);
+      expect(spyEmptyResponse).toHaveBeenCalledTimes(2);
 
       buildFetchSpy();
 
@@ -729,7 +729,7 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(5);
     });
 
-    it('should not throw error is initialisation fails', async () => {
+    it('should not throw error if initialisation fails', async () => {
       buildFetchSpy(undefined, undefined, 123);
       let callBack: any;
       ppomController = buildPPOMController({
@@ -748,6 +748,33 @@ describe('PPOMController', () => {
         jest.advanceTimersByTime(REFRESH_TIME_INTERVAL);
         jest.runOnlyPendingTimers();
         await flushPromises();
+      }).not.toThrow();
+    });
+
+    it('should not throw error if resetting ppom fails', async () => {
+      buildFetchSpy(undefined, undefined, 123);
+      let callBack: any;
+      const freeMock = jest.fn().mockImplementation(() => {
+        throw new Error('some error');
+      });
+      ppomController = buildPPOMController({
+        onPreferencesChange: (func: any) => {
+          callBack = func;
+        },
+        ppomProvider: {
+          ppomInit: async () => {
+            return Promise.resolve('123');
+          },
+          PPOM: new PPOMClass(undefined, freeMock),
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      buildFetchSpy({
+        status: 500,
+      });
+      expect(async () => {
+        callBack({ securityAlertsEnabled: false });
       }).not.toThrow();
     });
   });

@@ -77,9 +77,6 @@ type ChainInfo = {
 
 type ChainType = Record<string, ChainInfo>;
 
-type SingleFile = [string, Uint8Array | undefined] | undefined;
-type FileArray = SingleFile[];
-
 /**
  * @type PPOMState
  *
@@ -321,7 +318,7 @@ export class PPOMController extends BaseControllerV2<
     if (securityAlertsEnabled) {
       this.#updateVersionInfo()
         .then(async () => {
-          await this.#getNewFilesForChain(ETHEREUM_CHAIN_ID);
+          await this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID);
           // start scheduled task to fetch data files
           this.#checkScheduleFileDownloadForAllChains();
         })
@@ -363,13 +360,7 @@ export class PPOMController extends BaseControllerV2<
     if (!this.#networkIsSupported(this.#chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
-
-    await this.#reinitPPOMForNetworkIfRequired();
-    if (this.#ppomInitError) {
-      const errorText = this.#ppomInitError;
-      this.#ppomInitError = undefined;
-      throw Error(errorText);
-    }
+    await this.#reinitPPOMForChainIfRequired(this.#chainId);
 
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
@@ -435,7 +426,9 @@ export class PPOMController extends BaseControllerV2<
    * 3. clears version information of data files
    */
   #resetToInactiveState() {
-    this.#resetPPOM();
+    this.#resetPPOM().catch((error: Error) => {
+      console.error(`Error in resetting ppom: ${error.message}`);
+    });
     this.#clearDataFetchIntervals();
     this.update((draftState) => {
       draftState.versionInfo = [];
@@ -493,8 +486,8 @@ export class PPOMController extends BaseControllerV2<
     if (blockaidEnabled) {
       this.#updateVersionInfo()
         .then(async () => {
+          await this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID);
           this.#checkScheduleFileDownloadForAllChains();
-          await this.#getNewFilesForChain(ETHEREUM_CHAIN_ID);
         })
         .catch((error: Error) => {
           console.error(`Error in initialising: ${error.message}`);
@@ -528,31 +521,21 @@ export class PPOMController extends BaseControllerV2<
   /*
    * The function resets PPOM.
    */
-  #resetPPOM(): void {
+  async #resetPPOM(): Promise<void> {
     if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
+      await this.#ppomMutex.use(async () => {
+        this.#ppom.free();
+        this.#ppom = undefined;
+      });
     }
   }
 
   /*
    * The function initialises PPOM.
    */
-  async #reinitPPOM(chainId: string, files?: FileArray): Promise<void> {
-    this.#resetPPOM();
-    this.#ppom = await this.#getPPOM(chainId, files);
-  }
-
-  /**
-   * Conditionally update the ppom configuration.
-   *
-   * The function will check if files are required to be downloaded and
-   * if needed will re-initialise PPOM passing new network files to it.
-   */
-  async #reinitPPOMForNetworkIfRequired(): Promise<void> {
-    if (this.#isDataRequiredForCurrentChain() || this.#ppom === undefined) {
-      await this.#getNewFilesForChain(this.#chainId);
-    }
+  async #reinitPPOM(chainId: string): Promise<void> {
+    await this.#resetPPOM();
+    await this.#getPPOM(chainId);
   }
 
   /*
@@ -617,6 +600,28 @@ export class PPOMController extends BaseControllerV2<
     }
   }
 
+  async #getAllFiles(versionInfo: PPOMVersionResponse) {
+    const files = await Promise.all(
+      versionInfo.map(async (file) => {
+        let data: ArrayBuffer | undefined;
+        try {
+          data = await this.#getFile(file);
+        } catch (exp: unknown) {
+          console.error(
+            `Error in getting file ${file.filePath}: ${(exp as Error).message}`,
+          );
+        }
+        if (data) {
+          return [file.name, new Uint8Array(data)];
+        }
+        return undefined;
+      }),
+    );
+    return files?.filter(
+      (data: (string | Uint8Array)[] | undefined) => data?.[1] !== undefined,
+    );
+  }
+
   /*
    * Gets a single file from CDN and write to the storage.
    */
@@ -650,10 +655,14 @@ export class PPOMController extends BaseControllerV2<
       fileVersionInfo.filePath,
     );
 
-    await this.#storage.writeFile({
-      data: fileData,
-      ...fileVersionInfo,
-    });
+    try {
+      await this.#storage.writeFile({
+        data: fileData,
+        ...fileVersionInfo,
+      });
+    } catch (error: unknown) {
+      console.error(`Error in writing file: ${(error as Error).message}`);
+    }
 
     return fileData;
   }
@@ -683,34 +692,13 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * Fetches new files for current network and save them to storage.
-   * The function is invoked if user if attempting transaction for current network,
-   * for which data is not previously fetched.
+   * The function will initialise PPOM for the network if required.
    */
-  async #getNewFilesForChain(chainId: string): Promise<void> {
-    const versionInfoForCurrentChain = this.state.versionInfo.filter(
-      ({ chainId: id }) => id === chainId,
-    );
-    let files: FileArray = await Promise.all(
-      versionInfoForCurrentChain.map(async (fileVersionInfo) => {
-        let data: ArrayBuffer | undefined;
-        try {
-          data = await this.#getFile(fileVersionInfo);
-        } catch (exp: unknown) {
-          console.error(
-            `Error in getting file ${fileVersionInfo.filePath}: ${
-              (exp as Error).message
-            }`,
-          );
-        }
-        return [fileVersionInfo.name, data ? new Uint8Array(data) : undefined];
-      }),
-    );
-    files = files.filter((data: SingleFile) => data?.[1] !== undefined);
-
-    await this.#setChainIdDataFetched(chainId);
-
-    await this.#reinitPPOM(chainId, files);
+  async #reinitPPOMForChainIfRequired(chainId: string): Promise<void> {
+    if (this.#isDataRequiredForCurrentChain() || this.#ppom === undefined) {
+      await this.#reinitPPOM(chainId);
+      await this.#setChainIdDataFetched(chainId);
+    }
   }
 
   /*
@@ -992,64 +980,37 @@ export class PPOMController extends BaseControllerV2<
    *
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
-  async #getPPOM(chainId: string, newFiles?: FileArray): Promise<any> {
-    try {
-      let files: FileArray;
-      this.#ppomInitError = undefined;
-      // For some reason ppom initialisation in contrructor fails for react native
-      // thus it is added here to prevent validation from failing.
-      await this.#initialisePPOM();
-      const { chainStatus } = this.state;
-      const versionInfo =
-        chainStatus[chainId]?.versionInfo ??
-        this.state.versionInfo.filter(({ chainId: id }) => id === chainId);
-      if (!versionInfo?.length) {
-        this.#ppomInitError = `Aborting validation as no files are found for the network with chainId: ${chainId}`;
-        return undefined;
-      }
-      if (newFiles?.length) {
-        files = newFiles;
-      } else {
-        // Get all the files for  the chainId
-        files = await Promise.all(
-          versionInfo.map(async (file) => {
-            let data: ArrayBuffer | undefined;
-            try {
-              data = await this.#getFile(file);
-            } catch (exp: unknown) {
-              console.error(
-                `Error in getting file ${file.filePath}: ${
-                  (exp as Error).message
-                }`,
-              );
-            }
-            if (data) {
-              return [file.name, new Uint8Array(data)];
-            }
-            return undefined;
-          }),
-        );
-      }
+  async #getPPOM(chainId: string): Promise<any> {
+    // For some reason ppom initialisation in contrructor fails for react native
+    // thus it is added here to prevent validation from failing.
+    await this.#initialisePPOM();
+    const { chainStatus } = this.state;
+    const versionInfo = chainStatus[chainId]?.versionInfo?.length
+      ? chainStatus[chainId]?.versionInfo
+      : this.state.versionInfo.filter(({ chainId: id }) => id === chainId);
 
-      files = files?.filter((data: SingleFile) => data?.[1] !== undefined);
-
-      // The following code throw error if no data files are found for the chainId.
-      // This check has been put in place after suggestion of security team.
-      // If we want to disable ppom validation on all instances of Metamask,
-      // this can be achieved by returning empty data from version file.
-      if (files?.length !== versionInfo?.length) {
-        this.#ppomInitError = `Aborting validation as not all files could not be downloaded for the network with chainId: ${chainId}`;
-        return undefined;
-      }
-
-      return await this.#ppomMutex.use(async () => {
-        const { PPOM } = this.#ppomProvider;
-        return PPOM.new(this.#jsonRpcRequest.bind(this), files);
-      });
-    } catch (error: any) {
-      this.#ppomInitError = error?.message;
-      return undefined;
+    if (versionInfo?.length === undefined || versionInfo?.length === 0) {
+      throw new Error(
+        `Aborting validation as no files are found for the network with chainId: ${chainId}`,
+      );
     }
+    // Get all the files for  the chainId
+    const files = await this.#getAllFiles(versionInfo);
+
+    // The following code throw error if no data files are found for the chainId.
+    // This check has been put in place after suggestion of security team.
+    // If we want to disable ppom validation on all instances of Metamask,
+    // this can be achieved by returning empty data from version file.
+    if (files?.length !== versionInfo?.length) {
+      throw new Error(
+        `Aborting validation as not all files could not be downloaded for the network with chainId: ${chainId}`,
+      );
+    }
+
+    return await this.#ppomMutex.use(async () => {
+      const { PPOM } = this.#ppomProvider;
+      this.#ppom = PPOM.new(this.#jsonRpcRequest.bind(this), files);
+    });
   }
 
   /**
