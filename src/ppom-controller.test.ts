@@ -222,7 +222,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow(
-        'Aborting validation as no files are found for the network with chainId: 0x1',
+        'Aborting initialising PPOM as no files are found for the network with chainId: 0x1',
       );
     });
 
@@ -239,7 +239,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow(
-        'Aborting validation as no files are found for the network with chainId: 0x1',
+        'Aborting initialising PPOM as no files are found for the network with chainId: 0x1',
       );
     });
 
@@ -255,7 +255,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow(
-        'Aborting validation as not all files could not be downloaded for the network with chainId: 0x1',
+        'Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: 0x1',
       );
     });
 
@@ -281,7 +281,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow(
-        'Aborting validation as not all files could not be downloaded for the network with chainId: 0x1',
+        'Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: 0x1',
       );
     });
 
@@ -343,7 +343,7 @@ describe('PPOMController', () => {
           return Promise.resolve();
         });
       }).rejects.toThrow(
-        'Aborting validation as not all files could not be downloaded for the network with chainId: 0x1',
+        'Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: 0x1',
       );
     });
   });

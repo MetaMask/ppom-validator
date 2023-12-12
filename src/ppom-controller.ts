@@ -986,7 +986,7 @@ export class PPOMController extends BaseControllerV2<
 
     if (versionInfo?.length === undefined || versionInfo?.length === 0) {
       throw new Error(
-        `Aborting validation as no files are found for the network with chainId: ${chainId}`,
+        `Aborting initialising PPOM as no files are found for the network with chainId: ${chainId}`,
       );
     }
     // Get all the files for  the chainId
@@ -998,7 +998,7 @@ export class PPOMController extends BaseControllerV2<
     // this can be achieved by returning empty data from version file.
     if (files?.length !== versionInfo?.length) {
       throw new Error(
-        `Aborting validation as not all files could not be downloaded for the network with chainId: ${chainId}`,
+        `Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: ${chainId}`,
       );
     }
 
