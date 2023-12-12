@@ -203,7 +203,7 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
-  #ppomInitialisationCallback: (() => void) | undefined;
+  #ppomInitialisationCallback: ((status?: string) => void) | undefined;
 
   /**
    * Creates a PPOMController instance.
@@ -316,19 +316,14 @@ export class PPOMController extends BaseControllerV2<
     this.#registerMessageHandlers();
 
     if (securityAlertsEnabled) {
-      this.#updateVersionInfo()
+      this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
         .then(async () => {
-          await this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID);
-          // start scheduled task to fetch data files
+          this.#ppomInitialisationCallback?.('SUCCESS');
           this.#checkScheduleFileDownloadForAllChains();
         })
         .catch((error: Error) => {
-          console.error(`Error in initialising: ${error.message}`);
-        })
-        .finally(() => {
-          if (this.#ppomInitialisationCallback) {
-            this.#ppomInitialisationCallback();
-          }
+          this.#ppomInitialisationCallback?.('FAILURE');
+          console.error(`Error in initialising ppom: ${error.message}`);
         });
     }
   }
@@ -484,18 +479,14 @@ export class PPOMController extends BaseControllerV2<
     }
     this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
-      this.#updateVersionInfo()
+      this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
         .then(async () => {
-          await this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID);
+          this.#ppomInitialisationCallback?.('SUCCESS');
           this.#checkScheduleFileDownloadForAllChains();
         })
         .catch((error: Error) => {
-          console.error(`Error in initialising: ${error.message}`);
-        })
-        .finally(() => {
-          if (this.#ppomInitialisationCallback) {
-            this.#ppomInitialisationCallback();
-          }
+          this.#ppomInitialisationCallback?.('FAILURE');
+          console.error(`Error in initialising ppom: ${error.message}`);
         });
     } else {
       this.#resetToInactiveState();
@@ -985,9 +976,13 @@ export class PPOMController extends BaseControllerV2<
     // thus it is added here to prevent validation from failing.
     await this.#initialisePPOM();
     const { chainStatus } = this.state;
-    const versionInfo = chainStatus[chainId]?.versionInfo?.length
-      ? chainStatus[chainId]?.versionInfo
-      : this.state.versionInfo.filter(({ chainId: id }) => id === chainId);
+    let versionInfo = chainStatus[chainId]?.versionInfo;
+    if (!versionInfo?.length) {
+      await this.#updateVersionInfo();
+      versionInfo = this.state.versionInfo.filter(
+        ({ chainId: id }) => id === chainId,
+      );
+    }
 
     if (versionInfo?.length === undefined || versionInfo?.length === 0) {
       throw new Error(
