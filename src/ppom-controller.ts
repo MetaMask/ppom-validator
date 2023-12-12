@@ -203,7 +203,7 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
-  #ppomInitialisationCallback: ((status?: string) => void) | undefined;
+  #ppomInitialisationCallback: ((status: string) => void) | undefined;
 
   /**
    * Creates a PPOMController instance.
