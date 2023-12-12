@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.15.0]
-### Uncategorized
-- Cleanup and refactor method to get all files for a network, add status to preference change callback ([#107](https://github.com/MetaMask/ppom-validator/pull/107))
+### Changed
+- Cleanup and refactor method to get all files for a network ([#107](https://github.com/MetaMask/ppom-validator/pull/107))
 
 ## [0.14.0]
 ### Changed
