@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0]
+### Uncategorized
+- Cleanup and refactor method to get all files for a network, add status to preference change callback ([#107](https://github.com/MetaMask/ppom-validator/pull/107))
+
 ## [0.14.0]
 ### Changed
 - Add code changes to handle memory corruption ([#105](https://github.com/MetaMask/ppom-validator/pull/105))
@@ -95,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/MetaMask/ppom-validator/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/MetaMask/ppom-validator/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/MetaMask/ppom-validator/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/MetaMask/ppom-validator/compare/v0.11.0...v0.12.0
