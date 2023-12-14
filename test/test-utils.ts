@@ -1,7 +1,11 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
 
-import { PPOMController } from '../src/ppom-controller';
+import {
+  PPOMController,
+  PPOMControllerActions,
+  PPOMControllerEvents,
+} from '../src/ppom-controller';
 import { StorageKey } from '../src/ppom-storage';
 
 export const buildDummyResponse = (
@@ -175,14 +179,17 @@ export class PPOMClass {
 }
 
 export const buildPPOMController = (args?: any) => {
-  const controllerMessenger = new ControllerMessenger();
+  const controllerMessenger: ControllerMessenger<
+    PPOMControllerActions,
+    PPOMControllerEvents
+  > = new ControllerMessenger();
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,
     provider: () => undefined,
     chainId: '0x1',
-    onNetworkChange: () => undefined,
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
+      allowedEvents: ['NetworkController:stateChange'],
     }),
     securityAlertsEnabled: true,
     onPreferencesChange: () => undefined,
@@ -194,7 +201,7 @@ export const buildPPOMController = (args?: any) => {
     cdnBaseUrl: 'ppom_cdn_base_url',
     ...args,
   });
-  return ppomController;
+  return { controllerMessenger, ppomController };
 };
 
 // eslint-disable-next-line jsdoc/require-jsdoc
