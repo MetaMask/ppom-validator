@@ -819,7 +819,7 @@ describe('PPOMController', () => {
   });
 
   describe('initialisePPOM', () => {
-    it('should invoke ppomInitialisationCallback once initialisation is complete', async () => {
+    it('should publich initialisationStateChange events to the messenger', async () => {
       buildFetchSpy();
       let callBack: any;
       const ppomInitialisationCallbackMock = jest.fn();
@@ -846,7 +846,7 @@ describe('PPOMController', () => {
       callBack({ securityAlertsEnabled: true });
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(2);
+      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(3);
     });
   });
 });

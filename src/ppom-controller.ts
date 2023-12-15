@@ -415,6 +415,10 @@ export class PPOMController extends BaseControllerV2<
   }
 
   #setToActiveState() {
+    this.messagingSystem.publish(
+      'PPOMController:initialisationStateChangeEvent',
+      'INPROGRESS',
+    );
     this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
       .then(async () => {
         this.messagingSystem.publish(
