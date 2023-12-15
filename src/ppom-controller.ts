@@ -428,7 +428,7 @@ export class PPOMController extends BaseControllerV2<
       .then(async () => {
         this.messagingSystem.publish(
           'PPOMController:initialisationStateChangeEvent',
-          PPOMInitialisationStatus.FAIL,
+          PPOMInitialisationStatus.SUCCESS,
         );
         this.#checkScheduleFileDownloadForAllChains();
       })
@@ -544,12 +544,12 @@ export class PPOMController extends BaseControllerV2<
    * The function resets PPOM.
    */
   async #resetPPOM(): Promise<void> {
-    if (this.#ppom) {
-      await this.#ppomMutex.use(async () => {
+    await this.#ppomMutex.use(async () => {
+      if (this.#ppom) {
         this.#ppom.free();
         this.#ppom = undefined;
-      });
-    }
+      }
+    });
   }
 
   /*
