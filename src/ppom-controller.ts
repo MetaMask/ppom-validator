@@ -124,17 +124,22 @@ export type UpdatePPOM = {
   handler: () => void;
 };
 
-export type PPOMInitialisationStatus =
-  | 'INACTIVE'
-  | 'INPROGRESS'
-  | 'SUCCESS'
-  | 'FAIL';
+export type PPOMInitialisationStatusType = 'INPROGRESS' | 'SUCCESS' | 'FAIL';
+
+export const PPOMInitialisationStatus: Record<
+  PPOMInitialisationStatusType,
+  PPOMInitialisationStatusType
+> = {
+  INPROGRESS: 'INPROGRESS',
+  SUCCESS: 'SUCCESS',
+  FAIL: 'FAIL',
+};
 
 export type PPOMControllerActions = UsePPOM | UpdatePPOM;
 
 export type PPOMControllerInitialisationStateChangeEvent = {
   type: 'PPOMController:initialisationStateChangeEvent';
-  payload: [PPOMInitialisationStatus];
+  payload: [PPOMInitialisationStatusType];
 };
 
 export type PPOMControllerEvents =
@@ -417,20 +422,20 @@ export class PPOMController extends BaseControllerV2<
   #setToActiveState() {
     this.messagingSystem.publish(
       'PPOMController:initialisationStateChangeEvent',
-      'INPROGRESS',
+      PPOMInitialisationStatus.INPROGRESS,
     );
     this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
       .then(async () => {
         this.messagingSystem.publish(
           'PPOMController:initialisationStateChangeEvent',
-          'SUCCESS',
+          PPOMInitialisationStatus.FAIL,
         );
         this.#checkScheduleFileDownloadForAllChains();
       })
       .catch((error: Error) => {
         this.messagingSystem.publish(
           'PPOMController:initialisationStateChangeEvent',
-          'FAIL',
+          PPOMInitialisationStatus.FAIL,
         );
         console.error(`Error in initialising ppom: ${error.message}`);
       });
