@@ -3,6 +3,7 @@ import {
   RestrictedControllerMessenger,
 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
+import { NetworkControllerStateChangeEvent } from '@metamask/network-controller';
 import { Mutex } from 'await-semaphore';
 
 import {
@@ -123,14 +124,35 @@ export type UpdatePPOM = {
   handler: () => void;
 };
 
+export type PPOMInitialisationStatusType = 'INPROGRESS' | 'SUCCESS' | 'FAIL';
+
+export const PPOMInitialisationStatus: Record<
+  PPOMInitialisationStatusType,
+  PPOMInitialisationStatusType
+> = {
+  INPROGRESS: 'INPROGRESS',
+  SUCCESS: 'SUCCESS',
+  FAIL: 'FAIL',
+};
+
 export type PPOMControllerActions = UsePPOM | UpdatePPOM;
+
+export type PPOMControllerInitialisationStateChangeEvent = {
+  type: 'PPOMController:initialisationStateChangeEvent';
+  payload: [PPOMInitialisationStatusType];
+};
+
+export type PPOMControllerEvents =
+  | PPOMControllerInitialisationStateChangeEvent
+  | NetworkControllerStateChangeEvent;
 
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
   PPOMControllerActions,
+  | PPOMControllerInitialisationStateChangeEvent
+  | NetworkControllerStateChangeEvent,
   never,
-  never,
-  never
+  NetworkControllerStateChangeEvent['type']
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
@@ -203,15 +225,12 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
-  #ppomInitialisationCallback: ((status: string) => void) | undefined;
-
   /**
    * Creates a PPOMController instance.
    *
    * @param options - Constructor options.
    * @param options.chainId - ChainId of the selected network.
    * @param options.messenger - Controller messenger.
-   * @param options.onNetworkChange - Callback tobe invoked when network changes.
    * @param options.provider - The provider used to create the PPOM instance.
    * @param options.storageBackend - The storage backend to use for storing PPOM data.
    * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
@@ -223,13 +242,11 @@ export class PPOMController extends BaseControllerV2<
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
    * @param options.blockaidPublicKey - Public key of blockaid for verifying signatures of data files.
-   * @param options.ppomInitialisationCallback - Callback to be invoked as ppom initialisation completes.
    * @returns The PPOMController instance.
    */
   constructor({
     chainId,
     messenger,
-    onNetworkChange,
     provider,
     storageBackend,
     securityAlertsEnabled,
@@ -241,10 +258,8 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration,
     state,
     blockaidPublicKey,
-    ppomInitialisationCallback,
   }: {
     chainId: string;
-    onNetworkChange: (callback: (networkState: any) => void) => void;
     messenger: PPOMControllerMessenger;
     provider: any;
     storageBackend: StorageBackend;
@@ -257,7 +272,6 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration?: number;
     state?: PPOMState;
     blockaidPublicKey: string;
-    ppomInitialisationCallback?: () => undefined;
   }) {
     const currentChainId = addHexPrefix(chainId);
     const initialState = {
@@ -304,10 +318,6 @@ export class PPOMController extends BaseControllerV2<
         : fileFetchScheduleDuration;
     this.#securityAlertsEnabled = securityAlertsEnabled;
     this.#blockaidPublicKey = blockaidPublicKey;
-    this.#ppomInitialisationCallback = ppomInitialisationCallback;
-
-    // add new network to chainStatus list
-    onNetworkChange(this.#onNetworkChange.bind(this));
 
     // enable / disable PPOM validations as user changes preferences
     onPreferencesChange(this.#onPreferenceChange.bind(this));
@@ -315,16 +325,11 @@ export class PPOMController extends BaseControllerV2<
     // register message handlers
     this.#registerMessageHandlers();
 
+    // subscribe to events
+    this.#subscribeMessageEvents();
+
     if (securityAlertsEnabled) {
-      this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
-        .then(async () => {
-          this.#ppomInitialisationCallback?.('SUCCESS');
-          this.#checkScheduleFileDownloadForAllChains();
-        })
-        .catch((error: Error) => {
-          this.#ppomInitialisationCallback?.('FAILURE');
-          console.error(`Error in initialising ppom: ${error.message}`);
-        });
+      this.#setToActiveState();
     }
   }
 
@@ -414,6 +419,28 @@ export class PPOMController extends BaseControllerV2<
     this.#fileScheduleInterval = undefined;
   }
 
+  #setToActiveState() {
+    this.messagingSystem.publish(
+      'PPOMController:initialisationStateChangeEvent',
+      PPOMInitialisationStatus.INPROGRESS,
+    );
+    this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
+      .then(async () => {
+        this.messagingSystem.publish(
+          'PPOMController:initialisationStateChangeEvent',
+          PPOMInitialisationStatus.SUCCESS,
+        );
+        this.#checkScheduleFileDownloadForAllChains();
+      })
+      .catch((error: Error) => {
+        this.messagingSystem.publish(
+          'PPOMController:initialisationStateChangeEvent',
+          PPOMInitialisationStatus.FAIL,
+        );
+        console.error(`Error in initialising ppom: ${error.message}`);
+      });
+  }
+
   /*
    * The function resets the controller to inactiva state
    * 1. reset the PPOM
@@ -479,15 +506,7 @@ export class PPOMController extends BaseControllerV2<
     }
     this.#securityAlertsEnabled = blockaidEnabled;
     if (blockaidEnabled) {
-      this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
-        .then(async () => {
-          this.#ppomInitialisationCallback?.('SUCCESS');
-          this.#checkScheduleFileDownloadForAllChains();
-        })
-        .catch((error: Error) => {
-          this.#ppomInitialisationCallback?.('FAILURE');
-          console.error(`Error in initialising ppom: ${error.message}`);
-        });
+      this.#setToActiveState();
     } else {
       this.#resetToInactiveState();
     }
@@ -510,15 +529,27 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
+   * Constructor helper for registering this controller's messaging system
+   * actions.
+   */
+  #subscribeMessageEvents(): void {
+    const onNetworkChange = this.#onNetworkChange.bind(this);
+    this.messagingSystem.subscribe(
+      'NetworkController:stateChange',
+      onNetworkChange,
+    );
+  }
+
+  /*
    * The function resets PPOM.
    */
   async #resetPPOM(): Promise<void> {
-    if (this.#ppom) {
-      await this.#ppomMutex.use(async () => {
+    await this.#ppomMutex.use(async () => {
+      if (this.#ppom) {
         this.#ppom.free();
         this.#ppom = undefined;
-      });
-    }
+      }
+    });
   }
 
   /*
