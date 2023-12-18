@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0]
+### Changed
+- Fix use of messenger in PPOMController ([#110](https://github.com/MetaMask/ppom-validator/pull/110))
+
 ## [0.15.0]
 ### Changed
 - Cleanup and refactor method to get all files for a network ([#107](https://github.com/MetaMask/ppom-validator/pull/107))
@@ -99,7 +103,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.16.0...HEAD
+[0.16.0]: https://github.com/MetaMask/ppom-validator/compare/v0.15.0...v0.16.0
 [0.15.0]: https://github.com/MetaMask/ppom-validator/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/MetaMask/ppom-validator/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/MetaMask/ppom-validator/compare/v0.12.0...v0.13.0
