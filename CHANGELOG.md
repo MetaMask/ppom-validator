@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.16.0]
-### Uncategorized
+### Changed
 - Fix use of messenger in PPOMController ([#110](https://github.com/MetaMask/ppom-validator/pull/110))
 
 ## [0.15.0]
