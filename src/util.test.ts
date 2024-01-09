@@ -1,4 +1,3 @@
-import crypto from 'crypto';
 import fs from 'fs';
 
 import { addHexPrefix, constructURLHref, validateSignature } from './util';
@@ -10,9 +9,9 @@ const CORRECT_SIGNATURE =
 const INCORRECT_SIGNATURE =
   '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c123';
 
-// eslint-disable-next-line @typescript-eslint/no-shadow
 Object.defineProperty(globalThis, 'crypto', {
-  value: crypto.webcrypto,
+  // eslint-disable-next-line
+  value: require('crypto').webcrypto,
   writable: true,
 });
 
