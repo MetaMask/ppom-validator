@@ -31,7 +31,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
-    "@metamask/base-controller": "^3.0.0",
+    "@metamask/base-controller": "^4.0.1",
     "@metamask/controller-utils": "^8.0.1",
     "@metamask/network-controller": "^17.0.0",
     "await-semaphore": "^0.1.3",
