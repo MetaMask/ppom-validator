@@ -4,7 +4,8 @@ import {
   simpleStorageBackend,
   storageBackendReturningData,
 } from '../test/test-utils';
-import { PPOMStorage, StorageKey } from './ppom-storage';
+import type { StorageKey } from './ppom-storage';
+import { PPOMStorage } from './ppom-storage';
 
 const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
 const DUMMY_NAME = 'DUMMY_NAME';
