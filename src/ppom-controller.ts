@@ -1,17 +1,15 @@
-import {
-  BaseControllerV2,
-  RestrictedControllerMessenger,
-} from '@metamask/base-controller';
+import type { RestrictedControllerMessenger } from '@metamask/base-controller';
+import { BaseControllerV2 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
-import { NetworkControllerStateChangeEvent } from '@metamask/network-controller';
+import type { NetworkControllerStateChangeEvent } from '@metamask/network-controller';
 import { Mutex } from 'await-semaphore';
 
-import {
+import type {
   StorageBackend,
-  PPOMStorage,
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
+import { PPOMStorage } from './ppom-storage';
 import {
   IdGenerator,
   PROVIDER_ERRORS,
@@ -351,9 +349,9 @@ export class PPOMController extends BaseControllerV2<
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(
-    callback: (ppom: any) => Promise<T>,
-  ): Promise<T & { providerRequestsCount: Record<string, number> }> {
+  async usePPOM<Type>(
+    callback: (ppom: any) => Promise<Type>,
+  ): Promise<Type & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }

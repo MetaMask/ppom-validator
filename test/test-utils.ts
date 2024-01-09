@@ -1,12 +1,12 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
 
-import {
-  PPOMController,
+import type {
   PPOMControllerActions,
   PPOMControllerEvents,
 } from '../src/ppom-controller';
-import { StorageKey } from '../src/ppom-storage';
+import { PPOMController } from '../src/ppom-controller';
+import type { StorageKey } from '../src/ppom-storage';
 
 export const buildDummyResponse = (
   resultType = 'DUMMY_RESULT_TYPE',
