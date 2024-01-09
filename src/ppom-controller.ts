@@ -1,16 +1,15 @@
-import {
-  BaseControllerV2,
-  RestrictedControllerMessenger,
-} from '@metamask/base-controller';
+import type { RestrictedControllerMessenger } from '@metamask/base-controller';
+import { BaseControllerV2 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
+import type { NetworkControllerStateChangeEvent } from '@metamask/network-controller';
 import { Mutex } from 'await-semaphore';
 
-import {
+import type {
   StorageBackend,
-  PPOMStorage,
   FileMetadataList,
   FileMetadata,
 } from './ppom-storage';
+import { PPOMStorage } from './ppom-storage';
 import {
   IdGenerator,
   PROVIDER_ERRORS,
@@ -21,7 +20,6 @@ import {
 } from './util';
 
 export const REFRESH_TIME_INTERVAL = 1000 * 60 * 60 * 2;
-
 const PROVIDER_REQUEST_LIMIT = 300;
 const FILE_FETCH_SCHEDULE_INTERVAL = 1000 * 60 * 5;
 export const NETWORK_CACHE_DURATION = 1000 * 60 * 60 * 24 * 7;
@@ -61,7 +59,7 @@ const ETHEREUM_CHAIN_ID = '0x1';
  */
 type PPOMFileVersion = FileMetadata & {
   filePath: string;
-  signature: string;
+  hashSignature: string;
 };
 
 /**
@@ -69,14 +67,14 @@ type PPOMFileVersion = FileMetadata & {
  */
 type PPOMVersionResponse = PPOMFileVersion[];
 
-type ChainType = Record<
-  string,
-  {
-    chainId: string;
-    lastVisited: number;
-    dataFetched: boolean;
-  }
->;
+type ChainInfo = {
+  chainId: string;
+  lastVisited: number;
+  dataFetched: boolean;
+  versionInfo: PPOMVersionResponse;
+};
+
+type ChainType = Record<string, ChainInfo>;
 
 /**
  * @type PPOMState
@@ -124,14 +122,35 @@ export type UpdatePPOM = {
   handler: () => void;
 };
 
+export type PPOMInitialisationStatusType = 'INPROGRESS' | 'SUCCESS' | 'FAIL';
+
+export const PPOMInitialisationStatus: Record<
+  PPOMInitialisationStatusType,
+  PPOMInitialisationStatusType
+> = {
+  INPROGRESS: 'INPROGRESS',
+  SUCCESS: 'SUCCESS',
+  FAIL: 'FAIL',
+};
+
 export type PPOMControllerActions = UsePPOM | UpdatePPOM;
+
+export type PPOMControllerInitialisationStateChangeEvent = {
+  type: 'PPOMController:initialisationStateChangeEvent';
+  payload: [PPOMInitialisationStatusType];
+};
+
+export type PPOMControllerEvents =
+  | PPOMControllerInitialisationStateChangeEvent
+  | NetworkControllerStateChangeEvent;
 
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
   PPOMControllerActions,
+  | PPOMControllerInitialisationStateChangeEvent
+  | NetworkControllerStateChangeEvent,
   never,
-  never,
-  never
+  NetworkControllerStateChangeEvent['type']
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
@@ -157,6 +176,8 @@ export class PPOMController extends BaseControllerV2<
   PPOMControllerMessenger
 > {
   #ppom: any;
+
+  #ppomInitError: any;
 
   #provider: any;
 
@@ -195,7 +216,12 @@ export class PPOMController extends BaseControllerV2<
   // true if user has enabled preference for blockaid security check
   #securityAlertsEnabled: boolean;
 
+  // Map of count of each provider request call
+  #providerRequestsCount: Record<string, number> = {};
+
   #blockaidPublicKey: string;
+
+  #ppomInitialised = false;
 
   /**
    * Creates a PPOMController instance.
@@ -203,7 +229,6 @@ export class PPOMController extends BaseControllerV2<
    * @param options - Constructor options.
    * @param options.chainId - ChainId of the selected network.
    * @param options.messenger - Controller messenger.
-   * @param options.onNetworkChange - Callback tobe invoked when network changes.
    * @param options.provider - The provider used to create the PPOM instance.
    * @param options.storageBackend - The storage backend to use for storing PPOM data.
    * @param options.securityAlertsEnabled - True if user has enabled preference for blockaid security check.
@@ -214,13 +239,12 @@ export class PPOMController extends BaseControllerV2<
    * @param options.dataUpdateDuration - Duration after which data is fetched again.
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
-   * @param options.blockaidPublicKey - Public key of blcokaid for verifying signatures of data files.
+   * @param options.blockaidPublicKey - Public key of blockaid for verifying signatures of data files.
    * @returns The PPOMController instance.
    */
   constructor({
     chainId,
     messenger,
-    onNetworkChange,
     provider,
     storageBackend,
     securityAlertsEnabled,
@@ -234,7 +258,6 @@ export class PPOMController extends BaseControllerV2<
     blockaidPublicKey,
   }: {
     chainId: string;
-    onNetworkChange: (callback: (networkState: any) => void) => void;
     messenger: PPOMControllerMessenger;
     provider: any;
     storageBackend: StorageBackend;
@@ -257,8 +280,10 @@ export class PPOMController extends BaseControllerV2<
           chainId: currentChainId,
           lastVisited: new Date().getTime(),
           dataFetched: false,
+          versionInfo: [],
         },
       },
+      versionFileETag: state?.versionFileETag ?? '',
     };
     super({
       name: controllerName,
@@ -286,12 +311,11 @@ export class PPOMController extends BaseControllerV2<
     this.#providerRequestLimit = providerRequestLimit ?? PROVIDER_REQUEST_LIMIT;
     this.#dataUpdateDuration = dataUpdateDuration ?? REFRESH_TIME_INTERVAL;
     this.#fileFetchScheduleDuration =
-      fileFetchScheduleDuration ?? FILE_FETCH_SCHEDULE_INTERVAL;
+      fileFetchScheduleDuration === undefined
+        ? FILE_FETCH_SCHEDULE_INTERVAL
+        : fileFetchScheduleDuration;
     this.#securityAlertsEnabled = securityAlertsEnabled;
     this.#blockaidPublicKey = blockaidPublicKey;
-
-    // add new network to chainStatus list
-    onNetworkChange(this.#onNetworkChange.bind(this));
 
     // enable / disable PPOM validations as user changes preferences
     onPreferencesChange(this.#onPreferenceChange.bind(this));
@@ -299,33 +323,16 @@ export class PPOMController extends BaseControllerV2<
     // register message handlers
     this.#registerMessageHandlers();
 
-    // start scheduled task to fetch data files
-    this.#checkScheduleFileDownloadForAllChains();
-  }
+    // subscribe to events
+    this.#subscribeMessageEvents();
 
-  /*
-   * The function check if ethereum mainnet is in list of recent networks
-   */
-  #includesEthereumMainnet() {
-    return (
-      this.state?.chainStatus &&
-      Object.keys(this.state?.chainStatus)?.some(
-        (chainId: string) => chainId === ETHEREUM_CHAIN_ID,
-      )
-    );
-  }
-
-  /*
-   * Reset intervals for data fetching
-   */
-  #resetDataFetchIntervals() {
-    clearInterval(this.#refreshDataInterval);
-    clearInterval(this.#fileScheduleInterval);
+    if (securityAlertsEnabled) {
+      this.#setToActiveState();
+    }
   }
 
   /**
    * Update the PPOM.
-   * This function will acquire mutex lock and invoke internal method #updatePPOM.
    */
   async updatePPOM(): Promise<void> {
     if (!this.#securityAlertsEnabled) {
@@ -333,38 +340,134 @@ export class PPOMController extends BaseControllerV2<
     }
     // delete chains more than a week old
     this.#deleteOldChainIds();
-    if (!this.#includesEthereumMainnet()) {
-      this.#resetDataFetchIntervals();
-      return;
-    }
-
-    await this.#ppomMutex.use(async () => {
-      await this.#updatePPOM();
-    });
+    await this.#updatePPOM();
   }
 
   /**
    * Use the PPOM.
    * This function receives a callback that will be called with the PPOM.
-   * The callback will be called with the PPOM after it has been initialized.
    *
    * @param callback - Callback to be invoked with PPOM.
    */
-  async usePPOM<T>(callback: (ppom: any) => Promise<T>): Promise<T> {
+  async usePPOM<Type>(
+    callback: (ppom: any) => Promise<Type>,
+  ): Promise<Type & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
-    if (this.#chainId !== ETHEREUM_CHAIN_ID) {
+    if (!this.#networkIsSupported(this.#chainId)) {
       throw Error('Blockaid validation is available only on ethereum mainnet');
     }
-    return await this.#ppomMutex.use(async () => {
-      this.#resetPPOM();
-      await this.#maybeUpdatePPOM();
-      this.#ppom = await this.#getPPOM();
+    await this.#reinitPPOMForChainIfRequired(this.#chainId);
 
-      this.#providerRequests = 0;
-      return await callback(this.#ppom);
+    this.#providerRequests = 0;
+    this.#providerRequestsCount = {};
+    return await this.#ppomMutex.use(async () => {
+      const result = await callback(this.#ppom);
+
+      return {
+        ...result,
+        // we are destructuring the object below as this will be used outside the controller
+        // we want to avoid possibility of outside code changing an instance variable.
+        providerRequestsCount: { ...this.#providerRequestsCount },
+      };
     });
+  }
+
+  /*
+   * Initialise PPOM loading wasm file.
+   * This is done only if user has enabled preference for PPOM Validation.
+   * Initialisation is done as soon as controller is constructed
+   * or as user enables preference for blcokaid validation.
+   */
+  async #initialisePPOM() {
+    if (this.#securityAlertsEnabled && !this.#ppomInitialised) {
+      await this.#ppomMutex
+        .use(async () => {
+          const { ppomInit } = this.#ppomProvider;
+          await ppomInit('./ppom_bg.wasm');
+          this.#ppomInitialised = true;
+        })
+        .catch((error: Error) => {
+          console.error('Error in trying to initialize PPOM', error);
+          throw error;
+        });
+    }
+  }
+
+  /*
+   * The function check if ethereum chainId is supported for validation
+   * Currently it checks for only Ethereum Mainnet but it will include more networks in future.
+   */
+  #networkIsSupported(chainId: string) {
+    return chainId === ETHEREUM_CHAIN_ID;
+  }
+
+  /*
+   * Clear intervals for data fetching.
+   * This is done if data fetching is no longer needed.
+   * In cases like:
+   * 1. User disabled preference to validate request using Blockaid
+   * 2. There is not network in stats.chainStatus for which Blockaid validation is supported.
+   */
+  #clearDataFetchIntervals() {
+    clearInterval(this.#refreshDataInterval);
+    clearInterval(this.#fileScheduleInterval);
+    this.#refreshDataInterval = undefined;
+    this.#fileScheduleInterval = undefined;
+  }
+
+  #setToActiveState() {
+    this.messagingSystem.publish(
+      'PPOMController:initialisationStateChangeEvent',
+      PPOMInitialisationStatus.INPROGRESS,
+    );
+    this.#reinitPPOMForChainIfRequired(ETHEREUM_CHAIN_ID)
+      .then(async () => {
+        this.messagingSystem.publish(
+          'PPOMController:initialisationStateChangeEvent',
+          PPOMInitialisationStatus.SUCCESS,
+        );
+        this.#checkScheduleFileDownloadForAllChains();
+      })
+      .catch((error: Error) => {
+        this.messagingSystem.publish(
+          'PPOMController:initialisationStateChangeEvent',
+          PPOMInitialisationStatus.FAIL,
+        );
+        console.error(`Error in initialising ppom: ${error.message}`);
+      });
+  }
+
+  /*
+   * The function resets the controller to inactiva state
+   * 1. reset the PPOM
+   * 2. clear data fetch intervals
+   * 3. clears version information of data files
+   */
+  #resetToInactiveState() {
+    this.#resetPPOM().catch((error: Error) => {
+      console.error(`Error in resetting ppom: ${error.message}`);
+    });
+    this.#clearDataFetchIntervals();
+    this.update((draftState) => {
+      draftState.versionInfo = [];
+      const newChainStatus = { ...this.state.chainStatus };
+      Object.keys(newChainStatus).forEach((chainId: string) => {
+        if (newChainStatus[chainId]) {
+          const chainInfo: ChainInfo = {
+            ...(newChainStatus[chainId] as ChainInfo),
+            dataFetched: false,
+            versionInfo: [],
+          };
+          newChainStatus[chainId] = chainInfo;
+        }
+      });
+      draftState.chainStatus = newChainStatus;
+      draftState.storageMetadata = [];
+      draftState.versionFileETag = '';
+    });
+    // todo: as we move data files to controller storage we should also delete those here
   }
 
   /*
@@ -372,9 +475,6 @@ export class PPOMController extends BaseControllerV2<
    */
   #onNetworkChange(networkControllerState: any): void {
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
-    if (id === this.#chainId) {
-      return;
-    }
     let chainStatus = { ...this.state.chainStatus };
     const existingNetworkObject = chainStatus[id];
     this.#chainId = id;
@@ -384,6 +484,7 @@ export class PPOMController extends BaseControllerV2<
         chainId: id,
         lastVisited: new Date().getTime(),
         dataFetched: existingNetworkObject?.dataFetched ?? false,
+        versionInfo: existingNetworkObject?.versionInfo ?? [],
       },
     };
     this.update((draftState) => {
@@ -402,7 +503,11 @@ export class PPOMController extends BaseControllerV2<
       return;
     }
     this.#securityAlertsEnabled = blockaidEnabled;
-    this.#checkScheduleFileDownloadForAllChains();
+    if (blockaidEnabled) {
+      this.#setToActiveState();
+    } else {
+      this.#resetToInactiveState();
+    }
   }
 
   /*
@@ -422,25 +527,35 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * The function resets PPOM.
+   * Constructor helper for registering this controller's messaging system
+   * actions.
    */
-  #resetPPOM(): void {
-    if (this.#ppom) {
-      this.#ppom.free();
-      this.#ppom = undefined;
-    }
+  #subscribeMessageEvents(): void {
+    const onNetworkChange = this.#onNetworkChange.bind(this);
+    this.messagingSystem.subscribe(
+      'NetworkController:stateChange',
+      onNetworkChange,
+    );
   }
 
-  /**
-   * Conditionally update the ppom configuration.
-   *
-   * If the ppom configuration is out of date, this function will call `updatePPOM`
-   * to update the configuration.
+  /*
+   * The function resets PPOM.
    */
-  async #maybeUpdatePPOM(): Promise<void> {
-    if (this.#isDataRequiredForCurrentChain()) {
-      await this.#getNewFilesForCurrentChain();
-    }
+  async #resetPPOM(): Promise<void> {
+    await this.#ppomMutex.use(async () => {
+      if (this.#ppom) {
+        this.#ppom.free();
+        this.#ppom = undefined;
+      }
+    });
+  }
+
+  /*
+   * The function initialises PPOM.
+   */
+  async #reinitPPOM(chainId: string): Promise<void> {
+    await this.#resetPPOM();
+    await this.#getPPOM(chainId);
   }
 
   /*
@@ -453,11 +568,11 @@ export class PPOMController extends BaseControllerV2<
 
   /*
    * Update the PPOM configuration for all chainId.
+   * If new version info file is available the function will update data files for all chains.
    */
   async #updatePPOM(): Promise<void> {
     const versionInfoUpdated = await this.#updateVersionInfo();
     if (versionInfoUpdated) {
-      await this.#storage.syncMetadata(this.state.versionInfo);
       await this.#getNewFilesForAllChains();
     }
   }
@@ -493,6 +608,7 @@ export class PPOMController extends BaseControllerV2<
     );
   }
 
+  // todo: function below can be utility function
   /*
    * The function check to ensure that file path can contain only alphanumeric
    * characters and a dot character (.) or slash (/).
@@ -504,20 +620,45 @@ export class PPOMController extends BaseControllerV2<
     }
   }
 
+  async #getAllFiles(versionInfo: PPOMVersionResponse) {
+    const files = await Promise.all(
+      versionInfo.map(async (file) => {
+        let data: ArrayBuffer | undefined;
+        try {
+          data = await this.#getFile(file);
+        } catch (exp: unknown) {
+          console.error(
+            `Error in getting file ${file.filePath}: ${(exp as Error).message}`,
+          );
+        }
+        if (data) {
+          return [file.name, new Uint8Array(data)];
+        }
+        return undefined;
+      }),
+    );
+    return files?.filter(
+      (data: (string | Uint8Array)[] | undefined) => data?.[1] !== undefined,
+    );
+  }
+
   /*
    * Gets a single file from CDN and write to the storage.
    */
   async #getFile(
     fileVersionInfo: PPOMFileVersion,
-    overrideStorage = false,
   ): Promise<ArrayBuffer | undefined> {
     const { storageMetadata } = this.state;
     // do not fetch file if the storage version is latest
-    if (
-      !overrideStorage &&
-      this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)
-    ) {
-      return undefined;
+    if (this.#checkFilePresentInStorage(storageMetadata, fileVersionInfo)) {
+      try {
+        return await this.#storage.readFile(
+          fileVersionInfo.name,
+          fileVersionInfo.chainId,
+        );
+      } catch (error: unknown) {
+        console.error(`Error in reading file: ${(error as Error).message}`);
+      }
     }
     // validate file path for valid characters
     this.#checkFilePath(fileVersionInfo.filePath);
@@ -529,15 +670,19 @@ export class PPOMController extends BaseControllerV2<
 
     await validateSignature(
       fileData,
-      fileVersionInfo.signature,
+      fileVersionInfo.hashSignature,
       this.#blockaidPublicKey,
       fileVersionInfo.filePath,
     );
 
-    await this.#storage.writeFile({
-      data: fileData,
-      ...fileVersionInfo,
-    });
+    try {
+      await this.#storage.writeFile({
+        data: fileData,
+        ...fileVersionInfo,
+      });
+    } catch (error: unknown) {
+      console.error(`Error in writing file: ${(error as Error).message}`);
+    }
 
     return fileData;
   }
@@ -546,66 +691,64 @@ export class PPOMController extends BaseControllerV2<
    * As files for a chain are fetched this function set dataFetched
    * property for that chainId in chainStatus to true.
    */
-  #setChainIdDataFetched(chainId: string): void {
-    const { chainStatus } = this.state;
+  async #setChainIdDataFetched(chainId: string): Promise<void> {
+    const { chainStatus, versionInfo } = this.state;
     const chainIdObject = chainStatus[chainId];
-    if (chainIdObject && !chainIdObject.dataFetched) {
+    const versionInfoForChain = versionInfo.filter(
+      ({ chainId: id }) => id === chainId,
+    );
+    if (chainIdObject) {
       this.update((draftState) => {
         draftState.chainStatus = {
           ...chainStatus,
-          [chainId]: { ...chainIdObject, dataFetched: true },
+          [chainId]: {
+            ...chainIdObject,
+            dataFetched: true,
+            versionInfo: versionInfoForChain,
+          },
         };
       });
     }
   }
 
   /*
-   * Fetches new files for current network and save them to storage.
-   * The function is invoked if user if attempting transaction for current network,
-   * for which data is not previously fetched.
+   * The function will initialise PPOM for the network if required.
    */
-  async #getNewFilesForCurrentChain(): Promise<void> {
-    const { versionInfo } = this.state;
-    for (const fileVersionInfo of versionInfo) {
-      if (fileVersionInfo.chainId !== this.#chainId) {
-        continue;
-      }
-
-      await this.#getFile(fileVersionInfo).catch((exp: Error) => {
-        console.error(
-          `Error in getting file ${fileVersionInfo.filePath}: ${exp.message}`,
-        );
-        throw exp;
-      });
+  async #reinitPPOMForChainIfRequired(chainId: string): Promise<void> {
+    if (this.#isDataRequiredForCurrentChain() || this.#ppom === undefined) {
+      await this.#reinitPPOM(chainId);
+      await this.#setChainIdDataFetched(chainId);
     }
-    this.#setChainIdDataFetched(this.#chainId);
   }
 
   /*
    * Function creates list of all files to be fetched for all chainIds in chainStatus.
    */
-  #getListOfFilesToBeFetched(): {
-    fileVersionInfo: PPOMFileVersion;
-    isLastFileOfNetwork: boolean;
-  }[] {
+  async #getListOfFilesToBeFetched(): Promise<
+    {
+      fileVersionInfo: PPOMFileVersion;
+      isLastFileOfNetwork: boolean;
+    }[]
+  > {
     const {
       chainStatus,
       storageMetadata,
       versionInfo: stateVersionInfo,
     } = this.state;
-
+    const networkIsSupported = this.#networkIsSupported.bind(this);
     // create a map of chainId and files belonging to that chainId
     // not include the files for which the version in storage is the latest one
-    const chainIdsFileInfoList = Object.keys(chainStatus).map(
-      (chainId): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
+    // As we add support for multiple chains it will be useful to sort the chain in desc order of lastvisited
+    const chainIdsFileInfoList = Object.keys(chainStatus)
+      .filter(networkIsSupported)
+      .map((chainId): { chainId: string; versionInfo: PPOMFileVersion[] } => ({
         chainId,
         versionInfo: stateVersionInfo.filter(
           (versionInfo) =>
             versionInfo.chainId === chainId &&
             !this.#checkFilePresentInStorage(storageMetadata, versionInfo),
         ),
-      }),
-    );
+      }));
 
     // build a list of files to be fetched for all networks
     const fileToBeFetchedList: {
@@ -613,17 +756,13 @@ export class PPOMController extends BaseControllerV2<
       isLastFileOfNetwork: boolean;
     }[] = [];
     chainIdsFileInfoList.forEach((chainIdFileInfo) => {
-      const { chainId, versionInfo } = chainIdFileInfo;
+      const { versionInfo } = chainIdFileInfo;
       versionInfo.forEach((fileVersionInfo, index) => {
         fileToBeFetchedList.push({
           fileVersionInfo,
           isLastFileOfNetwork: index === versionInfo.length - 1,
         });
       });
-      if (versionInfo.length === 0) {
-        // set dataFetched to true for chainId
-        this.#setChainIdDataFetched(chainId);
-      }
     });
 
     return fileToBeFetchedList;
@@ -642,7 +781,9 @@ export class PPOMController extends BaseControllerV2<
     }
     const currentTimestamp = new Date().getTime();
 
-    const chainIds = Object.keys(this.state.chainStatus);
+    const chainIds = Object.keys(this.state.chainStatus).filter(
+      (id) => id !== ETHEREUM_CHAIN_ID,
+    );
     const oldChaninIds: any[] = chainIds.filter(
       (chainId) =>
         (this.state.chainStatus[chainId] as any).lastVisited <
@@ -681,7 +822,7 @@ export class PPOMController extends BaseControllerV2<
     }
 
     // build a list of files to be fetched for all networks
-    const fileToBeFetchedList = this.#getListOfFilesToBeFetched();
+    const fileToBeFetchedList = await this.#getListOfFilesToBeFetched();
 
     // Get scheduled interval, if schedule interval is large so that not all files can be fetched in
     // this.#dataUpdateDuration, reduce schedule interval
@@ -697,6 +838,7 @@ export class PPOMController extends BaseControllerV2<
     // schedule files to be fetched in regular intervals
     this.#fileScheduleInterval = setInterval(() => {
       const fileToBeFetched = fileToBeFetchedList.pop();
+
       if (fileToBeFetched) {
         const { chainStatus } = this.state;
         const { fileVersionInfo, isLastFileOfNetwork } = fileToBeFetched;
@@ -705,10 +847,13 @@ export class PPOMController extends BaseControllerV2<
         if (chainStatus[fileVersionInfo.chainId]) {
           // get the file from CDN
           this.#getFile(fileVersionInfo)
-            .then(() => {
+            .then(async () => {
               if (isLastFileOfNetwork) {
                 // if this was last file for the chainId set dataFetched for chainId to true
-                this.#setChainIdDataFetched(fileVersionInfo.chainId);
+                await this.#setChainIdDataFetched(fileVersionInfo.chainId);
+                if (fileVersionInfo.chainId === ETHEREUM_CHAIN_ID) {
+                  await this.#reinitPPOM(ETHEREUM_CHAIN_ID);
+                }
               }
             })
             .catch((exp: Error) =>
@@ -721,6 +866,8 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        this.#storage.syncMetadata(this.state.versionInfo);
       }
     }, scheduleInterval);
   }
@@ -786,7 +933,7 @@ export class PPOMController extends BaseControllerV2<
 
     // If ETag is same it is not required to fetch data files again
     const eTagChanged = await this.#checkIfVersionInfoETagChanged(url);
-    if (!eTagChanged) {
+    if (!eTagChanged && this.state.versionInfo?.length) {
       return undefined;
     }
 
@@ -824,6 +971,11 @@ export class PPOMController extends BaseControllerV2<
         resolve(PROVIDER_ERRORS.methodNotSupported());
         return;
       }
+
+      this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
+        ? Number(this.#providerRequestsCount[method]) + 1
+        : 1;
+
       // Invoke provider and return result
       this.#provider.sendAsync(
         createPayload(method, params),
@@ -848,67 +1000,58 @@ export class PPOMController extends BaseControllerV2<
    *
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
-  async #getPPOM(): Promise<any> {
-    // Get all the files for  the chainId
-    let files = await Promise.all(
-      this.state.versionInfo
-        .filter((file) => file.chainId === this.#chainId)
-        .map(async (file) => {
-          let data: ArrayBuffer | undefined;
-          try {
-            data = await this.#storage.readFile(file.name, file.chainId);
-          } catch {
-            try {
-              data = await this.#getFile(file, true);
-            } catch (exp: unknown) {
-              console.error(
-                `Error in getting file ${file.filePath}: ${
-                  (exp as Error).message
-                }`,
-              );
-            }
-          }
-          if (data) {
-            return [file.name, new Uint8Array(data)];
-          }
-          return undefined;
-        }),
-    );
+  async #getPPOM(chainId: string): Promise<any> {
+    // For some reason ppom initialisation in contrructor fails for react native
+    // thus it is added here to prevent validation from failing.
+    await this.#initialisePPOM();
+    const { chainStatus } = this.state;
+    let versionInfo = chainStatus[chainId]?.versionInfo;
+    if (!versionInfo?.length) {
+      await this.#updateVersionInfo();
+      versionInfo = this.state.versionInfo.filter(
+        ({ chainId: id }) => id === chainId,
+      );
+    }
 
-    files = files.filter((data: unknown) => data !== undefined);
+    if (versionInfo?.length === undefined || versionInfo?.length === 0) {
+      throw new Error(
+        `Aborting initialising PPOM as no files are found for the network with chainId: ${chainId}`,
+      );
+    }
+    // Get all the files for  the chainId
+    const files = await this.#getAllFiles(versionInfo);
 
     // The following code throw error if no data files are found for the chainId.
     // This check has been put in place after suggestion of security team.
     // If we want to disable ppom validation on all instances of Metamask,
     // this can be achieved by returning empty data from version file.
-    if (!files.length) {
+    if (files?.length !== versionInfo?.length) {
       throw new Error(
-        `Aborting validation as no files are found for the network with chainId: ${
-          this.#chainId
-        }`,
+        `Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: ${chainId}`,
       );
     }
 
-    const { ppomInit, PPOM } = this.#ppomProvider;
-    await ppomInit('./ppom_bg.wasm');
-    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
+    return await this.#ppomMutex.use(async () => {
+      const { PPOM } = this.#ppomProvider;
+      this.#ppom = PPOM.new(this.#jsonRpcRequest.bind(this), files);
+    });
   }
 
   /**
    * Functioned to be called to update PPOM.
    */
   #onDataUpdateDuration(): void {
-    this.updatePPOM().catch(() => {
-      // console.error(`Error while trying to update PPOM: ${exp.message}`);
+    this.updatePPOM().catch((exp: Error) => {
+      console.error(`Error while trying to update PPOM: ${exp.message}`);
     });
   }
 
-  /**
+  /*
    * The function invokes the task to fetch files of all the chains and then
    * starts the scheduled periodic task to fetch files for all the chains.
    */
   #checkScheduleFileDownloadForAllChains(): void {
-    if (this.#securityAlertsEnabled && this.#includesEthereumMainnet()) {
+    if (this.#securityAlertsEnabled) {
       if (!this.#refreshDataInterval) {
         this.#onDataUpdateDuration();
         this.#refreshDataInterval = setInterval(
@@ -917,7 +1060,7 @@ export class PPOMController extends BaseControllerV2<
         );
       }
     } else {
-      this.#resetDataFetchIntervals();
+      this.#resetToInactiveState();
     }
   }
 }

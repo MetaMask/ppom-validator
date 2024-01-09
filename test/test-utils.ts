@@ -1,8 +1,25 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
 
+import type {
+  PPOMControllerActions,
+  PPOMControllerEvents,
+} from '../src/ppom-controller';
 import { PPOMController } from '../src/ppom-controller';
-import { StorageKey } from '../src/ppom-storage';
+import type { StorageKey } from '../src/ppom-storage';
+
+export const buildDummyResponse = (
+  resultType = 'DUMMY_RESULT_TYPE',
+  reason = 'DUMMY_REASON',
+) => {
+  return {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
+    result_type: resultType,
+    reason,
+    features: [],
+    providerRequestsCount: {},
+  };
+};
 
 export const buildStorageBackend = (obj = {}) => {
   return {
@@ -14,6 +31,23 @@ export const buildStorageBackend = (obj = {}) => {
     ...obj,
   };
 };
+
+export const StorageMetadata = [
+  {
+    name: 'data',
+    chainId: '0x1',
+    version: '1.0.3',
+    checksum:
+      '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+  },
+  {
+    name: 'blob',
+    chainId: '0x1',
+    version: '1.0.0',
+    checksum:
+      '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+  },
+];
 
 export const simpleStorageBackend = buildStorageBackend();
 
@@ -95,8 +129,17 @@ export const buildFetchSpy = (
     });
 };
 
-class PPOMClass {
+export class PPOMClass {
   #jsonRpcRequest: any;
+
+  constructor(newMock?: any, freeMock?: any) {
+    if (newMock) {
+      this.new = newMock;
+    }
+    if (freeMock) {
+      this.free = freeMock;
+    }
+  }
 
   new = (jsonRpcRequest: any) => {
     this.#jsonRpcRequest = jsonRpcRequest;
@@ -109,31 +152,65 @@ class PPOMClass {
 
   free = () => undefined;
 
-  testJsonRPCRequest = async (method: string, args2: any) =>
-    await this.#jsonRpcRequest(method ?? 'eth_blockNumber', args2);
+  testJsonRPCRequest = async (method: string) =>
+    await this.#jsonRpcRequest(method ?? 'eth_blockNumber');
+
+  testCallRpcRequests = async () => {
+    const methods = [
+      'eth_getBalance', // call 1 time
+      'eth_getTransactionCount', // call 2 times
+      'trace_call', // call 3 times
+      'trace_callMany', // call 4 times
+      'debug_traceCall', // call 5 times
+      'trace_filter', // call 6 times
+    ];
+    const numberOfCalls = [1, 2, 3, 4, 5, 6];
+
+    const promises = [];
+
+    for (let i = 0; i < methods.length; i++) {
+      const limit = numberOfCalls[i] ?? 0;
+      for (let j = 0; j < limit; j++) {
+        promises.push(this.#jsonRpcRequest(methods[i]));
+      }
+    }
+    await Promise.all(promises);
+  };
 }
 
 export const buildPPOMController = (args?: any) => {
-  const controllerMessenger = new ControllerMessenger();
+  const controllerMessenger: ControllerMessenger<
+    PPOMControllerActions,
+    PPOMControllerEvents
+  > = new ControllerMessenger();
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,
     provider: () => undefined,
     chainId: '0x1',
-    onNetworkChange: () => undefined,
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
+      allowedEvents: ['NetworkController:stateChange'],
     }),
     securityAlertsEnabled: true,
     onPreferencesChange: () => undefined,
     state: {},
     ppomProvider: {
-      ppomInit: () => undefined,
+      ppomInit: () => 123,
       PPOM: new PPOMClass(),
     },
     cdnBaseUrl: 'ppom_cdn_base_url',
     ...args,
   });
-  return ppomController;
+  const changeNetwork = (chainId: string) => {
+    controllerMessenger.publish(
+      'NetworkController:stateChange',
+      {
+        providerConfig: { chainId },
+      } as any,
+      [],
+    );
+  };
+  return { changeNetwork, controllerMessenger, ppomController };
 };
 
 // eslint-disable-next-line jsdoc/require-jsdoc
