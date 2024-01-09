@@ -37,6 +37,7 @@
     "await-semaphore": "^0.1.3",
     "crypto-js": "^4.2.0",
     "elliptic": "^6.5.4",
+    "eslint-plugin-n": "^16.6.2",
     "json-rpc-random-id": "^1.0.1"
   },
   "devDependencies": {
