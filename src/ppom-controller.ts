@@ -1031,6 +1031,10 @@ export class PPOMController extends BaseController<
       );
     }
 
+    if (this.#chainId !== ETHEREUM_CHAIN_ID) {
+      return undefined;
+    }
+
     return await this.#ppomMutex.use(async () => {
       const { PPOM } = this.#ppomProvider;
       this.#ppom = PPOM.new(this.#jsonRpcRequest.bind(this), files);
