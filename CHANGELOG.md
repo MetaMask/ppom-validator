@@ -7,18 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.17.0]
-### Uncategorized
-- Intiialise PPOM only if user is on mainnet ([#121](https://github.com/MetaMask/ppom-validator/pull/121))
-- Bump @metamask/base-controller from 3.2.3 to 4.0.1 ([#117](https://github.com/MetaMask/ppom-validator/pull/117))
-- Bump @metamask/eslint-config-nodejs from 11.1.0 to 12.1.0 ([#21](https://github.com/MetaMask/ppom-validator/pull/21))
-- Bump @metamask/eslint-config from 11.1.0 to 12.2.0 ([#52](https://github.com/MetaMask/ppom-validator/pull/52))
-- Bump @metamask/eslint-config-typescript from 11.1.0 to 12.1.0 ([#22](https://github.com/MetaMask/ppom-validator/pull/22))
-- Bump @babel/traverse from 7.20.5 to 7.23.7 ([#119](https://github.com/MetaMask/ppom-validator/pull/119))
-- Bump @metamask/auto-changelog from 3.2.0 to 3.4.4 ([#113](https://github.com/MetaMask/ppom-validator/pull/113))
-- Bump @metamask/network-controller from 17.0.0 to 17.1.0 ([#116](https://github.com/MetaMask/ppom-validator/pull/116))
-- Bump @metamask/controller-utils from 6.1.0 to 8.0.1 ([#115](https://github.com/MetaMask/ppom-validator/pull/115))
-- Bump @metamask/eth-json-rpc-provider from 2.3.0 to 2.3.1 ([#114](https://github.com/MetaMask/ppom-validator/pull/114))
-- Bump @metamask/json-rpc-engine from 7.3.0 to 7.3.1 ([#118](https://github.com/MetaMask/ppom-validator/pull/118))
+### Changed
+- Intialise PPOM only if user is on mainnet ([#121](https://github.com/MetaMask/ppom-validator/pull/121))
 
 ## [0.16.0]
 ### Changed
