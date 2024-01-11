@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.18.0]
-### Uncategorized
+### Changed
 - Revert "Bump @metamask/base-controller from 3.2.3 to 4.0.1 (#117)" ([#117](https://github.com/MetaMask/ppom-validator/pull/117))
 
 ## [0.17.0]
