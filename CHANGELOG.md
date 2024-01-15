@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.19.0]
-### Uncategorized
-- Reset PPOM on network change ([#127](https://github.com/MetaMask/ppom-validator/pull/127))
+### Changed
+- Reinitialise PPOM for new network on network change ([#127](https://github.com/MetaMask/ppom-validator/pull/127))
 
 ## [0.18.0]
 ### Changed
