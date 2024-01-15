@@ -587,6 +587,29 @@ describe('PPOMController', () => {
 
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
     });
+
+    it('should not throw error if resetting ppom fails', async () => {
+      buildFetchSpy(undefined, undefined, 123);
+      const freeMock = jest.fn().mockImplementation(() => {
+        throw new Error('some error');
+      });
+      const { changeNetwork } = buildPPOMController({
+        ppomProvider: {
+          ppomInit: async () => {
+            return Promise.resolve('123');
+          },
+          PPOM: new PPOMClass(undefined, freeMock),
+        },
+      });
+      jest.runOnlyPendingTimers();
+      await flushPromises();
+      buildFetchSpy({
+        status: 500,
+      });
+      expect(async () => {
+        changeNetwork('0x1');
+      }).not.toThrow();
+    });
   });
 
   describe('onPreferencesChange', () => {

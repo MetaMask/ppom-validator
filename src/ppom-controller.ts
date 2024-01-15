@@ -492,6 +492,9 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     this.#checkScheduleFileDownloadForAllChains();
+    this.#resetPPOM().catch((error: Error) => {
+      console.error(`Error in resetting ppom: ${error.message}`);
+    });
   }
 
   /*
