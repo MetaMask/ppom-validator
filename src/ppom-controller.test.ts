@@ -427,7 +427,7 @@ describe('PPOMController', () => {
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(13);
+      expect(spy).toHaveBeenCalledTimes(9);
     });
 
     it('should not re-throw error if file write fails', async () => {
@@ -524,7 +524,7 @@ describe('PPOMController', () => {
       changeNetwork('0x1');
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(3);
+      expect(spy).toHaveBeenCalledTimes(2);
     });
 
     it('should not trigger file download if preference is not enabled', async () => {
@@ -588,26 +588,20 @@ describe('PPOMController', () => {
       expect(ppomController.state.chainStatus['0x1']).toBeUndefined();
     });
 
-    it('should not throw error if resetting ppom fails', async () => {
-      buildFetchSpy(undefined, undefined, 123);
-      const freeMock = jest.fn().mockImplementation(() => {
-        throw new Error('some error');
-      });
-      const { changeNetwork } = buildPPOMController({
-        ppomProvider: {
-          ppomInit: async () => {
-            return Promise.resolve('123');
-          },
-          PPOM: new PPOMClass(undefined, freeMock),
-        },
-      });
-      jest.runOnlyPendingTimers();
+    it('should not throw error if update ppom fails', async () => {
+      buildFetchSpy();
+      const { changeNetwork } = buildPPOMController({ chainId: '0x2' });
+      changeNetwork('0x1');
       await flushPromises();
-      buildFetchSpy({
-        status: 500,
-      });
       expect(async () => {
-        changeNetwork('0x1');
+        buildFetchSpy({
+          status: 500,
+          json: () => {
+            throw new Error('some error');
+          },
+        });
+        jest.runOnlyPendingTimers();
+        await flushPromises();
       }).not.toThrow();
     });
   });

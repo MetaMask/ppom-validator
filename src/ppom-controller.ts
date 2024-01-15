@@ -475,9 +475,9 @@ export class PPOMController extends BaseControllerV2<
    */
   #onNetworkChange(networkControllerState: any): void {
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
+    this.#chainId = id;
     let chainStatus = { ...this.state.chainStatus };
     const existingNetworkObject = chainStatus[id];
-    this.#chainId = id;
     chainStatus = {
       ...chainStatus,
       [id]: {
@@ -491,10 +491,9 @@ export class PPOMController extends BaseControllerV2<
       draftState.chainStatus = chainStatus;
     });
     this.#deleteOldChainIds();
-    this.#checkScheduleFileDownloadForAllChains();
-    this.#resetPPOM().catch((error: Error) => {
-      console.error(`Error in resetting ppom: ${error.message}`);
-    });
+    if (this.#networkIsSupported(id) && this.#securityAlertsEnabled) {
+      this.#setToActiveState();
+    }
   }
 
   /*
@@ -1066,8 +1065,6 @@ export class PPOMController extends BaseControllerV2<
           this.#dataUpdateDuration,
         );
       }
-    } else {
-      this.#resetToInactiveState();
     }
   }
 }
