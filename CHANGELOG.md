@@ -7,10 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.20.0]
-### Uncategorized
+### Changed
 - Add support for multiple chains ([#130](https://github.com/MetaMask/ppom-validator/pull/130))
-- Bump @metamask/swappable-obj-proxy from 2.1.0 to 2.2.0 ([#129](https://github.com/MetaMask/ppom-validator/pull/129))
-- Bump @metamask/utils from 8.2.1 to 8.3.0 ([#126](https://github.com/MetaMask/ppom-validator/pull/126))
 
 ## [0.19.0]
 ### Changed
