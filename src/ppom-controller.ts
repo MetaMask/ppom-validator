@@ -482,7 +482,7 @@ export class PPOMController extends BaseControllerV2<
    * The function is invoked on network change, it does following:
    * 1. update instant value this.#chainid
    * 2. if network is supported by blockaid add / update network in state variable chainStatus
-   * 2. instantiate PPOM for new network is user has enabled security alerts
+   * 2. instantiate PPOM for new network if user has enabled security alerts
    */
   #onNetworkChange(networkControllerState: any): void {
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
