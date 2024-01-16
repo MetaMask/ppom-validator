@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0]
+### Uncategorized
+- Add support for multiple chains ([#130](https://github.com/MetaMask/ppom-validator/pull/130))
+- Bump @metamask/swappable-obj-proxy from 2.1.0 to 2.2.0 ([#129](https://github.com/MetaMask/ppom-validator/pull/129))
+- Bump @metamask/utils from 8.2.1 to 8.3.0 ([#126](https://github.com/MetaMask/ppom-validator/pull/126))
+
 ## [0.19.0]
 ### Changed
 - Reinitialise PPOM for new network on network change ([#127](https://github.com/MetaMask/ppom-validator/pull/127))
@@ -115,7 +121,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/MetaMask/ppom-validator/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/MetaMask/ppom-validator/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/MetaMask/ppom-validator/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/MetaMask/ppom-validator/compare/v0.16.0...v0.17.0
