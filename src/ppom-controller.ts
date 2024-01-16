@@ -410,31 +410,38 @@ export class PPOMController extends BaseControllerV2<
   }
 
   /*
-   * The function updates the version info to get any latest changes and
    * Gets files to current network and pass to PPOM to prepare it fot validating transactions.
    */
-  #setToActiveState() {
+  #initPPOMforCurrentChain() {
     this.messagingSystem.publish(
       'PPOMController:initialisationStateChangeEvent',
       PPOMInitialisationStatus.INPROGRESS,
     );
+    this.#initPPOMWithFiles()
+      .then(async () => {
+        this.messagingSystem.publish(
+          'PPOMController:initialisationStateChangeEvent',
+          PPOMInitialisationStatus.SUCCESS,
+        );
+        this.#checkScheduleFileDownloadForAllChains();
+      })
+      .catch((error: Error) => {
+        this.messagingSystem.publish(
+          'PPOMController:initialisationStateChangeEvent',
+          PPOMInitialisationStatus.FAIL,
+        );
+        console.error(`Error in initialising ppom: ${error.message}`);
+      });
+  }
+
+  /*
+   * The function updates the version info to get any latest changes and
+   * initialise PPOM for current chain
+   */
+  #setToActiveState() {
     this.#updateVersionInfo()
       .then(() => {
-        this.#initPPOMWithFiles()
-          .then(async () => {
-            this.messagingSystem.publish(
-              'PPOMController:initialisationStateChangeEvent',
-              PPOMInitialisationStatus.SUCCESS,
-            );
-            this.#checkScheduleFileDownloadForAllChains();
-          })
-          .catch((error: Error) => {
-            this.messagingSystem.publish(
-              'PPOMController:initialisationStateChangeEvent',
-              PPOMInitialisationStatus.FAIL,
-            );
-            console.error(`Error in initialising ppom: ${error.message}`);
-          });
+        this.#initPPOMforCurrentChain();
       })
       .catch((error: Error) =>
         console.error(`Error in fetching version info: ${error.message}`),
@@ -504,7 +511,7 @@ export class PPOMController extends BaseControllerV2<
     });
     this.#deleteOldChainIds();
     if (this.#securityAlertsEnabled) {
-      this.#setToActiveState();
+      this.#initPPOMforCurrentChain();
     }
   }
 
@@ -578,10 +585,8 @@ export class PPOMController extends BaseControllerV2<
    * If new version info file is available the function will update data files for all chains.
    */
   async #updatePPOM(): Promise<void> {
-    const versionInfoUpdated = await this.#updateVersionInfo();
-    if (versionInfoUpdated) {
-      await this.#getNewFilesForAllChains();
-    }
+    await this.#updateVersionInfo();
+    await this.#getNewFilesForAllChains();
   }
 
   /*

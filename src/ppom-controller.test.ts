@@ -532,20 +532,15 @@ describe('PPOMController', () => {
     });
 
     it('should trigger file download if preference is enabled', async () => {
-      const spy = buildFetchSpy({
-        status: 500,
-      });
-      const { changeNetwork } = buildPPOMController({
-        securityAlertsEnabled: true,
-      });
+      const spy = buildFetchSpy();
+      const { changeNetwork } = buildPPOMController();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledTimes(6);
       changeNetwork(Utils.SUPPORTED_NETWORK_CHAINIDS.BSC);
-      await flushPromises();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledTimes(8);
     });
 
     it('should not trigger file download if preference is not enabled', async () => {
@@ -888,7 +883,7 @@ describe('PPOMController', () => {
   });
 
   describe('initialisePPOM', () => {
-    it('should publich initialisationStateChange events to the messenger', async () => {
+    it('should publish initialisationStateChange events to the messenger', async () => {
       buildFetchSpy();
       let callBack: any;
       const ppomInitialisationCallbackMock = jest.fn();
@@ -910,12 +905,12 @@ describe('PPOMController', () => {
       );
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(1);
+      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(2);
       callBack({ securityAlertsEnabled: false });
       callBack({ securityAlertsEnabled: true });
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(3);
+      expect(ppomInitialisationCallbackMock).toHaveBeenCalledTimes(4);
     });
   });
 });
