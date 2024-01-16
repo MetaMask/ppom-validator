@@ -7,6 +7,7 @@ import type {
 } from '../src/ppom-controller';
 import { PPOMController } from '../src/ppom-controller';
 import type { StorageKey } from '../src/ppom-storage';
+import { SUPPORTED_NETWORK_CHAINIDS } from '../src/util';
 
 export const buildDummyResponse = (
   resultType = 'DUMMY_RESULT_TYPE',
@@ -35,14 +36,14 @@ export const buildStorageBackend = (obj = {}) => {
 export const StorageMetadata = [
   {
     name: 'data',
-    chainId: '0x1',
+    chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
   },
   {
     name: 'blob',
-    chainId: '0x1',
+    chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
@@ -61,7 +62,7 @@ export const storageBackendReturningData = buildStorageBackend({
 export const VERSION_INFO = [
   {
     name: 'blob',
-    chainId: '0x1',
+    chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
     version: '1.0.0',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
@@ -71,7 +72,7 @@ export const VERSION_INFO = [
   },
   {
     name: 'data',
-    chainId: '0x1',
+    chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
     version: '1.0.3',
     checksum:
       '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
@@ -186,7 +187,7 @@ export const buildPPOMController = (args?: any) => {
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,
     provider: () => undefined,
-    chainId: '0x1',
+    chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
     messenger: controllerMessenger.getRestricted({
       name: 'PPOMController',
       allowedEvents: ['NetworkController:stateChange'],

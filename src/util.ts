@@ -5,6 +5,24 @@ import IdIterator from 'json-rpc-random-id';
 const EdDSA = elliptic.eddsa;
 const URL_PREFIX = 'https://';
 
+export const SUPPORTED_NETWORK_CHAINIDS = {
+  MAINNET: '0x1',
+  BSC: '0x38',
+  OPTIMISM: '0xa',
+  POLYGON: '0x89',
+  AVALANCHE: '0xa86a',
+  ARBITRUM: '0xa4b1',
+  LINEA_MAINNET: '0xe708',
+};
+
+export const blockaidValidationSupportedForNetwork = (
+  chainId: string,
+): boolean => {
+  return Object.values(SUPPORTED_NETWORK_CHAINIDS).some(
+    (cid) => cid === chainId,
+  );
+};
+
 export const IdGenerator = IdIterator();
 
 export const createPayload = (
@@ -91,4 +109,15 @@ export const addHexPrefix = (str: string) => {
   }
 
   return `0x${str}`;
+};
+
+/*
+ * The function check to ensure that file path can contain only alphanumeric
+ * characters and a dot character (.) or slash (/).
+ */
+export const checkFilePath = (filePath: string): void => {
+  const filePathRegex = /^[\w./]+$/u;
+  if (!filePath.match(filePathRegex)) {
+    throw new Error(`Invalid file path for data file: ${filePath}`);
+  }
 };
