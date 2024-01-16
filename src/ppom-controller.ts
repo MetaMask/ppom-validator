@@ -575,6 +575,9 @@ export class PPOMController extends BaseControllerV2<
    * prepares instance of PPOM by passing files of selected network to it.
    */
   async #initPPOMWithFiles(): Promise<void> {
+    if (!blockaidValidationSupportedForNetwork(this.#chainId)) {
+      return;
+    }
     await this.#resetPPOM();
     this.#updateVersionInfoForChainId(this.#chainId);
     this.#ppom = await this.#getPPOM(this.#chainId);

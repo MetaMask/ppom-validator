@@ -442,7 +442,7 @@ describe('PPOMController', () => {
       await ppomController.updatePPOM();
       jest.runOnlyPendingTimers();
       await flushPromises();
-      expect(spy).toHaveBeenCalledTimes(5);
+      expect(spy).toHaveBeenCalledTimes(10);
     });
 
     it('should not re-throw error if file write fails', async () => {
