@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0]
+### Changed
+- Add support for multiple chains ([#130](https://github.com/MetaMask/ppom-validator/pull/130))
+
 ## [0.19.0]
 ### Changed
 - Reinitialise PPOM for new network on network change ([#127](https://github.com/MetaMask/ppom-validator/pull/127))
@@ -115,7 +119,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.19.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.20.0...HEAD
+[0.20.0]: https://github.com/MetaMask/ppom-validator/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/MetaMask/ppom-validator/compare/v0.18.0...v0.19.0
 [0.18.0]: https://github.com/MetaMask/ppom-validator/compare/v0.17.0...v0.18.0
 [0.17.0]: https://github.com/MetaMask/ppom-validator/compare/v0.16.0...v0.17.0
