@@ -108,7 +108,7 @@ export const addHexPrefix = (str: string) => {
     return str.replace('0X', '0x');
   }
 
-  return `0x${str}`;
+  return `0x${parseInt(str, 10).toString(16)}`;
 };
 
 /*

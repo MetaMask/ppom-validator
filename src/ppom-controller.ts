@@ -578,7 +578,6 @@ export class PPOMController extends BaseControllerV2<
     if (!blockaidValidationSupportedForNetwork(this.#chainId)) {
       return;
     }
-    await this.#resetPPOM();
     this.#updateVersionInfoForChainId(this.#chainId);
     this.#ppom = await this.#getPPOM(this.#chainId);
   }
@@ -1042,6 +1041,9 @@ export class PPOMController extends BaseControllerV2<
     }
 
     return await this.#ppomMutex.use(async () => {
+      if (this.#ppom) {
+        this.#ppom.free();
+      }
       const { PPOM } = this.#ppomProvider;
       return PPOM.new(this.#jsonRpcRequest.bind(this), files);
     });
