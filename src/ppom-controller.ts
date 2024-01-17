@@ -220,6 +220,8 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
+  #optimiseForDevice = false;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -237,6 +239,7 @@ export class PPOMController extends BaseControllerV2<
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
    * @param options.blockaidPublicKey - Public key of blockaid for verifying signatures of data files.
+   * @param options.optimiseForDevice - Whether performance should be optimised for mobile devices.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -253,6 +256,7 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration,
     state,
     blockaidPublicKey,
+    optimiseForDevice,
   }: {
     chainId: string;
     messenger: PPOMControllerMessenger;
@@ -267,6 +271,7 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration?: number;
     state?: PPOMState;
     blockaidPublicKey: string;
+    optimiseForDevice?: boolean;
   }) {
     const currentChainId = addHexPrefix(chainId);
     const initialState = {
@@ -312,6 +317,7 @@ export class PPOMController extends BaseControllerV2<
         : fileFetchScheduleDuration;
     this.#securityAlertsEnabled = securityAlertsEnabled;
     this.#blockaidPublicKey = blockaidPublicKey;
+    this.#optimiseForDevice = optimiseForDevice ?? false;
 
     // enable / disable PPOM validations as user changes preferences
     onPreferencesChange(this.#onPreferenceChange.bind(this));
@@ -578,7 +584,6 @@ export class PPOMController extends BaseControllerV2<
     if (!blockaidValidationSupportedForNetwork(this.#chainId)) {
       return;
     }
-    await this.#resetPPOM();
     this.#updateVersionInfoForChainId(this.#chainId);
     this.#ppom = await this.#getPPOM(this.#chainId);
   }
@@ -866,7 +871,10 @@ export class PPOMController extends BaseControllerV2<
             .then(async () => {
               if (isLastFileOfNetwork) {
                 this.#updateVersionInfoForChainId(this.#chainId);
-                if (this.#chainId === fileVersionInfo.chainId) {
+                if (
+                  this.#chainId === fileVersionInfo.chainId &&
+                  !this.#optimiseForDevice
+                ) {
                   await this.#initPPOMWithFiles();
                 }
               }
@@ -1042,6 +1050,9 @@ export class PPOMController extends BaseControllerV2<
     }
 
     return await this.#ppomMutex.use(async () => {
+      if (this.#ppom) {
+        this.#ppom.free();
+      }
       const { PPOM } = this.#ppomProvider;
       return PPOM.new(this.#jsonRpcRequest.bind(this), files);
     });

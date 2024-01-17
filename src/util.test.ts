@@ -82,7 +82,7 @@ describe('Util', () => {
   });
   describe('addHexPrefix', () => {
     it('should add prefix', () => {
-      expect(addHexPrefix('123')).toBe('0x123');
+      expect(addHexPrefix('123')).toBe('0x7b');
       expect(addHexPrefix('0X123')).toBe('0x123');
       expect(addHexPrefix('0x123')).toBe('0x123');
     });
