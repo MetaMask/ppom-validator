@@ -75,6 +75,14 @@ type ChainInfo = {
 
 type ChainType = Record<string, ChainInfo>;
 
+export type NativeCrypto = {
+  createHash: (str: string) => {
+    update: (ab: ArrayBuffer) => {
+      digest: (str: string) => string;
+    };
+  };
+};
+
 /**
  * @type PPOMState
  *
@@ -220,6 +228,8 @@ export class PPOMController extends BaseControllerV2<
 
   #ppomInitialised = false;
 
+  #nativeCrypto: NativeCrypto | undefined = undefined;
+
   /**
    * Creates a PPOMController instance.
    *
@@ -237,6 +247,8 @@ export class PPOMController extends BaseControllerV2<
    * @param options.fileFetchScheduleDuration - Duration after which next data file is fetched.
    * @param options.state - Initial state of the controller.
    * @param options.blockaidPublicKey - Public key of blockaid for verifying signatures of data files.
+   * @param options.nativeCrypto - Native implementation of crypto hashing function.
+   * This is useful to leverage faster native crypto implementation on devices.
    * @returns The PPOMController instance.
    */
   constructor({
@@ -253,6 +265,7 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration,
     state,
     blockaidPublicKey,
+    nativeCrypto,
   }: {
     chainId: string;
     messenger: PPOMControllerMessenger;
@@ -267,6 +280,7 @@ export class PPOMController extends BaseControllerV2<
     fileFetchScheduleDuration?: number;
     state?: PPOMState;
     blockaidPublicKey: string;
+    nativeCrypto?: NativeCrypto;
   }) {
     const currentChainId = addHexPrefix(chainId);
     const initialState = {
@@ -312,6 +326,7 @@ export class PPOMController extends BaseControllerV2<
         : fileFetchScheduleDuration;
     this.#securityAlertsEnabled = securityAlertsEnabled;
     this.#blockaidPublicKey = blockaidPublicKey;
+    this.#nativeCrypto = nativeCrypto;
 
     // enable / disable PPOM validations as user changes preferences
     onPreferencesChange(this.#onPreferenceChange.bind(this));
@@ -679,6 +694,7 @@ export class PPOMController extends BaseControllerV2<
       fileVersionInfo.hashSignature,
       this.#blockaidPublicKey,
       fileVersionInfo.filePath,
+      this.#nativeCrypto,
     );
 
     try {

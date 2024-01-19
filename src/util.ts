@@ -2,6 +2,8 @@ import CryptoJS, { SHA256 } from 'crypto-js';
 import elliptic from 'elliptic';
 import IdIterator from 'json-rpc-random-id';
 
+import type { NativeCrypto } from './ppom-controller';
+
 const EdDSA = elliptic.eddsa;
 const URL_PREFIX = 'https://';
 
@@ -54,7 +56,15 @@ export const PROVIDER_ERRORS = {
   }),
 };
 
-const getHash = async (data: ArrayBuffer, useNative: boolean): Promise<any> => {
+const getHash = async (
+  data: ArrayBuffer,
+  nativeCrypto?: NativeCrypto,
+  useNative = true,
+): Promise<any> => {
+  if (nativeCrypto) {
+    return nativeCrypto.createHash('sha256').update(data).digest('hex');
+  }
+
   if (
     'crypto' in globalThis &&
     typeof globalThis.crypto === 'object' &&
@@ -68,6 +78,7 @@ const getHash = async (data: ArrayBuffer, useNative: boolean): Promise<any> => {
       .join('');
     return hash;
   }
+
   return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
 };
 
@@ -79,9 +90,10 @@ export const validateSignature = async (
   hashSignature: string,
   key: string,
   filePath: string,
-  useNative = true,
+  nativeCrypto?: NativeCrypto,
+  useNative?: boolean,
 ) => {
-  const hashString = await getHash(data, useNative);
+  const hashString = await getHash(data, nativeCrypto, useNative);
   // const hashString = hash.toString();
   const ec = new EdDSA('ed25519');
   const ecKey = ec.keyFromPublic(key);
