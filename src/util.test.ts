@@ -39,11 +39,38 @@ describe('Util', () => {
           INCORRECT_SIGNATURE,
           TEST_PUBLIC_KEY,
           'invalid_data_file',
+          undefined,
           false,
         );
       }).rejects.toThrow(
         'Signature verification failed for file path: invalid_data_file',
       );
+    });
+
+    it('should use nativeCrypto if passed', async () => {
+      const blobData = await fs.promises.readFile('./test/stale_tags.bin');
+      const nativeDigest = jest.fn().mockReturnValue('abc');
+      const nativeCrypto = {
+        createHash: () => ({
+          update: () => ({
+            digest: nativeDigest,
+          }),
+        }),
+      };
+
+      await expect(async () => {
+        await validateSignature(
+          blobData,
+          CORRECT_SIGNATURE,
+          TEST_PUBLIC_KEY,
+          'valid_data_file',
+          nativeCrypto,
+        );
+      }).rejects.toThrow(
+        'Signature verification failed for file path: valid_data_file',
+      );
+
+      expect(nativeDigest).toHaveBeenCalledTimes(1);
     });
 
     it('should validate correct signature - failing', async () => {
@@ -54,6 +81,7 @@ describe('Util', () => {
           CORRECT_SIGNATURE,
           TEST_PUBLIC_KEY,
           'valid_data_file',
+          undefined,
           false,
         );
       }).not.toThrow(
