@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.22.0]
-### Uncategorized
+### Changed
 - Add option to use crypto implementation pass to the constructor ([#134](https://github.com/MetaMask/ppom-validator/pull/134))
 
 ## [0.21.0]
