@@ -514,11 +514,14 @@ describe('PPOMController', () => {
       expect(spy).toHaveBeenCalledTimes(7);
     });
 
-    it('should throw error if syncMetadata fails', async () => {
+    it('should not throw error if syncMetadata fails', async () => {
       buildFetchSpy(undefined, undefined, 1);
-      const { ppomController } = buildPPOMController();
-      jest.spyOn(JSON, 'stringify').mockImplementation(() => {
-        throw new Error('Some error');
+      const { ppomController } = buildPPOMController({
+        storageBackend: buildStorageBackend({
+          dir: async (): Promise<any> => {
+            throw new Error('Some error');
+          },
+        }),
       });
       await flushPromises();
       jest.runOnlyPendingTimers();
