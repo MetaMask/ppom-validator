@@ -896,8 +896,13 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        this.#storage.syncMetadata(this.state.versionInfo);
+        this.#storage
+          .syncMetadata(this.state.versionInfo)
+          .catch((exp: Error) => {
+            console.error(
+              `Error while trying to sync metadata: ${exp.message}`,
+            );
+          });
       }
     }, scheduleInterval);
   }
