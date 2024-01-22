@@ -513,6 +513,22 @@ describe('PPOMController', () => {
       await flushPromises();
       expect(spy).toHaveBeenCalledTimes(7);
     });
+
+    it('should not throw error if syncMetadata fails', async () => {
+      buildFetchSpy(undefined, undefined, 1);
+      const { ppomController } = buildPPOMController({
+        storageBackend: buildStorageBackend({
+          dir: async (): Promise<any> => {
+            throw new Error('Some error');
+          },
+        }),
+      });
+      await flushPromises();
+      jest.runOnlyPendingTimers();
+      expect(async () => {
+        await ppomController.updatePPOM();
+      }).not.toThrow('Some error');
+    });
   });
 
   describe('onNetworkChange', () => {

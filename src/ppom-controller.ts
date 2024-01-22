@@ -308,7 +308,7 @@ export class PPOMController extends BaseControllerV2<
     this.#storage = new PPOMStorage({
       storageBackend,
       readMetadata: () => {
-        return JSON.parse(JSON.stringify(this.state.storageMetadata));
+        return [...this.state.storageMetadata];
       },
       writeMetadata: (metadata) => {
         this.update((draftState) => {
@@ -697,14 +697,14 @@ export class PPOMController extends BaseControllerV2<
       this.#nativeCrypto,
     );
 
-    try {
-      await this.#storage.writeFile({
+    this.#storage
+      .writeFile({
         data: fileData,
         ...fileVersionInfo,
+      })
+      .catch((error: Error) => {
+        console.error(`Error in writing file: ${error.message}`);
       });
-    } catch (error: unknown) {
-      console.error(`Error in writing file: ${(error as Error).message}`);
-    }
 
     return fileData;
   }
@@ -896,8 +896,13 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
-        // eslint-disable-next-line @typescript-eslint/no-floating-promises
-        this.#storage.syncMetadata(this.state.versionInfo);
+        this.#storage
+          .syncMetadata(this.state.versionInfo)
+          .catch((exp: Error) => {
+            console.error(
+              `Error while trying to sync metadata: ${exp.message}`,
+            );
+          });
       }
     }, scheduleInterval);
   }
