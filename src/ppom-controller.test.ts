@@ -1,4 +1,9 @@
 import {
+  NETWORK_CACHE_DURATION,
+  REFRESH_TIME_INTERVAL,
+} from './ppom-controller';
+import * as Utils from './util';
+import {
   PPOMClass,
   StorageMetadata,
   VERSION_INFO,
@@ -7,11 +12,6 @@ import {
   buildPPOMController,
   buildStorageBackend,
 } from '../test/test-utils';
-import {
-  NETWORK_CACHE_DURATION,
-  REFRESH_TIME_INTERVAL,
-} from './ppom-controller';
-import * as Utils from './util';
 
 jest.mock('@metamask/controller-utils', () => {
   return {
