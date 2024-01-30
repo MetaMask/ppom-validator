@@ -952,6 +952,7 @@ export class PPOMController extends BaseControllerV2<
     url: string,
     options: Record<string, unknown> = {},
     method = 'GET',
+    // TODO: Fix `any` usage - provide minimum expected type for `response`.
   ): Promise<any> {
     const response = await safelyExecute(
       async () =>
