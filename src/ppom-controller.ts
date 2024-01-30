@@ -1,7 +1,13 @@
 import type { RestrictedControllerMessenger } from '@metamask/base-controller';
 import { BaseControllerV2 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
-import type { NetworkControllerStateChangeEvent } from '@metamask/network-controller';
+import type {
+  Json,
+  JsonRpcError,
+  JsonRpcParams,
+  JsonRpcResponse,
+  JsonRpcSuccess,
+} from '@metamask/utils';
 import { Mutex } from 'await-semaphore';
 
 import type {
@@ -992,8 +998,11 @@ export class PPOMController extends BaseControllerV2<
    */
   async #jsonRpcRequest(
     method: string,
-    params: Record<string, unknown>,
-  ): Promise<any> {
+    params: JsonRpcParams,
+  ): Promise<
+    | JsonRpcResponse<Json>
+    | ReturnType<(typeof PROVIDER_ERRORS)[keyof typeof PROVIDER_ERRORS]>
+  > {
     return new Promise((resolve) => {
       // Resolve with error if number of requests from PPOM to provider exceeds the limit for the current transaction
       if (this.#providerRequests > this.#providerRequestLimit) {
@@ -1014,12 +1023,12 @@ export class PPOMController extends BaseControllerV2<
       // Invoke provider and return result
       this.#provider.sendAsync(
         createPayload(method, params),
-        (error: Error, res: any) => {
+        (error, res: JsonRpcSuccess<Json>) => {
           if (error) {
             resolve({
               jsonrpc: '2.0',
               id: IdGenerator(),
-              error,
+              error: error as JsonRpcError,
             });
           } else {
             resolve(res);
