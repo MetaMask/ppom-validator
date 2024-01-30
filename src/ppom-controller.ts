@@ -4,6 +4,7 @@ import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import type {
   NetworkControllerStateChangeEvent,
   NetworkState,
+  Provider,
 } from '@metamask/network-controller';
 import type {
   Json,
@@ -193,7 +194,7 @@ export class PPOMController extends BaseControllerV2<
 > {
   #ppom: any;
 
-  #provider: any;
+  #provider: Provider;
 
   #storage: PPOMStorage;
 
@@ -278,7 +279,7 @@ export class PPOMController extends BaseControllerV2<
   }: {
     chainId: string;
     messenger: PPOMControllerMessenger;
-    provider: any;
+    provider: Provider;
     storageBackend: StorageBackend;
     securityAlertsEnabled: boolean;
     onPreferencesChange: (
