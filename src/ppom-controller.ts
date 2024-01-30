@@ -63,6 +63,14 @@ const ALLOWED_PROVIDER_CALLS = [
   'trace_filter',
 ];
 
+// Provisional skeleton type for PPOM class
+// TODO: Replace with actual PPOM class
+type PPOM = {
+  new: (...args: unknown[]) => PPOM;
+  validateJsonRpc: () => Promise<unknown>;
+  free: () => void;
+} & Record<string, unknown>;
+
 /**
  * @type PPOMFileVersion
  * @augments FileMetadata
@@ -132,7 +140,7 @@ const versionInfoFileHeaders = {
 
 export type UsePPOM = {
   type: `${typeof controllerName}:usePPOM`;
-  handler: (callback: (ppom: any) => Promise<any>) => Promise<any>;
+  handler: (callback: (ppom: PPOM) => Promise<unknown>) => Promise<unknown>;
 };
 
 export type UpdatePPOM = {
@@ -174,7 +182,7 @@ export type PPOMControllerMessenger = RestrictedControllerMessenger<
 type PPOMProvider = {
   ppomInit: (wasmFilePath: string) => Promise<void>;
   // eslint-disable-next-line @typescript-eslint/naming-convention
-  PPOM: any;
+  PPOM: PPOM;
 };
 
 /**
@@ -192,7 +200,7 @@ export class PPOMController extends BaseControllerV2<
   PPOMState,
   PPOMControllerMessenger
 > {
-  #ppom: any;
+  #ppom: PPOM | undefined;
 
   #provider: Provider;
 
@@ -379,7 +387,7 @@ export class PPOMController extends BaseControllerV2<
    * @param callback - Callback to be invoked with PPOM.
    */
   async usePPOM<Type>(
-    callback: (ppom: any) => Promise<Type>,
+    callback: (ppom: PPOM) => Promise<Type>,
   ): Promise<Type & { providerRequestsCount: Record<string, number> }> {
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
@@ -396,6 +404,9 @@ export class PPOMController extends BaseControllerV2<
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
     return await this.#ppomMutex.use(async () => {
+      if (!this.#ppom) {
+        throw Error('PPOM is not initialised');
+      }
       const result = await callback(this.#ppom);
 
       return {
@@ -1062,7 +1073,7 @@ export class PPOMController extends BaseControllerV2<
    *
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
-  async #getPPOM(chainId: string): Promise<any> {
+  async #getPPOM(chainId: string): Promise<PPOM> {
     // PPOM initialisation in contructor fails for react native
     // thus it is added here to prevent validation from failing.
     await this.#initialisePPOM();
