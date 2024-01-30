@@ -2,6 +2,10 @@ import type { RestrictedControllerMessenger } from '@metamask/base-controller';
 import { BaseControllerV2 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import type {
+  NetworkControllerStateChangeEvent,
+  NetworkState,
+} from '@metamask/network-controller';
+import type {
   Json,
   JsonRpcError,
   JsonRpcParams,
@@ -153,17 +157,16 @@ export type PPOMControllerInitialisationStateChangeEvent = {
   payload: [PPOMInitialisationStatusType];
 };
 
-export type PPOMControllerEvents =
-  | PPOMControllerInitialisationStateChangeEvent
-  | NetworkControllerStateChangeEvent;
+export type PPOMControllerEvents = PPOMControllerInitialisationStateChangeEvent;
+
+export type AllowedEvents = NetworkControllerStateChangeEvent;
 
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
   PPOMControllerActions,
-  | PPOMControllerInitialisationStateChangeEvent
-  | NetworkControllerStateChangeEvent,
+  PPOMControllerEvents | AllowedEvents,
   never,
-  NetworkControllerStateChangeEvent['type']
+  AllowedEvents['type']
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
@@ -278,7 +281,15 @@ export class PPOMController extends BaseControllerV2<
     provider: any;
     storageBackend: StorageBackend;
     securityAlertsEnabled: boolean;
-    onPreferencesChange: (callback: (perferenceState: any) => void) => void;
+    onPreferencesChange: (
+      callback: (
+        // TOOD: Replace with `PreferencesState` from `@metamask/preferences-controller`
+        preferencesState: { securityAlertsEnabled: boolean } & Record<
+          string,
+          Json
+        >,
+      ) => void,
+    ) => void;
     ppomProvider: PPOMProvider;
     cdnBaseUrl: string;
     providerRequestLimit?: number;
@@ -505,7 +516,7 @@ export class PPOMController extends BaseControllerV2<
    * 2. if network is supported by blockaid add / update network in state variable chainStatus
    * 2. instantiate PPOM for new network if user has enabled security alerts
    */
-  #onNetworkChange(networkControllerState: any): void {
+  #onNetworkChange(networkControllerState: NetworkState): void {
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);
     if (id === this.#chainId) {
       return;
@@ -539,7 +550,13 @@ export class PPOMController extends BaseControllerV2<
   /*
    * enable / disable PPOM validations as user changes preferences
    */
-  #onPreferenceChange(preferenceControllerState: any): void {
+  #onPreferenceChange(
+    // TOOD: Replace with `PreferencesState` from `@metamask/preferences-controller`
+    preferenceControllerState: { securityAlertsEnabled: boolean } & Record<
+      string,
+      Json
+    >,
+  ): void {
     const blockaidEnabled = preferenceControllerState.securityAlertsEnabled;
     if (blockaidEnabled === this.#securityAlertsEnabled) {
       return;
