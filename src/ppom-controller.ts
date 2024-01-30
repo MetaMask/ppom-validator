@@ -206,9 +206,9 @@ export class PPOMController extends BaseControllerV2<
 
   #storage: PPOMStorage;
 
-  #refreshDataInterval: any;
+  #refreshDataInterval: ReturnType<typeof setInterval> | undefined;
 
-  #fileScheduleInterval: any;
+  #fileScheduleInterval: ReturnType<typeof setInterval> | undefined;
 
   /*
    * This mutex is used to prevent concurrent usage of the PPOM instance
@@ -850,9 +850,10 @@ export class PPOMController extends BaseControllerV2<
     const currentTimestamp = new Date().getTime();
 
     const chainIds = Object.keys(this.state.chainStatus);
-    const oldChaninIds: any[] = chainIds.filter(
+    const oldChainIds = chainIds.filter(
       (chainId) =>
-        (this.state.chainStatus[chainId] as any).lastVisited <
+        (this.state.chainStatus[chainId]?.lastVisited ??
+          Number.MAX_SAFE_INTEGER) <
           currentTimestamp - NETWORK_CACHE_DURATION &&
         chainId !== this.#chainId,
     );
@@ -863,11 +864,13 @@ export class PPOMController extends BaseControllerV2<
           Number(this.state.chainStatus[c2]?.lastVisited) -
           Number(this.state.chainStatus[c1]?.lastVisited),
       )[NETWORK_CACHE_LIMIT.MAX];
-      oldChaninIds.push(oldestChainId);
+      if (oldestChainId !== undefined) {
+        oldChainIds.push(oldestChainId);
+      }
     }
 
     const chainStatus = { ...this.state.chainStatus };
-    oldChaninIds.forEach((chainId) => {
+    oldChainIds.forEach((chainId) => {
       delete chainStatus[chainId];
     });
 

@@ -61,7 +61,7 @@ const getHash = async (
   data: ArrayBuffer,
   nativeCrypto?: NativeCrypto,
   useNative = true,
-): Promise<any> => {
+): Promise<string> => {
   if (nativeCrypto) {
     return nativeCrypto.createHash('sha256').update(data).digest('hex');
   }
@@ -80,7 +80,7 @@ const getHash = async (
     return hash;
   }
 
-  return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
+  return SHA256(CryptoJS.lib.WordArray.create(data)).toString();
 };
 
 // useNative argument is added for testing purpose, without it test cases are breaking in Node-20 and above

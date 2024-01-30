@@ -107,7 +107,7 @@ export class PPOMStorage {
       // check if the file is readable (e.g. corrupted or deleted)
       try {
         await this.readFile(fileMetadata.name, fileMetadata.chainId);
-      } catch (exp: any) {
+      } catch (exp: unknown) {
         console.error('Error: ', exp);
         continue;
       }
