@@ -7,10 +7,9 @@ import type {
   Provider,
 } from '@metamask/network-controller';
 import type {
+  JsonRpcFailure,
   Json,
-  JsonRpcError,
   JsonRpcParams,
-  JsonRpcResponse,
   JsonRpcSuccess,
 } from '@metamask/utils';
 import { Mutex } from 'await-semaphore';
@@ -1033,7 +1032,8 @@ export class PPOMController extends BaseControllerV2<
     method: string,
     params: JsonRpcParams,
   ): Promise<
-    | JsonRpcResponse<Json>
+    | JsonRpcSuccess<Json>
+    | (Omit<JsonRpcFailure, 'error'> & { error: unknown })
     | ReturnType<(typeof PROVIDER_ERRORS)[keyof typeof PROVIDER_ERRORS]>
   > {
     return new Promise((resolve) => {
@@ -1061,7 +1061,7 @@ export class PPOMController extends BaseControllerV2<
             resolve({
               jsonrpc: '2.0',
               id: IdGenerator(),
-              error: error as JsonRpcError,
+              error,
             });
           } else {
             resolve(res);
