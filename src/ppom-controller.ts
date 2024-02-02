@@ -863,9 +863,9 @@ export class PPOMController extends BaseControllerV2<
           Number(this.state.chainStatus[c2]?.lastVisited) -
           Number(this.state.chainStatus[c1]?.lastVisited),
       )[NETWORK_CACHE_LIMIT.MAX];
-      if (oldestChainId !== undefined) {
-        oldChainIds.push(oldestChainId);
-      }
+      // `oldestChainId` will always be defined, as `chainIds` is guaranteed to have at least `NETWORK_CACHE_LIMIT.MAX` elements
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      oldChainIds.push(oldestChainId!);
     }
 
     const chainStatus = { ...this.state.chainStatus };
