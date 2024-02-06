@@ -144,6 +144,22 @@ export class PPOMStorage {
   }
 
   /**
+   * Delete all files in storage.
+   *
+   * @param metadata - List of all files in storage.
+   */
+  async deleteAllFiles(metadata: FileMetadataList): Promise<void> {
+    for (const fileMetadata of metadata) {
+      const { name, chainId } = fileMetadata;
+      try {
+        await this.#storageBackend.delete({ name, chainId });
+      } catch (exp: any) {
+        console.error(`Error in deleting file: ${name}, ${chainId}`, exp);
+      }
+    }
+  }
+
+  /**
    * Read the file from the local storage.
    * 1. Check if the file exists in the local storage.
    * 2. Check if the file exists in the metadata.
