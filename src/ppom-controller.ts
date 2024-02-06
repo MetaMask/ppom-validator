@@ -403,10 +403,9 @@ export class PPOMController extends BaseControllerV2<
     this.#providerRequests = 0;
     this.#providerRequestsCount = {};
     return await this.#ppomMutex.use(async () => {
-      if (!this.#ppom) {
-        throw Error('PPOM is not initialised');
-      }
-      const result = await callback(this.#ppom);
+      // `this.#ppom` is defined in `#initPPOMIfRequired`
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const result = await callback(this.#ppom!);
 
       return {
         ...result,
