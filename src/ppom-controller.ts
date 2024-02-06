@@ -850,8 +850,9 @@ export class PPOMController extends BaseControllerV2<
     const chainIds = Object.keys(this.state.chainStatus);
     const oldChainIds = chainIds.filter(
       (chainId) =>
-        (this.state.chainStatus[chainId]?.lastVisited ??
-          Number.MAX_SAFE_INTEGER) <
+        // `chainId` is of type `keyof typeof this.state.chainStatus`
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        this.state.chainStatus[chainId]!.lastVisited <
           currentTimestamp - NETWORK_CACHE_DURATION &&
         chainId !== this.#chainId,
     );
