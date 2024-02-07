@@ -7,10 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.23.0]
-### Uncategorized
+### Changed
 - Metadata should be synced for only active networks ([#146](https://github.com/MetaMask/ppom-validator/pull/146))
 - Delete files from storage as blockaid preference is disabled ([#145](https://github.com/MetaMask/ppom-validator/pull/145))
-- Bump minimum Node version to 18 and use LTS for development ([#142](https://github.com/MetaMask/ppom-validator/pull/142))
 - Remove dangling promises ([#136](https://github.com/MetaMask/ppom-validator/pull/136))
 
 ## [0.22.0]
