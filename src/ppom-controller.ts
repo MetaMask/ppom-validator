@@ -380,6 +380,10 @@ export class PPOMController extends BaseControllerV2<
     return await this.#ppomMutex.use(async () => {
       const result = await callback(this.#ppom);
 
+      console.log('Dickie: providerRequestsCount with result', {
+        providerRequestsCount: this.#providerRequestsCount,
+        result,
+      });
       return {
         ...result,
         // we are destructuring the object below as this will be used outside the controller
@@ -1014,6 +1018,11 @@ export class PPOMController extends BaseControllerV2<
       this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
         ? Number(this.#providerRequestsCount[method]) + 1
         : 1;
+
+      console.log(
+        'Dickie: providerRequestsCount only',
+        this.#providerRequestsCount,
+      );
 
       // Invoke provider and return result
       this.#provider.sendAsync(
