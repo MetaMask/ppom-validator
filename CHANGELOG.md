@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0]
+### Changed
+- Metadata should be synced for only active networks ([#146](https://github.com/MetaMask/ppom-validator/pull/146))
+- Delete files from storage as blockaid preference is disabled ([#145](https://github.com/MetaMask/ppom-validator/pull/145))
+- Remove dangling promises ([#136](https://github.com/MetaMask/ppom-validator/pull/136))
+
 ## [0.22.0]
 ### Changed
 - Add option to use crypto implementation pass to the constructor ([#134](https://github.com/MetaMask/ppom-validator/pull/134))
@@ -127,7 +133,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.22.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.23.0...HEAD
+[0.23.0]: https://github.com/MetaMask/ppom-validator/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/MetaMask/ppom-validator/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/MetaMask/ppom-validator/compare/v0.20.0...v0.21.0
 [0.20.0]: https://github.com/MetaMask/ppom-validator/compare/v0.19.0...v0.20.0
