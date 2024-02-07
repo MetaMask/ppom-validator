@@ -206,4 +206,36 @@ describe('PPOMStorage', () => {
       });
     });
   });
+
+  describe('deleteAllFiles', () => {
+    it('should delete all files passed to it', async () => {
+      const mockDeleteFile = jest
+        .fn()
+        .mockImplementation(async () => Promise.resolve());
+      const storageBackend = buildStorageBackend({ delete: mockDeleteFile });
+      const ppomStorage = new PPOMStorage({
+        storageBackend,
+        readMetadata: () => [simpleFileData],
+        writeMetadata: () => undefined,
+      });
+      await ppomStorage.deleteAllFiles([simpleFileData]);
+      expect(mockDeleteFile).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not throw error if delete fails', async () => {
+      const mockDeleteFile = jest
+        .fn()
+        .mockImplementation(async () =>
+          Promise.reject(new Error('some error')),
+        );
+      const storageBackend = buildStorageBackend({ delete: mockDeleteFile });
+      const ppomStorage = new PPOMStorage({
+        storageBackend,
+        readMetadata: () => [simpleFileData],
+        writeMetadata: () => undefined,
+      });
+      await ppomStorage.deleteAllFiles([simpleFileData]);
+      expect(mockDeleteFile).toHaveBeenCalledTimes(1);
+    });
+  });
 });

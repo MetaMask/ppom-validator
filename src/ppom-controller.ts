@@ -502,6 +502,7 @@ export class PPOMController extends BaseControllerV2<
       console.error(`Error in resetting ppom: ${error.message}`);
     });
     this.#clearDataFetchIntervals();
+    const storageMetadata = { ...this.state.storageMetadata };
     this.update((draftState) => {
       draftState.versionInfo = [];
       const newChainStatus = { ...this.state.chainStatus };
@@ -517,6 +518,9 @@ export class PPOMController extends BaseControllerV2<
       draftState.chainStatus = newChainStatus;
       draftState.storageMetadata = [];
       draftState.versionFileETag = '';
+    });
+    this.#storage.deleteAllFiles(storageMetadata).catch((error: Error) => {
+      console.error(`Error in deleting files: ${error.message}`);
     });
   }
 
