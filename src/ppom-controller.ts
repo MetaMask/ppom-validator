@@ -502,7 +502,7 @@ export class PPOMController extends BaseControllerV2<
       console.error(`Error in resetting ppom: ${error.message}`);
     });
     this.#clearDataFetchIntervals();
-    const storageMetadata = { ...this.state.storageMetadata };
+    const { storageMetadata } = this.state;
     this.update((draftState) => {
       draftState.versionInfo = [];
       const newChainStatus = { ...this.state.chainStatus };
@@ -937,13 +937,13 @@ export class PPOMController extends BaseControllerV2<
       // clear interval if all files are fetched
       if (!fileToBeFetchedList.length) {
         clearInterval(this.#fileScheduleInterval);
-        this.#storage
-          .syncMetadata(this.state.versionInfo)
-          .catch((exp: Error) => {
-            console.error(
-              `Error while trying to sync metadata: ${exp.message}`,
-            );
-          });
+        const activeChainIds = Object.keys(this.state.chainStatus);
+        const versionInfoRequired = this.state.versionInfo.filter(
+          ({ chainId }) => activeChainIds.includes(chainId),
+        );
+        this.#storage.syncMetadata(versionInfoRequired).catch((exp: Error) => {
+          console.error(`Error while trying to sync metadata: ${exp.message}`);
+        });
       }
     }, scheduleInterval);
   }
