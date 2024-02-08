@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.24.0]
-### Uncategorized
+### Changed
 - fix: delete all files fails when blockaid preference is disabled ([#148](https://github.com/MetaMask/ppom-validator/pull/148))
 
 ## [0.23.0]
