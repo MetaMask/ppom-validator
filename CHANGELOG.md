@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0]
+### Changed
+- fix: delete all files fails when blockaid preference is disabled ([#148](https://github.com/MetaMask/ppom-validator/pull/148))
+
 ## [0.23.0]
 ### Changed
 - Metadata should be synced for only active networks ([#146](https://github.com/MetaMask/ppom-validator/pull/146))
@@ -133,7 +137,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.23.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.24.0...HEAD
+[0.24.0]: https://github.com/MetaMask/ppom-validator/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/MetaMask/ppom-validator/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/MetaMask/ppom-validator/compare/v0.21.0...v0.22.0
 [0.21.0]: https://github.com/MetaMask/ppom-validator/compare/v0.20.0...v0.21.0
