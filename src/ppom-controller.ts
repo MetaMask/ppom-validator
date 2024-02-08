@@ -475,7 +475,7 @@ export class PPOMController extends BaseControllerV2<
       console.error(`Error in resetting ppom: ${error.message}`);
     });
     this.#clearDataFetchIntervals();
-    const storageMetadata = { ...this.state.storageMetadata };
+    const { storageMetadata } = this.state;
     this.update((draftState) => {
       draftState.versionInfo = [];
       const newChainStatus = { ...this.state.chainStatus };
