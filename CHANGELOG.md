@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- Add `@metamask/utils` ^8.3.0 as a dependency. ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
+
+### Removed
+- **BREAKING:** `NetworkControllerStateChangeEvent` is removed from the `PPOMControllerEvents` union type. ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
+
+### Fixed
+- **BREAKING**: `PPOMController` class constructor option types are narrowed from `any`. ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
+  - The constructor expects `provider` to be the `SafeEventEmitterProvider` type from the `@metamask/eth-json-rpc-provider` package.
+  - The constructor expects `onPreferencesChange` to be `(callback: (preferencesState: { securityAlertsEnabled: boolean } & Record<string, Json>) => void) => void`.
+- **BREAKING:** `UsePPOM` type is narrowed to no longer use `any` in its definition. ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
+- **BREAKING:** When the `PPOM` makes JSON-RPC requests to the provider, the `params` type is widened from `Record<string, unknown>` to `JsonRpcParams`, and the response type is narrowed from `any` to `JsonRpcSuccess<Json>`. ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
 
 ## [0.24.0]
 ### Changed
