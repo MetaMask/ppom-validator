@@ -1,3 +1,4 @@
+import type { JsonRpcParams } from '@metamask/utils';
 import CryptoJS, { SHA256 } from 'crypto-js';
 import elliptic from 'elliptic';
 import IdIterator from 'json-rpc-random-id';
@@ -27,40 +28,40 @@ export const blockaidValidationSupportedForNetwork = (
 
 export const IdGenerator = IdIterator();
 
-export const createPayload = (
-  method: string,
-  params: Record<string, unknown>,
-) => ({
-  id: IdGenerator(),
-  jsonrpc: '2.0',
-  method,
-  params: params || [],
-});
+export const createPayload = (method: string, params: JsonRpcParams) =>
+  ({
+    id: IdGenerator(),
+    jsonrpc: '2.0',
+    method,
+    params: params ?? [],
+  } as const);
 
 export const PROVIDER_ERRORS = {
-  limitExceeded: () => ({
-    jsonrpc: '2.0',
-    id: IdGenerator(),
-    error: {
-      code: -32005,
-      message: 'Limit exceeded',
-    },
-  }),
-  methodNotSupported: () => ({
-    jsonrpc: '2.0',
-    id: IdGenerator(),
-    error: {
-      code: -32601,
-      message: 'Method not supported',
-    },
-  }),
+  limitExceeded: () =>
+    ({
+      jsonrpc: '2.0',
+      id: IdGenerator(),
+      error: {
+        code: -32005,
+        message: 'Limit exceeded',
+      },
+    } as const),
+  methodNotSupported: () =>
+    ({
+      jsonrpc: '2.0',
+      id: IdGenerator(),
+      error: {
+        code: -32601,
+        message: 'Method not supported',
+      },
+    } as const),
 };
 
 const getHash = async (
   data: ArrayBuffer,
   nativeCrypto?: NativeCrypto,
   useNative = true,
-): Promise<any> => {
+): Promise<string> => {
   if (nativeCrypto) {
     return nativeCrypto.createHash('sha256').update(data).digest('hex');
   }
@@ -79,7 +80,7 @@ const getHash = async (
     return hash;
   }
 
-  return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
+  return SHA256(CryptoJS.lib.WordArray.create(data)).toString();
 };
 
 // useNative argument is added for testing purpose, without it test cases are breaking in Node-20 and above

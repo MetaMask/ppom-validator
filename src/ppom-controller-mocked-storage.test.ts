@@ -1,5 +1,5 @@
-import { buildFetchSpy, buildPPOMController } from '../test/test-utils';
 import { REFRESH_TIME_INTERVAL } from './ppom-controller';
+import { buildFetchSpy, buildPPOMController } from '../test/test-utils';
 
 jest.mock('@metamask/controller-utils', () => {
   return {
