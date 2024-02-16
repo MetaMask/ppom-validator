@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.25.0]
-### Uncategorized
+### Changed
 - Download files and initialise PPOM when first transaction on network is received ([#151](https://github.com/MetaMask/ppom-validator/pull/151))
 - Typing fixes for `provider`, `ppom` and other `any` usage ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
 
