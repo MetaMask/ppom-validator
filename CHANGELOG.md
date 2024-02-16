@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0]
+### Changed
+- Download files and initialise PPOM when first transaction on network is received ([#151](https://github.com/MetaMask/ppom-validator/pull/151))
+- Typing fixes for `provider`, `ppom` and other `any` usage ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
+
 ## [0.24.0]
 ### Changed
 - fix: delete all files fails when blockaid preference is disabled ([#148](https://github.com/MetaMask/ppom-validator/pull/148))
@@ -137,7 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.24.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.25.0...HEAD
+[0.25.0]: https://github.com/MetaMask/ppom-validator/compare/v0.24.0...v0.25.0
 [0.24.0]: https://github.com/MetaMask/ppom-validator/compare/v0.23.0...v0.24.0
 [0.23.0]: https://github.com/MetaMask/ppom-validator/compare/v0.22.0...v0.23.0
 [0.22.0]: https://github.com/MetaMask/ppom-validator/compare/v0.21.0...v0.22.0
