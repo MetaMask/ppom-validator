@@ -1,5 +1,5 @@
-import { buildFetchSpy, buildPPOMController } from '../test/test-utils';
 import * as Utils from './util';
+import { buildFetchSpy, buildPPOMController } from '../test/test-utils';
 
 jest.mock('@metamask/controller-utils', () => {
   return {

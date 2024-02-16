@@ -1,3 +1,4 @@
+import * as Utils from './util';
 import {
   buildDummyResponse,
   buildFetchSpy,
@@ -7,7 +8,6 @@ import {
   StorageMetadata,
   VERSION_INFO,
 } from '../test/test-utils';
-import * as Utils from './util';
 
 jest.mock('@metamask/controller-utils', () => {
   return {

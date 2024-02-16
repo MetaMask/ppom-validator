@@ -1,10 +1,10 @@
+import type { StorageKey } from './ppom-storage';
 import {
   DUMMY_ARRAY_BUFFER_DATA,
   buildStorageBackend,
   simpleStorageBackend,
   storageBackendReturningData,
 } from '../test/test-utils';
-import type { StorageKey } from './ppom-storage';
 import { PPOMStorage } from './ppom-storage';
 
 const DUMMY_CHECKSUM = 'DUMMY_CHECKSUM';
