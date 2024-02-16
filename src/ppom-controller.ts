@@ -21,13 +21,13 @@ import type {
 } from './ppom-storage';
 import { PPOMStorage } from './ppom-storage';
 import {
-  IdGenerator,
-  PROVIDER_ERRORS,
   addHexPrefix,
   blockaidValidationSupportedForNetwork,
   checkFilePath,
   constructURLHref,
   createPayload,
+  IdGenerator,
+  PROVIDER_ERRORS,
   validateSignature,
 } from './util';
 
@@ -378,9 +378,8 @@ export class PPOMController extends BaseControllerV2<
 
   /*
    * The function is invoked on network change, it does following:
-   * 1. update instant value this.#chainid
-   * 2. reset PPOM if validation is not cupported for current chain
-   * 2. instantiate PPOM for new network if user has enabled security alerts
+   * 1. update instance value this.#chainid
+   * 2. reset PPOM
    */
   #onNetworkChange(networkControllerState: NetworkState): void {
     const id = addHexPrefix(networkControllerState.providerConfig.chainId);

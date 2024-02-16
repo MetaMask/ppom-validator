@@ -1,11 +1,11 @@
 import {
-  PPOMClass,
-  StorageMetadata,
-  VERSION_INFO,
   buildDummyResponse,
   buildFetchSpy,
   buildPPOMController,
   buildStorageBackend,
+  PPOMClass,
+  StorageMetadata,
+  VERSION_INFO,
 } from '../test/test-utils';
 import * as Utils from './util';
 
