@@ -3,7 +3,6 @@ import * as ControllerUtils from '@metamask/controller-utils';
 import type { NetworkState } from '@metamask/network-controller';
 
 import type {
-  AllowedEvents,
   PPOMControllerActions,
   PPOMControllerEvents,
 } from '../src/ppom-controller';
@@ -184,7 +183,7 @@ export class PPOMClass {
 export const buildPPOMController = (args?: any) => {
   const controllerMessenger: ControllerMessenger<
     PPOMControllerActions,
-    PPOMControllerEvents | AllowedEvents
+    PPOMControllerEvents
   > = new ControllerMessenger();
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,

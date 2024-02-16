@@ -80,7 +80,7 @@ const getHash = async (
     return hash;
   }
 
-  return SHA256(CryptoJS.lib.WordArray.create(data)).toString();
+  return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
 };
 
 // useNative argument is added for testing purpose, without it test cases are breaking in Node-20 and above
