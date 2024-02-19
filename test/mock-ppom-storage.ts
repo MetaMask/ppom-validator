@@ -1,6 +1,6 @@
 export class PPOMStorage {
   async syncMetadata(): Promise<void> {
-    throw new Error('some error');
+    return undefined;
   }
 
   async deleteAllFiles(): Promise<void> {
