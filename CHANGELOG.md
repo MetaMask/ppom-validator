@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.26.0]
-### Uncategorized
-- TS fixes in api interface ([#155](https://github.com/MetaMask/ppom-validator/pull/155))
+### Changed
+- Typing fixes in api interface ([#155](https://github.com/MetaMask/ppom-validator/pull/155))
 
 ## [0.25.0]
 ### Changed
