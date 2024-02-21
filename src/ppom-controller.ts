@@ -55,11 +55,22 @@ const ALLOWED_PROVIDER_CALLS = [
   'trace_filter',
 ];
 
+type SecurityAlertResponse = {
+  reason: string;
+  features?: string[];
+  // eslint-disable-next-line @typescript-eslint/naming-convention
+  result_type: string;
+  providerRequestsCount?: Record<string, number>;
+  securityAlertId?: string;
+};
+
 // Provisional skeleton type for PPOM class
 // TODO: Replace with actual PPOM class
 type PPOM = {
   new: (...args: unknown[]) => PPOM;
-  validateJsonRpc: () => Promise<unknown>;
+  validateJsonRpc: (
+    request: Record<string, unknown>,
+  ) => Promise<SecurityAlertResponse>;
   free: () => void;
 } & Record<string, unknown>;
 
