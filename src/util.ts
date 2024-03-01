@@ -16,6 +16,8 @@ export const SUPPORTED_NETWORK_CHAINIDS = {
   AVALANCHE: '0xa86a',
   ARBITRUM: '0xa4b1',
   LINEA_MAINNET: '0xe708',
+  BASE: '0x2105',
+  SEPOLIA: '0xaa36a7',
 };
 
 export const blockaidValidationSupportedForNetwork = (
