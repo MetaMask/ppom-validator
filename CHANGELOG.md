@@ -7,9 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.28.0]
-### Uncategorized
-- fix: Fix writing files to storage ([#174](https://github.com/MetaMask/ppom-validator/pull/174))
-- Enabling MetaMask security code scanner ([#159](https://github.com/MetaMask/ppom-validator/pull/159))
+### Changed
+- Fix writing files to storage ([#174](https://github.com/MetaMask/ppom-validator/pull/174))
 
 ## [0.27.0]
 ### Changed
