@@ -561,7 +561,7 @@ export class PPOMController extends BaseControllerV2<
       this.#nativeCrypto,
     );
 
-    this.#storage
+    await this.#storage
       .writeFile({
         data: fileData,
         ...fileVersionInfo,
