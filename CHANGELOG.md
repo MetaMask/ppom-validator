@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.29.0]
+### Changed
+- Fix access to PPOM instance and wrap it in mutex lock ([#178](https://github.com/MetaMask/ppom-validator/pull/178))
+
 ## [0.28.0]
 ### Changed
 - Fix writing files to storage ([#174](https://github.com/MetaMask/ppom-validator/pull/174))
@@ -154,7 +158,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.28.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.29.0...HEAD
+[0.29.0]: https://github.com/MetaMask/ppom-validator/compare/v0.28.0...v0.29.0
 [0.28.0]: https://github.com/MetaMask/ppom-validator/compare/v0.27.0...v0.28.0
 [0.27.0]: https://github.com/MetaMask/ppom-validator/compare/v0.26.0...v0.27.0
 [0.26.0]: https://github.com/MetaMask/ppom-validator/compare/v0.25.0...v0.26.0
