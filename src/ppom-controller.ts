@@ -326,11 +326,12 @@ export class PPOMController extends BaseControllerV2<
         }`,
       );
     }
-    await this.#initPPOMIfRequired();
-
-    this.#providerRequests = 0;
-    this.#providerRequestsCount = {};
     return await this.#ppomMutex.use(async () => {
+      await this.#initPPOMIfRequired();
+
+      this.#providerRequests = 0;
+      this.#providerRequestsCount = {};
+
       // `this.#ppom` is defined in `#initPPOMIfRequired`
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const result = await callback(this.#ppom!);
@@ -352,16 +353,9 @@ export class PPOMController extends BaseControllerV2<
    */
   async #initialisePPOM() {
     if (this.#securityAlertsEnabled && !this.#ppomInitialised) {
-      await this.#ppomMutex
-        .use(async () => {
-          const { ppomInit } = this.#ppomProvider;
-          await ppomInit('./ppom_bg.wasm');
-          this.#ppomInitialised = true;
-        })
-        .catch((error: Error) => {
-          console.error('Error in trying to initialize PPOM', error);
-          throw error;
-        });
+      const { ppomInit } = this.#ppomProvider;
+      await ppomInit('./ppom_bg.wasm');
+      this.#ppomInitialised = true;
     }
   }
 
@@ -736,12 +730,10 @@ export class PPOMController extends BaseControllerV2<
       );
     }
 
-    return await this.#ppomMutex.use(async () => {
-      if (this.#ppom) {
-        this.#ppom.free();
-      }
-      const { PPOM } = this.#ppomProvider;
-      return PPOM.new(this.#jsonRpcRequest.bind(this), files);
-    });
+    if (this.#ppom) {
+      this.#ppom.free();
+    }
+    const { PPOM } = this.#ppomProvider;
+    return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }
 }

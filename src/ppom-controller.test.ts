@@ -384,7 +384,7 @@ describe('PPOMController', () => {
       expect(async () => {
         changeNetwork('0x2');
       }).not.toThrow();
-      expect(mockMutexUse).toHaveBeenCalledTimes(4);
+      expect(mockMutexUse).toHaveBeenCalledTimes(2);
     });
 
     it('should not do anything when networkChange called for same network', async () => {
@@ -397,7 +397,7 @@ describe('PPOMController', () => {
       });
 
       changeNetwork(Utils.SUPPORTED_NETWORK_CHAINIDS.MAINNET);
-      expect(mockMutexUse).toHaveBeenCalledTimes(3);
+      expect(mockMutexUse).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -464,11 +464,11 @@ describe('PPOMController', () => {
         return Promise.resolve();
       });
 
-      expect(mockMutexUse).toHaveBeenCalledTimes(3);
+      expect(mockMutexUse).toHaveBeenCalledTimes(1);
       callBack({ securityAlertsEnabled: false });
-      expect(mockMutexUse).toHaveBeenCalledTimes(4);
+      expect(mockMutexUse).toHaveBeenCalledTimes(2);
       callBack({ securityAlertsEnabled: false });
-      expect(mockMutexUse).toHaveBeenCalledTimes(4);
+      expect(mockMutexUse).toHaveBeenCalledTimes(2);
     });
   });
 
