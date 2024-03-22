@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.29.0]
-### Uncategorized
-- PPOM access fix ([#178](https://github.com/MetaMask/ppom-validator/pull/178))
+### Changed
+- Fix access to PPOM instance and wrap it in mutex lock ([#178](https://github.com/MetaMask/ppom-validator/pull/178))
 
 ## [0.28.0]
 ### Changed
