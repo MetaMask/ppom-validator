@@ -18,6 +18,7 @@ export const SUPPORTED_NETWORK_CHAINIDS = {
   LINEA_MAINNET: '0xe708',
   BASE: '0x2105',
   SEPOLIA: '0xaa36a7',
+  OPBNB: '0xcc',
 };
 
 export const blockaidValidationSupportedForNetwork = (
