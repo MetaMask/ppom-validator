@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.30.0]
-### Uncategorized
-- feat: OPBNB network support support ([#184](https://github.com/MetaMask/ppom-validator/pull/184))
+### Changed
+- feat: adding OPBNB network support for blockaid validations ([#184](https://github.com/MetaMask/ppom-validator/pull/184))
 
 ## [0.29.0]
 ### Changed
