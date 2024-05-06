@@ -1039,15 +1039,15 @@ __metadata:
   linkType: hard
 
 "@metamask/eth-json-rpc-infura@npm:^9.0.0":
-  version: 9.0.0
-  resolution: "@metamask/eth-json-rpc-infura@npm:9.0.0"
+  version: 9.1.0
+  resolution: "@metamask/eth-json-rpc-infura@npm:9.1.0"
   dependencies:
     "@metamask/eth-json-rpc-provider": ^2.1.0
     "@metamask/json-rpc-engine": ^7.1.1
     "@metamask/rpc-errors": ^6.0.0
     "@metamask/utils": ^8.1.0
-    node-fetch: ^2.6.7
-  checksum: 3dd6783dd54a72fc479496212524150e3e3f6869a135a02709d3ef9c2d7a2e2b99690eef91776c269da3c0d79709daed0c8693549cb8dd999e5b3d96e0b106c0
+    node-fetch: ^2.7.0
+  checksum: 58f2a6b6ce9c545c9210b2ab3f8c0946cc82ed02c82a096406d8c7146c89c1eba1a13e472048a6e252906dd5eb336e63238d9a5446407c1d46b1d6a40e2a64f4
   languageName: node
   linkType: hard
 
@@ -5834,7 +5834,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-fetch@npm:^2.6.7":
+"node-fetch@npm:^2.7.0":
   version: 2.7.0
   resolution: "node-fetch@npm:2.7.0"
   dependencies:
