@@ -106,7 +106,6 @@ describe('PPOMController', () => {
           ],
         },
         undefined,
-        123,
       );
       const { ppomController } = buildPPOMController({
         fileFetchScheduleDuration: 0,
@@ -116,7 +115,7 @@ describe('PPOMController', () => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
     });
 
     it('should pass instance of provider to ppom to enable it to send JSON RPC request on it', async () => {
@@ -255,7 +254,7 @@ describe('PPOMController', () => {
     });
 
     it('should fail if local storage files are corrupted and CDN also not return file', async () => {
-      buildFetchSpy(undefined, undefined, 123);
+      buildFetchSpy();
       let callBack: any;
       const { ppomController } = buildPPOMController({
         storageBackend: buildStorageBackend({
@@ -274,13 +273,9 @@ describe('PPOMController', () => {
       });
       callBack({ securityAlertsEnabled: false });
       callBack({ securityAlertsEnabled: true });
-      buildFetchSpy(
-        undefined,
-        {
-          status: 500,
-        },
-        456,
-      );
+      buildFetchSpy(undefined, {
+        status: 500,
+      });
 
       await expect(async () => {
         await ppomController.usePPOM(async () => {
@@ -306,20 +301,23 @@ describe('PPOMController', () => {
       });
     });
 
-    it('should not get files if ETag of version info file is not changed', async () => {
-      const spy = buildFetchSpy(undefined, undefined, 1);
+    it('should not get files if cached response is obtained for version info file', async () => {
+      const spy = buildFetchSpy({
+        status: 304,
+        json: () => VERSION_INFO,
+      });
       const { changeNetwork, ppomController } = buildPPOMController();
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(4);
+      expect(spy).toHaveBeenCalledTimes(3);
 
       changeNetwork('0x2');
       changeNetwork(Utils.SUPPORTED_NETWORK_CHAINIDS.MAINNET);
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
-      expect(spy).toHaveBeenCalledTimes(5);
+      expect(spy).toHaveBeenCalledTimes(4);
     });
 
     it('should re-initantiate PPOM instance if there are new files', async () => {
