@@ -110,14 +110,11 @@ export type PPOMState = {
   versionInfo: PPOMVersionResponse;
   // storage metadat of files already present in the storage
   storageMetadata: FileMetadataList;
-  // ETag obtained using HEAD request on version file
-  versionFileETag?: string;
 };
 
 const stateMetaData = {
   versionInfo: { persist: true, anonymous: false },
   storageMetadata: { persist: true, anonymous: false },
-  versionFileETag: { persist: true, anonymous: false },
 };
 
 const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
@@ -267,7 +264,6 @@ export class PPOMController extends BaseControllerV2<
     const initialState = {
       versionInfo: state?.versionInfo ?? [],
       storageMetadata: state?.storageMetadata ?? [],
-      versionFileETag: state?.versionFileETag ?? '',
     };
     super({
       name: controllerName,
@@ -374,7 +370,6 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.versionInfo = [];
       draftState.storageMetadata = [];
-      draftState.versionFileETag = '';
     });
     this.#storage.deleteAllFiles(storageMetadata).catch((error: Error) => {
       console.error(`Error in deleting files: ${error.message}`);
@@ -574,8 +569,7 @@ export class PPOMController extends BaseControllerV2<
     url: string,
     options: Record<string, unknown> = {},
     method = 'GET',
-  ): Promise<any> {
-    let cached = false;
+  ): Promise<{ cached: boolean; response: any }> {
     const response = await safelyExecute(
       async () =>
         timeoutFetch(
@@ -590,9 +584,7 @@ export class PPOMController extends BaseControllerV2<
         ),
       true,
     );
-    if (response?.status === 304) {
-      cached = true;
-    }
+    const cached = response?.status === 304;
     if (!response?.status || response?.status < 200 || response?.status > 399) {
       throw new Error(`Failed to fetch file with url: ${url}`);
     }
@@ -605,7 +597,6 @@ export class PPOMController extends BaseControllerV2<
   async #fetchVersionInfo(): Promise<PPOMVersionResponse | undefined> {
     const url = constructURLHref(this.#cdnBaseUrl, PPOM_VERSION_FILE_NAME);
 
-    // If ETag is same it is not required to fetch data files again
     const { cached, response } = await this.#getAPIResponse(url, {
       headers: versionInfoFileHeaders,
     });
