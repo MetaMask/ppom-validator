@@ -110,14 +110,11 @@ export type PPOMState = {
   versionInfo: PPOMVersionResponse;
   // storage metadat of files already present in the storage
   storageMetadata: FileMetadataList;
-  // ETag obtained using HEAD request on version file
-  versionFileETag?: string;
 };
 
 const stateMetaData = {
   versionInfo: { persist: true, anonymous: false },
   storageMetadata: { persist: true, anonymous: false },
-  versionFileETag: { persist: true, anonymous: false },
 };
 
 const PPOM_VERSION_FILE_NAME = 'ppom_version.json';
@@ -267,7 +264,6 @@ export class PPOMController extends BaseControllerV2<
     const initialState = {
       versionInfo: state?.versionInfo ?? [],
       storageMetadata: state?.storageMetadata ?? [],
-      versionFileETag: state?.versionFileETag ?? '',
     };
     super({
       name: controllerName,
@@ -374,7 +370,6 @@ export class PPOMController extends BaseControllerV2<
     this.update((draftState) => {
       draftState.versionInfo = [];
       draftState.storageMetadata = [];
-      draftState.versionFileETag = '';
     });
     this.#storage.deleteAllFiles(storageMetadata).catch((error: Error) => {
       console.error(`Error in deleting files: ${error.message}`);
@@ -574,7 +569,7 @@ export class PPOMController extends BaseControllerV2<
     url: string,
     options: Record<string, unknown> = {},
     method = 'GET',
-  ): Promise<any> {
+  ): Promise<{ cached: boolean; response: any }> {
     const response = await safelyExecute(
       async () =>
         timeoutFetch(
@@ -589,35 +584,11 @@ export class PPOMController extends BaseControllerV2<
         ),
       true,
     );
-    if (response?.status !== 200) {
+    const cached = response?.status === 304;
+    if (!response?.status || response?.status < 200 || response?.status > 399) {
       throw new Error(`Failed to fetch file with url: ${url}`);
     }
-    return response;
-  }
-
-  /*
-   * Function sends a HEAD request to version info file and compares the ETag to the one saved in controller state.
-   * If ETag is not changed we can be sure that there is not change in files and we do not need to fetch data again.
-   */
-  async #checkIfVersionInfoETagChanged(url: string): Promise<boolean> {
-    const headResponse = await this.#getAPIResponse(
-      url,
-      {
-        headers: versionInfoFileHeaders,
-      },
-      'HEAD',
-    );
-
-    const { versionFileETag } = this.state;
-    if (headResponse.headers.get('ETag') === versionFileETag) {
-      return false;
-    }
-
-    this.update((draftState) => {
-      draftState.versionFileETag = headResponse.headers.get('ETag');
-    });
-
-    return true;
+    return { cached, response };
   }
 
   /*
@@ -626,15 +597,14 @@ export class PPOMController extends BaseControllerV2<
   async #fetchVersionInfo(): Promise<PPOMVersionResponse | undefined> {
     const url = constructURLHref(this.#cdnBaseUrl, PPOM_VERSION_FILE_NAME);
 
-    // If ETag is same it is not required to fetch data files again
-    const eTagChanged = await this.#checkIfVersionInfoETagChanged(url);
-    if (!eTagChanged && this.state.versionInfo?.length) {
+    const { cached, response } = await this.#getAPIResponse(url, {
+      headers: versionInfoFileHeaders,
+    });
+
+    if (cached && this.state.versionInfo?.length) {
       return undefined;
     }
 
-    const response = await this.#getAPIResponse(url, {
-      headers: versionInfoFileHeaders,
-    });
     return response.json();
   }
 
@@ -642,7 +612,7 @@ export class PPOMController extends BaseControllerV2<
    * Fetch the blob file from the PPOM cdn.
    */
   async #fetchBlob(url: string): Promise<ArrayBuffer> {
-    const response = await this.#getAPIResponse(url);
+    const { response } = await this.#getAPIResponse(url);
     return await response.arrayBuffer();
   }
 

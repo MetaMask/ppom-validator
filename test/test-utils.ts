@@ -114,18 +114,12 @@ export const buildFetchSpy = (
     status: 200,
     arrayBuffer: () => new ArrayBuffer(123),
   },
-  eTag?: number,
 ) => {
   return jest
     .spyOn(ControllerUtils, 'timeoutFetch' as any)
     .mockImplementation((url: any) => {
       if (url === PPOM_VERSION_PATH) {
-        return {
-          headers: {
-            get: () => eTag ?? Math.round(Math.random() * 100),
-          },
-          ...versionData,
-        };
+        return versionData;
       }
       return blobData;
     });
