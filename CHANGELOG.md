@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.31.0]
-### Uncategorized
+### Changed
 - fix: treat all 2XX or 3XX HTTP response codes as success ([#186](https://github.com/MetaMask/ppom-validator/pull/186))
 
 ## [0.30.0]
