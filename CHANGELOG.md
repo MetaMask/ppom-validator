@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.32.0]
-### Uncategorized
+### Changed
 - Add support for blockaid validation in new networks ([#188](https://github.com/MetaMask/ppom-validator/pull/188))
 
 ## [0.31.0]
