@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.32.0]
+### Uncategorized
+- Add support for blockaid validation in new networks ([#188](https://github.com/MetaMask/ppom-validator/pull/188))
+
 ## [0.31.0]
 ### Changed
 - fix: treat all 2XX or 3XX HTTP response codes as success ([#186](https://github.com/MetaMask/ppom-validator/pull/186))
@@ -166,7 +170,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.31.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.32.0...HEAD
+[0.32.0]: https://github.com/MetaMask/ppom-validator/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/MetaMask/ppom-validator/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/MetaMask/ppom-validator/compare/v0.29.0...v0.30.0
 [0.29.0]: https://github.com/MetaMask/ppom-validator/compare/v0.28.0...v0.29.0
