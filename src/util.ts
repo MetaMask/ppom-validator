@@ -19,6 +19,10 @@ export const SUPPORTED_NETWORK_CHAINIDS = {
   BASE: '0x2105',
   SEPOLIA: '0xaa36a7',
   OPBNB: '0xcc',
+  ZKSYNC: '0x144',
+  SCROLL: '0x82750',
+  BERACHAIN: '0x138d5',
+  METACHAIN_ONE: '0x1b6e6',
 };
 
 export const blockaidValidationSupportedForNetwork = (
