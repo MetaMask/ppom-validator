@@ -2,16 +2,13 @@ import type { RestrictedControllerMessenger } from '@metamask/base-controller';
 import { BaseControllerV2 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import type {
+  NetworkControllerGetNetworkClientByIdAction,
   NetworkControllerStateChangeEvent,
   NetworkState,
   Provider,
 } from '@metamask/network-controller';
-import type {
-  JsonRpcFailure,
-  Json,
-  JsonRpcParams,
-  JsonRpcSuccess,
-} from '@metamask/utils';
+import { JsonRpcError } from '@metamask/rpc-errors';
+import type { Json, JsonRpcParams } from '@metamask/utils';
 import { Mutex } from 'await-semaphore';
 
 import type {
@@ -26,7 +23,6 @@ import {
   checkFilePath,
   constructURLHref,
   createPayload,
-  IdGenerator,
   PROVIDER_ERRORS,
   validateSignature,
 } from './util';
@@ -133,14 +129,16 @@ export type UsePPOM = {
 
 export type PPOMControllerActions = UsePPOM;
 
-export type PPOMControllerEvents = NetworkControllerStateChangeEvent;
+export type AllowedEvents = NetworkControllerStateChangeEvent;
+
+export type AllowedActions = NetworkControllerGetNetworkClientByIdAction;
 
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
-  PPOMControllerActions,
-  NetworkControllerStateChangeEvent,
-  never,
-  NetworkControllerStateChangeEvent['type']
+  PPOMControllerActions | AllowedActions,
+  AllowedEvents,
+  AllowedActions['type'],
+  AllowedEvents['type']
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
@@ -382,7 +380,12 @@ export class PPOMController extends BaseControllerV2<
    * 2. reset PPOM
    */
   #onNetworkChange(networkControllerState: NetworkState): void {
-    const id = addHexPrefix(networkControllerState.providerConfig.chainId);
+    const selectedNetworkClient = this.messagingSystem.call(
+      'NetworkController:getNetworkClientById',
+      networkControllerState.selectedNetworkClientId,
+    );
+    const { chainId } = selectedNetworkClient.configuration;
+    const id = addHexPrefix(chainId);
     if (id === this.#chainId) {
       return;
     }
@@ -620,47 +623,30 @@ export class PPOMController extends BaseControllerV2<
    * Send a JSON RPC request to the provider.
    * This method is used by the PPOM to make requests to the provider.
    */
-  async #jsonRpcRequest(
-    method: string,
-    params: JsonRpcParams,
-  ): Promise<
-    | JsonRpcSuccess<Json>
-    | (Omit<JsonRpcFailure, 'error'> & { error: unknown })
-    | ReturnType<(typeof PROVIDER_ERRORS)[keyof typeof PROVIDER_ERRORS]>
-  > {
-    return new Promise((resolve) => {
-      // Resolve with error if number of requests from PPOM to provider exceeds the limit for the current transaction
-      if (this.#providerRequests > this.#providerRequestLimit) {
-        resolve(PROVIDER_ERRORS.limitExceeded());
-        return;
-      }
-      this.#providerRequests += 1;
-      // Resolve with error if the provider method called by PPOM is not allowed for PPOM
-      if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
-        resolve(PROVIDER_ERRORS.methodNotSupported());
-        return;
-      }
-
-      this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
-        ? Number(this.#providerRequestsCount[method]) + 1
-        : 1;
-
-      // Invoke provider and return result
-      this.#provider.sendAsync(
-        createPayload(method, params),
-        (error, res: JsonRpcSuccess<Json>) => {
-          if (error) {
-            resolve({
-              jsonrpc: '2.0',
-              id: IdGenerator(),
-              error,
-            });
-          } else {
-            resolve(res);
-          }
-        },
+  async #jsonRpcRequest(method: string, params: JsonRpcParams): Promise<Json> {
+    // Resolve with error if number of requests from PPOM to provider exceeds the limit for the current transaction
+    if (this.#providerRequests > this.#providerRequestLimit) {
+      const limitExceededError = PROVIDER_ERRORS.limitExceeded();
+      throw new JsonRpcError(
+        limitExceededError.code,
+        limitExceededError.message,
       );
-    });
+    }
+    this.#providerRequests += 1;
+    // Resolve with error if the provider method called by PPOM is not allowed for PPOM
+    if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
+      const methodNotSupportedError = PROVIDER_ERRORS.methodNotSupported();
+      throw new JsonRpcError(
+        methodNotSupportedError.code,
+        methodNotSupportedError.message,
+      );
+    }
+
+    this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
+      ? Number(this.#providerRequestsCount[method]) + 1
+      : 1;
+
+    return await this.#provider.request(createPayload(method, params));
   }
 
   /*

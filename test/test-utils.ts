@@ -1,10 +1,14 @@
 import { ControllerMessenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
-import type { NetworkState } from '@metamask/network-controller';
+import type {
+  NetworkClientId,
+  NetworkState,
+} from '@metamask/network-controller';
 
 import type {
+  AllowedActions,
+  AllowedEvents,
   PPOMControllerActions,
-  PPOMControllerEvents,
 } from '../src/ppom-controller';
 import { PPOMController } from '../src/ppom-controller';
 import type { StorageKey } from '../src/ppom-storage';
@@ -174,39 +178,60 @@ export class PPOMClass {
   };
 }
 
-export const buildPPOMController = (args?: any) => {
+export const buildPPOMController = (options?: any) => {
   const controllerMessenger: ControllerMessenger<
-    PPOMControllerActions,
-    PPOMControllerEvents
+    PPOMControllerActions | AllowedActions,
+    AllowedEvents
   > = new ControllerMessenger();
+  const messenger = controllerMessenger.getRestricted({
+    name: 'PPOMController',
+    allowedActions: ['NetworkController:getNetworkClientById'],
+    allowedEvents: ['NetworkController:stateChange'],
+  });
+  const mockGetNetworkClientById = jest.fn();
+  controllerMessenger.registerActionHandler(
+    'NetworkController:getNetworkClientById',
+    mockGetNetworkClientById.mockReturnValue({
+      configuration: { chainId: '0x1' },
+      provider: {},
+      destroy: {},
+      blockTracker: {},
+    }),
+  );
   const ppomController = new PPOMController({
     storageBackend: storageBackendReturningData,
     provider: () => undefined,
     chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
-    messenger: controllerMessenger.getRestricted({
-      name: 'PPOMController',
-      allowedEvents: ['NetworkController:stateChange'],
-    }),
+    messenger,
     securityAlertsEnabled: true,
     onPreferencesChange: () => undefined,
     state: {},
     ppomProvider: {
-      ppomInit: () => 123,
+      ppomInit: jest.fn(),
       PPOM: new PPOMClass(),
     },
     cdnBaseUrl: 'ppom_cdn_base_url',
-    ...args,
+    ...options,
   });
-  const changeNetwork = (chainId: string) => {
+  const changeNetwork = ({
+    selectedNetworkClientId,
+  }: {
+    selectedNetworkClientId: NetworkClientId;
+  }) => {
     controllerMessenger.publish(
       'NetworkController:stateChange',
       {
-        providerConfig: { chainId },
+        selectedNetworkClientId,
       } as NetworkState,
       [],
     );
   };
-  return { changeNetwork, controllerMessenger, ppomController };
+  return {
+    changeNetwork,
+    mockGetNetworkClientById,
+    controllerMessenger,
+    ppomController,
+  };
 };
 
 // eslint-disable-next-line jsdoc/require-jsdoc
