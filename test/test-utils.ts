@@ -186,7 +186,7 @@ export const buildPPOMController = (options?: any) => {
   const messenger = controllerMessenger.getRestricted({
     name: 'PPOMController',
     allowedActions: ['NetworkController:getNetworkClientById'],
-    allowedEvents: ['NetworkController:networkDidChange'],
+    allowedEvents: ['NetworkController:stateChange'],
   });
   const mockGetNetworkClientById = jest.fn();
   controllerMessenger.registerActionHandler(
@@ -218,9 +218,13 @@ export const buildPPOMController = (options?: any) => {
   }: {
     selectedNetworkClientId: NetworkClientId;
   }) => {
-    controllerMessenger.publish('NetworkController:networkDidChange', {
-      selectedNetworkClientId,
-    } as NetworkState);
+    controllerMessenger.publish(
+      'NetworkController:stateChange',
+      {
+        selectedNetworkClientId,
+      } as NetworkState,
+      [],
+    );
   };
   return {
     changeNetwork,

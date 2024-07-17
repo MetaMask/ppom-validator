@@ -3,7 +3,7 @@ import { BaseControllerV2 } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import type {
   NetworkControllerGetNetworkClientByIdAction,
-  NetworkControllerNetworkDidChangeEvent,
+  NetworkControllerStateChangeEvent,
   NetworkState,
   Provider,
 } from '@metamask/network-controller';
@@ -129,7 +129,7 @@ export type UsePPOM = {
 
 export type PPOMControllerActions = UsePPOM;
 
-export type AllowedEvents = NetworkControllerNetworkDidChangeEvent;
+export type AllowedEvents = NetworkControllerStateChangeEvent;
 
 export type AllowedActions = NetworkControllerGetNetworkClientByIdAction;
 
@@ -432,7 +432,7 @@ export class PPOMController extends BaseControllerV2<
   #subscribeMessageEvents(): void {
     const onNetworkChange = this.#onNetworkChange.bind(this);
     this.messagingSystem.subscribe(
-      'NetworkController:networkDidChange',
+      'NetworkController:stateChange',
       onNetworkChange,
     );
   }
