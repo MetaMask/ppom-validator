@@ -122,8 +122,8 @@ describe('PPOMController', () => {
       buildFetchSpy();
       const { ppomController } = buildPPOMController({
         provider: {
-          sendAsync: (_arg1: any, arg2: any) => {
-            arg2(undefined, 'DUMMY_VALUE');
+          request: async () => {
+            return Promise.resolve('DUMMY_VALUE');
           },
         },
       });
@@ -244,6 +244,7 @@ describe('PPOMController', () => {
         }),
         state: {
           storageMetadata: StorageMetadata,
+          versionInfo: [],
         },
       });
 
@@ -306,14 +307,29 @@ describe('PPOMController', () => {
         status: 304,
         json: () => VERSION_INFO,
       });
-      const { changeNetwork, ppomController } = buildPPOMController();
+      const { changeNetwork, mockGetNetworkClientById, ppomController } =
+        buildPPOMController();
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
       expect(spy).toHaveBeenCalledTimes(3);
 
-      changeNetwork('0x2');
-      changeNetwork(Utils.SUPPORTED_NETWORK_CHAINIDS.MAINNET);
+      mockGetNetworkClientById.mockReturnValue({
+        configuration: {
+          chainId: '0x2',
+        },
+      });
+      changeNetwork({
+        selectedNetworkClientId: 'selectedNetworkClientId1',
+      });
+      mockGetNetworkClientById.mockReturnValue({
+        configuration: {
+          chainId: Utils.SUPPORTED_NETWORK_CHAINIDS.MAINNET,
+        },
+      });
+      changeNetwork({
+        selectedNetworkClientId: 'selectedNetworkClientId2',
+      });
       await ppomController.usePPOM(async () => {
         return Promise.resolve();
       });
@@ -326,7 +342,7 @@ describe('PPOMController', () => {
       const { ppomController } = buildPPOMController({
         ppomProvider: {
           ppomInit: async () => {
-            return Promise.resolve('123');
+            return Promise.resolve();
           },
           PPOM: new PPOMClass(undefined, freeMock),
         },
@@ -365,36 +381,51 @@ describe('PPOMController', () => {
       const freeMock = jest.fn().mockImplementation(() => {
         throw new Error('some error');
       });
-      const { changeNetwork, ppomController } = buildPPOMController({
-        ppomProvider: {
-          ppomInit: async () => {
-            return Promise.resolve('123');
+      const { changeNetwork, mockGetNetworkClientById, ppomController } =
+        buildPPOMController({
+          ppomProvider: {
+            ppomInit: async () => {
+              return Promise.resolve('123');
+            },
+            PPOM: new PPOMClass(undefined, freeMock),
           },
-          PPOM: new PPOMClass(undefined, freeMock),
-        },
-      });
+        });
       // calling usePPOM initialises PPOM
       await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
 
+      mockGetNetworkClientById.mockReturnValue({
+        configuration: {
+          chainId: '0x2',
+        },
+      });
       expect(async () => {
-        changeNetwork('0x2');
+        changeNetwork({
+          selectedNetworkClientId: 'selectedNetworkClientId1',
+        });
       }).not.toThrow();
       expect(mockMutexUse).toHaveBeenCalledTimes(2);
     });
 
     it('should not do anything when networkChange called for same network', async () => {
       buildFetchSpy();
-      const { changeNetwork, ppomController } = buildPPOMController();
+      const { changeNetwork, mockGetNetworkClientById, ppomController } =
+        buildPPOMController();
       // calling usePPOM initialises PPOM
       await ppomController.usePPOM(async (ppom: any) => {
         expect(ppom).toBeDefined();
         return Promise.resolve();
       });
-
-      changeNetwork(Utils.SUPPORTED_NETWORK_CHAINIDS.MAINNET);
+      mockGetNetworkClientById.mockReturnValue({
+        configuration: {
+          chainId: Utils.SUPPORTED_NETWORK_CHAINIDS.MAINNET,
+        },
+      });
+      changeNetwork({
+        selectedNetworkClientId: 'selectedNetworkClientId1',
+      });
       expect(mockMutexUse).toHaveBeenCalledTimes(1);
     });
   });
@@ -434,7 +465,7 @@ describe('PPOMController', () => {
         },
         ppomProvider: {
           ppomInit: async () => {
-            return Promise.resolve('123');
+            return Promise.resolve();
           },
           PPOM: new PPOMClass(undefined, freeMock),
         },
@@ -473,41 +504,46 @@ describe('PPOMController', () => {
   describe('jsonRPCRequest', () => {
     it('should propagate to ppom in correct format if JSON RPC request on provider fails', async () => {
       buildFetchSpy();
+
       const { ppomController } = buildPPOMController({
         provider: {
-          sendAsync: (_arg1: any, arg2: any) => {
-            arg2('DUMMY_ERROR');
+          request: () => {
+            throw new Error('DUMMY_ERROR');
           },
         },
       });
 
-      const result = await ppomController.usePPOM(async (ppom: any) => {
-        return await ppom.testJsonRPCRequest();
+      await ppomController.usePPOM(async (ppom: any) => {
+        await expect(ppom.testJsonRPCRequest()).rejects.toThrow('DUMMY_ERROR');
       });
-      expect(result.error).toBe('DUMMY_ERROR');
     });
 
     it('should not call provider if method call on provider is not allowed to PPOM', async () => {
       buildFetchSpy();
-      const sendAsyncMock = jest.fn();
+      const requestMock = jest.fn();
       const { ppomController } = buildPPOMController({
         provider: {
-          sendAsync: sendAsyncMock,
+          request: requestMock,
         },
       });
 
       await ppomController.usePPOM(async (ppom: any) => {
-        await ppom.testJsonRPCRequest('DUMMY_METHOD');
+        await expect(ppom.testJsonRPCRequest('DUMMY_METHOD')).rejects.toThrow(
+          expect.objectContaining({
+            code: Utils.PROVIDER_ERRORS.methodNotSupported().code,
+            message: Utils.PROVIDER_ERRORS.methodNotSupported().message,
+          }),
+        );
       });
-      expect(sendAsyncMock).toHaveBeenCalledTimes(0);
+      expect(requestMock).toHaveBeenCalledTimes(0);
     });
 
     it('should rate limit number of requests by PPOM on provider', async () => {
       buildFetchSpy();
       const { ppomController } = buildPPOMController({
         provider: {
-          sendAsync: (_arg1: any, arg2: any) => {
-            arg2(undefined, 'DUMMY_VALUE');
+          request: async () => {
+            return Promise.resolve('DUMMY_VALUE');
           },
         },
         providerRequestLimit: 5,
@@ -520,9 +556,11 @@ describe('PPOMController', () => {
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
-        const result = await ppom.testJsonRPCRequest();
-        expect(result.error.code).toBe(
-          Utils.PROVIDER_ERRORS.limitExceeded().error.code,
+        await expect(ppom.testJsonRPCRequest()).rejects.toThrow(
+          expect.objectContaining({
+            code: Utils.PROVIDER_ERRORS.limitExceeded().code,
+            message: Utils.PROVIDER_ERRORS.limitExceeded().message,
+          }),
         );
       });
     });
@@ -531,8 +569,8 @@ describe('PPOMController', () => {
       buildFetchSpy();
       const { ppomController } = buildPPOMController({
         provider: {
-          sendAsync: (_arg1: any, arg2: any) => {
-            arg2(undefined, 'DUMMY_VALUE');
+          request: async () => {
+            return Promise.resolve('DUMMY_VALUE');
           },
         },
         providerRequestLimit: 25,

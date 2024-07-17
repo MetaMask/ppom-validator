@@ -3,7 +3,6 @@ export type {
   PPOMState,
   UsePPOM,
   PPOMControllerActions,
-  PPOMControllerEvents,
   PPOMControllerMessenger,
 } from './ppom-controller';
 export { NETWORK_CACHE_DURATION, PPOMController } from './ppom-controller';

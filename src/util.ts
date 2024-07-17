@@ -44,24 +44,11 @@ export const createPayload = (method: string, params: JsonRpcParams) =>
   } as const);
 
 export const PROVIDER_ERRORS = {
-  limitExceeded: () =>
-    ({
-      jsonrpc: '2.0',
-      id: IdGenerator(),
-      error: {
-        code: -32005,
-        message: 'Limit exceeded',
-      },
-    } as const),
-  methodNotSupported: () =>
-    ({
-      jsonrpc: '2.0',
-      id: IdGenerator(),
-      error: {
-        code: -32601,
-        message: 'Method not supported',
-      },
-    } as const),
+  limitExceeded: () => ({ code: -32005, message: 'Limit exceeded' }),
+  methodNotSupported: () => ({
+    code: -32601,
+    message: 'Method not supported',
+  }),
 };
 
 const getHash = async (
