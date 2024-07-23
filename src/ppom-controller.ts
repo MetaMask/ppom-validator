@@ -1,5 +1,5 @@
 import type { RestrictedControllerMessenger } from '@metamask/base-controller';
-import { BaseControllerV2 } from '@metamask/base-controller';
+import { BaseController } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import type {
   NetworkControllerGetNetworkClientByIdAction,
@@ -158,7 +158,7 @@ type PPOMProvider = {
  * @property ppom - The PPOM instance
  * @property provider - The provider used to create the PPOM instance
  */
-export class PPOMController extends BaseControllerV2<
+export class PPOMController extends BaseController<
   typeof controllerName,
   PPOMState,
   PPOMControllerMessenger
