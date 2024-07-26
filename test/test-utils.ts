@@ -9,8 +9,9 @@ import type {
   AllowedActions,
   AllowedEvents,
   PPOMControllerActions,
+  PPOMControllerEvents,
 } from '../src/ppom-controller';
-import { PPOMController, PPOMControllerEvents } from '../src/ppom-controller';
+import { PPOMController } from '../src/ppom-controller';
 import type { StorageKey } from '../src/ppom-storage';
 import { SUPPORTED_NETWORK_CHAINIDS } from '../src/util';
 
