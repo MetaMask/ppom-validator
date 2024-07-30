@@ -36,7 +36,7 @@ Controller responsible for managing the PPOM</p>
 <ul class="tsd-hierarchy">
 <li><span class="target">PPOMController</span></li></ul></li></ul></section><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/2083f51/src/ppom-controller.ts#L161">src/ppom-controller.ts:161</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1476041/src/ppom-controller.ts#L177">src/ppom-controller.ts:177</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-index-accordion" open><summary class="tsd-accordion-summary tsd-index-summary">
@@ -51,7 +51,6 @@ Controller responsible for managing the PPOM</p>
 <div class="tsd-index-list"><a href="PPOMController.html#messagingSystem" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><rect fill="var(--color-icon-background)" stroke="#FF984D" stroke-width="1.5" x="1" y="1" width="22" height="22" rx="12" id="icon-1024-path"></rect><path d="M9.354 16V7.24H12.174C12.99 7.24 13.638 7.476 14.118 7.948C14.606 8.412 14.85 9.036 14.85 9.82C14.85 10.604 14.606 11.232 14.118 11.704C13.638 12.168 12.99 12.4 12.174 12.4H10.434V16H9.354ZM10.434 11.428H12.174C12.646 11.428 13.022 11.284 13.302 10.996C13.59 10.7 13.734 10.308 13.734 9.82C13.734 9.324 13.59 8.932 13.302 8.644C13.022 8.356 12.646 8.212 12.174 8.212H10.434V11.428Z" fill="var(--color-text)" id="icon-1024-text"></path></svg><span>messaging<wbr/>System</span></a>
 <a href="PPOMController.html#metadata" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>metadata</span></a>
 <a href="PPOMController.html#name" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>name</span></a>
-<a href="PPOMController.html#subscribe" class="tsd-index-link tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg><span>subscribe</span></a>
 </div></section>
 <section class="tsd-index-section">
 <h3 class="tsd-index-heading">Accessors</h3>
@@ -163,72 +162,62 @@ This is useful to leverage faster native crypto implementation on devices.</p>
 <div class="tsd-comment tsd-typography"><p>The storage backend to use for storing PPOM data.</p>
 </div></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <a href="PPOMController.html" class="tsd-signature-type" data-tsd-kind="Class">PPOMController</a></h4><aside class="tsd-sources">
-<p>Overrides BaseControllerV2&lt;
+<p>Overrides BaseController&lt;
   typeof controllerName,
   PPOMState,
   PPOMControllerMessenger
 &gt;.constructor</p>
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/2083f51/src/ppom-controller.ts#L225">src/ppom-controller.ts:225</a></li></ul></aside></li></ul></section></section>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1476041/src/ppom-controller.ts#L241">src/ppom-controller.ts:241</a></li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Properties</h2>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="messagingSystem" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagProtected">Protected</code> <span>messaging<wbr/>System</span><a href="#messagingSystem" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">messaging<wbr/>System<span class="tsd-signature-symbol">:</span> <a href="../types/PPOMControllerMessenger.html" class="tsd-signature-type" data-tsd-kind="Type alias">PPOMControllerMessenger</a></div><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.messagingSystem</p>
+<p>Inherited from BaseController.messagingSystem</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:55</li></ul></aside></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:72</li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a id="metadata" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagReadonly">Readonly</code> <span>metadata</span><a href="#metadata" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">metadata<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">StateMetadata</span><span class="tsd-signature-symbol">&lt;</span><a href="../types/PPOMState.html" class="tsd-signature-type" data-tsd-kind="Type alias">PPOMState</a><span class="tsd-signature-symbol">&gt;</span></div><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.metadata</p>
+<p>Inherited from BaseController.metadata</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:62</li></ul></aside></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:79</li></ul></aside></section>
 <section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a id="name" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagReadonly">Readonly</code> <span>name</span><a href="#name" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <div class="tsd-signature">name<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">&quot;PPOMController&quot;</span></div>
 <div class="tsd-comment tsd-typography"><p>The name of the controller.</p>
 <p>This is used by the ComposableController to construct a composed application state.</p>
 </div><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.name</p>
+<p>Inherited from BaseController.name</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:61</li></ul></aside></section>
-<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a id="subscribe" class="tsd-anchor"></a>
-<h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagReadonly">Readonly</code> <span>subscribe</span><a href="#subscribe" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
-<div class="tsd-signature">subscribe<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">undefined</span></div>
-<div class="tsd-comment tsd-typography"><p>The existence of the <code>subscribe</code> property is how the ComposableController detects whether a
-controller extends the old BaseController or the new one. We set it to <code>undefined</code> here to
-ensure the ComposableController never mistakes them for an older style controller.</p>
-</div><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.subscribe</p>
-<ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:68</li></ul></aside></section></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:78</li></ul></aside></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Accessors</h2>
 <section class="tsd-panel tsd-member tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a id="state" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>state</span><a href="#state" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited tsd-is-external">
-<li class="tsd-signature" id="state.state-1"><span class="tsd-signature-symbol">get</span> state<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">S</span></li>
+<li class="tsd-signature" id="state.state-1"><span class="tsd-signature-symbol">get</span> state<span class="tsd-signature-symbol">(</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ControllerState</span></li>
 <li class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Retrieves current controller state.</p>
 
 <h3>Returns</h3><p>The current state.</p>
 </div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">S</span></h4><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.state</p>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">ControllerState</span></h4><aside class="tsd-sources">
+<p>Inherited from BaseController.state</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:90</li></ul></aside></li>
-<li class="tsd-signature" id="state.state-2"><span class="tsd-signature-symbol">set</span> state<span class="tsd-signature-symbol">(</span>_<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">S</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:101</li></ul></aside></li>
+<li class="tsd-signature" id="state.state-2"><span class="tsd-signature-symbol">set</span> state<span class="tsd-signature-symbol">(</span>_<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">ControllerState</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">void</span></li>
 <li class="tsd-description">
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
 <li>
-<h5>_: <span class="tsd-signature-type">S</span></h5></li></ul></div>
+<h5>_: <span class="tsd-signature-type">ControllerState</span></h5></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.state</p>
+<p>Inherited from BaseController.state</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:91</li></ul></aside></li></ul></section></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:102</li></ul></aside></li></ul></section></section>
 <section class="tsd-panel-group tsd-member-group">
 <h2>Methods</h2>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="applyPatches" class="tsd-anchor"></a>
@@ -248,9 +237,9 @@ update function itself and can either be normal or inverse patches.</p>
 or undo changes.</p>
 </div></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.applyPatches</p>
+<p>Inherited from BaseController.applyPatches</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:115</li></ul></aside></li></ul></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:126</li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="destroy" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagProtected">Protected</code> <span>destroy</span><a href="#destroy" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external">
@@ -264,9 +253,9 @@ least ensures this instance won&#39;t be responsible for preventing the
 listeners from being garbage collected.</p>
 </div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">void</span></h4><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.destroy</p>
+<p>Inherited from BaseController.destroy</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:125</li></ul></aside></li></ul></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:136</li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a id="update" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><code class="tsd-tag ts-flagProtected">Protected</code> <span>update</span><a href="#update" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external">
@@ -307,9 +296,9 @@ object. Return a new state object or mutate the draft to update state.</p>
 <h5>next<wbr/>State<span class="tsd-signature-symbol">: </span><a href="../types/PPOMState.html" class="tsd-signature-type" data-tsd-kind="Type alias">PPOMState</a></h5></li>
 <li class="tsd-parameter">
 <h5>patches<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Patch</span><span class="tsd-signature-symbol">[]</span></h5></li></ul><aside class="tsd-sources">
-<p>Inherited from BaseControllerV2.update</p>
+<p>Inherited from BaseController.update</p>
 <ul>
-<li>Defined in node_modules/@metamask/base-controller/dist/BaseControllerV2.d.ts:103</li></ul></aside></li></ul></section>
+<li>Defined in node_modules/@metamask/base-controller/dist/types/BaseControllerV2.d.ts:114</li></ul></aside></li></ul></section>
 <section class="tsd-panel tsd-member tsd-kind-method tsd-parent-kind-class"><a id="usePPOM" class="tsd-anchor"></a>
 <h3 class="tsd-anchor-link"><span>usePPOM</span><a href="#usePPOM" aria-label="Permalink" class="tsd-anchor-icon"><svg class="icon icon-tabler icon-tabler-link" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><use href="#icon-anchor-a"></use><use href="#icon-anchor-b"></use><use href="#icon-anchor-c"></use></svg></a></h3>
 <ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
@@ -343,7 +332,7 @@ This function receives a callback that will be called with the PPOM.</p>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type" data-tsd-kind="Type parameter">Type</span><span class="tsd-signature-symbol">&gt;</span></h4></li></ul></li></ul></li></ul></div>
 <h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type" data-tsd-kind="Type parameter">Type</span><span class="tsd-signature-symbol"> &amp; </span><span class="tsd-signature-symbol">{ </span><br/><span>    </span>providerRequestsCount<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">, </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">; </span><br/><span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">&gt;</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/2083f51/src/ppom-controller.ts#L310">src/ppom-controller.ts:310</a></li></ul></aside></li></ul></section></section></div>
+<li>Defined in <a href="https://github.com/MetaMask/ppom-validator/blob/1476041/src/ppom-controller.ts#L326">src/ppom-controller.ts:326</a></li></ul></aside></li></ul></section></section></div>
 <div class="col-4 col-menu menu-sticky-wrap menu-highlight">
 <div class="tsd-navigation settings">
 <details class="tsd-index-accordion"><summary class="tsd-accordion-summary">
@@ -372,7 +361,6 @@ This function receives a callback that will be called with the PPOM.</p>
 <li class="tsd-kind-property tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a href="PPOMController.html#messagingSystem" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>messaging<wbr/>System</a></li>
 <li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="PPOMController.html#metadata" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>metadata</a></li>
 <li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="PPOMController.html#name" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>name</a></li>
-<li class="tsd-kind-property tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="PPOMController.html#subscribe" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-1024-path"></use><use href="#icon-1024-text"></use></svg>subscribe</a></li>
 <li class="tsd-kind-accessor tsd-parent-kind-class tsd-is-inherited tsd-is-external"><a href="PPOMController.html#state" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-262144-path"></use><use href="#icon-262144-text"></use></svg>state</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a href="PPOMController.html#applyPatches" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>apply<wbr/>Patches</a></li>
 <li class="tsd-kind-method tsd-parent-kind-class tsd-is-protected tsd-is-inherited tsd-is-external"><a href="PPOMController.html#destroy" class="tsd-index-link"><svg class="tsd-kind-icon" width="24" height="24" viewBox="0 0 24 24"><use href="#icon-2048-path"></use><use href="#icon-2048-text"></use></svg>destroy</a></li>
