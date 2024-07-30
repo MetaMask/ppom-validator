@@ -9,6 +9,7 @@ import type {
   AllowedActions,
   AllowedEvents,
   PPOMControllerActions,
+  PPOMControllerEvents,
 } from '../src/ppom-controller';
 import { PPOMController } from '../src/ppom-controller';
 import type { StorageKey } from '../src/ppom-storage';
@@ -181,7 +182,7 @@ export class PPOMClass {
 export const buildPPOMController = (options?: any) => {
   const controllerMessenger: ControllerMessenger<
     PPOMControllerActions | AllowedActions,
-    AllowedEvents
+    PPOMControllerEvents | AllowedEvents
   > = new ControllerMessenger();
   const messenger = controllerMessenger.getRestricted({
     name: 'PPOMController',

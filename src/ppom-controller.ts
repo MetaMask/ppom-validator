@@ -1,5 +1,9 @@
-import type { RestrictedControllerMessenger } from '@metamask/base-controller';
-import { BaseControllerV2 } from '@metamask/base-controller';
+import type {
+  ControllerGetStateAction,
+  ControllerStateChangeEvent,
+  RestrictedControllerMessenger,
+} from '@metamask/base-controller';
+import { BaseController } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
 import type {
   NetworkControllerGetNetworkClientByIdAction,
@@ -127,7 +131,19 @@ export type UsePPOM = {
   handler: (callback: (ppom: PPOM) => Promise<unknown>) => Promise<unknown>;
 };
 
-export type PPOMControllerActions = UsePPOM;
+export type PPOMControllerGetStateAction = ControllerGetStateAction<
+  typeof controllerName,
+  PPOMState
+>;
+
+export type PPOMControllerActions = PPOMControllerGetStateAction | UsePPOM;
+
+export type PPOMControllerStateChangeEvent = ControllerStateChangeEvent<
+  typeof controllerName,
+  PPOMState
+>;
+
+export type PPOMControllerEvents = PPOMControllerStateChangeEvent;
 
 export type AllowedEvents = NetworkControllerNetworkDidChangeEvent;
 
@@ -136,7 +152,7 @@ export type AllowedActions = NetworkControllerGetNetworkClientByIdAction;
 export type PPOMControllerMessenger = RestrictedControllerMessenger<
   typeof controllerName,
   PPOMControllerActions | AllowedActions,
-  AllowedEvents,
+  PPOMControllerEvents | AllowedEvents,
   AllowedActions['type'],
   AllowedEvents['type']
 >;
@@ -158,7 +174,7 @@ type PPOMProvider = {
  * @property ppom - The PPOM instance
  * @property provider - The provider used to create the PPOM instance
  */
-export class PPOMController extends BaseControllerV2<
+export class PPOMController extends BaseController<
   typeof controllerName,
   PPOMState,
   PPOMControllerMessenger
