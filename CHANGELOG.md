@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.33.0]
+### Added
+- Add and export types `PPOMControllerGetStateAction`, `PPOMControllerStateChangeEvent`, `PPOMControllerEvents` ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
+
+### Changed
+- **BREAKING:** Bump `@metamask/base-controller` from `^3.0.0` to `^6.0.2` ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
+- **BREAKING:** Adapt to EIP-1193 provider changes by replacing the deprecated `sendAsync` method with the `request` method ([#190](https://github.com/MetaMask/ppom-validator/pull/190))
+- `PPOMControllerMessenger` must allow `PPOMController:getState` action and `PPOMController:stateChange` event  ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
+  - Widen `PPOMControllerActions` to include `PPOMControllerGetStateAction`.
+
+### Fixed
+- Subscribe `PPOMControllerMessenger` to `NetworkController:networkDidChange` event and remove subscription to `NetworkController:stateChange` event ([#192](https://github.com/MetaMask/ppom-validator/pull/192))
+
 ## [0.32.0]
 ### Changed
 - Add support for blockaid validation in new networks ([#188](https://github.com/MetaMask/ppom-validator/pull/188))
@@ -170,7 +183,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.32.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.33.0...HEAD
+[0.33.0]: https://github.com/MetaMask/ppom-validator/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/MetaMask/ppom-validator/compare/v0.31.0...v0.32.0
 [0.31.0]: https://github.com/MetaMask/ppom-validator/compare/v0.30.0...v0.31.0
 [0.30.0]: https://github.com/MetaMask/ppom-validator/compare/v0.29.0...v0.30.0
