@@ -1,6 +1,6 @@
 {
   "name": "@metamask/ppom-validator",
-  "version": "0.32.0",
+  "version": "0.33.0",
   "description": "This module has code to integrate Blockaid PPOM with MetaMask",
   "homepage": "https://github.com/MetaMask/ppom-validator#readme",
   "bugs": {
