@@ -1250,7 +1250,7 @@ __metadata:
     "@metamask/eslint-config-typescript": ^12.1.0
     "@metamask/network-controller": ^20.0.0
     "@metamask/rpc-errors": ^6.3.1
-    "@metamask/utils": ^8.3.0
+    "@metamask/utils": ^9.1.0
     "@types/crypto-js": ^4.2.1
     "@types/elliptic": ^6.4.14
     "@types/jest": ^28.1.6
