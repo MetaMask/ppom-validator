@@ -322,29 +322,29 @@ export class PPOMController extends BaseController<
    * This function receives a callback that will be called with the PPOM.
    *
    * @param callback - Callback to be invoked with PPOM.
+   * @param chainId - ChainId of confirmation.
    */
   async usePPOM<Type>(
     callback: (ppom: PPOM) => Promise<Type>,
+    chainId?: string,
   ): Promise<Type & { providerRequestsCount: Record<string, number> }> {
+    const chainIdForRequest = chainId ?? this.#chainId;
     if (!this.#securityAlertsEnabled) {
       throw Error('User has securityAlertsEnabled set to false');
     }
-    if (!blockaidValidationSupportedForNetwork(this.#chainId)) {
+    if (!blockaidValidationSupportedForNetwork(chainIdForRequest)) {
       throw Error(
-        `Blockaid validation not available on network with chainId: ${
-          this.#chainId
-        }`,
+        `Blockaid validation not available on network with chainId: ${chainIdForRequest}`,
       );
     }
     return await this.#ppomMutex.use(async () => {
-      await this.#initPPOMIfRequired();
+      const ppom = await this.#initPPOMIfRequired(chainIdForRequest);
 
       this.#providerRequests = 0;
       this.#providerRequestsCount = {};
 
-      // `this.#ppom` is defined in `#initPPOMIfRequired`
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const result = await callback(this.#ppom!);
+      const result = await callback(ppom!);
 
       return {
         ...result,
@@ -468,14 +468,22 @@ export class PPOMController extends BaseController<
   /*
    * The function will initialise PPOM for the network if required.
    */
-  async #initPPOMIfRequired(): Promise<void> {
+  async #initPPOMIfRequired(chainId: string): Promise<PPOM | undefined> {
     const versionInfoUpdated = await this.#updateVersionInfo();
+    let ppom;
     if (this.#ppom === undefined || versionInfoUpdated) {
-      this.#ppom = await this.#getPPOM();
+      ppom = await this.#getPPOM(chainId);
+      if (this.#chainId === chainId) {
+        if (this.#ppom) {
+          this.#ppom.free();
+        }
+        this.#ppom = ppom;
+      }
       this.#storage.syncMetadata(this.state.versionInfo).catch((exp: Error) => {
         console.error(`Error while trying to sync metadata: ${exp.message}`);
       });
     }
+    return ppom;
   }
 
   /*
@@ -662,7 +670,9 @@ export class PPOMController extends BaseController<
       ? Number(this.#providerRequestsCount[method]) + 1
       : 1;
 
-    return await this.#provider.request(createPayload(method, params));
+    const payload = createPayload(method, params);
+    const result = await this.#provider.request(payload);
+    return { jsonrpc: '2.0', id: payload.id, result };
   }
 
   /*
@@ -671,12 +681,12 @@ export class PPOMController extends BaseController<
    *
    * It will load the data files from storage and pass data files and wasm file to ppom.
    */
-  async #getPPOM(): Promise<PPOM> {
+  async #getPPOM(chainId: string): Promise<PPOM> {
     // PPOM initialisation in contructor fails for react native
     // thus it is added here to prevent validation from failing.
     await this.#initialisePPOM();
     const versionInfo = this.state.versionInfo.filter(
-      ({ chainId: id }) => id === this.#chainId,
+      ({ chainId: id }) => id === chainId,
     );
 
     // The following code throw error if no data files are found for the chainId.
@@ -685,9 +695,7 @@ export class PPOMController extends BaseController<
     // this can be achieved by returning empty data from version file.
     if (versionInfo?.length === undefined || versionInfo?.length === 0) {
       throw new Error(
-        `Aborting initialising PPOM as no files are found for the network with chainId: ${
-          this.#chainId
-        }`,
+        `Aborting initialising PPOM as no files are found for the network with chainId: ${chainId}`,
       );
     }
 
@@ -696,15 +704,10 @@ export class PPOMController extends BaseController<
 
     if (files?.length !== versionInfo?.length) {
       throw new Error(
-        `Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: ${
-          this.#chainId
-        }`,
+        `Aborting initialising PPOM as not all files could not be downloaded for the network with chainId: ${chainId}`,
       );
     }
 
-    if (this.#ppom) {
-      this.#ppom.free();
-    }
     const { PPOM } = this.#ppomProvider;
     return PPOM.new(this.#jsonRpcRequest.bind(this), files);
   }

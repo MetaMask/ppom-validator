@@ -89,6 +89,31 @@ describe('PPOMController', () => {
       expect(result).toStrictEqual(dummyResponse);
     });
 
+    it('should initialise PPOM on even different network', async () => {
+      buildFetchSpy({
+        status: 200,
+        json: () => [
+          {
+            name: 'blob',
+            chainId: '0xa',
+            version: '1.0.0',
+            checksum:
+              '409a7f83ac6b31dc8c77e3ec18038f209bd2f545e0f4177c2e2381aa4e067b49',
+            signature:
+              '0x304402206d433e9172960de6717d94ae263e47eefacd3584a3274a452f8f9567b3a797db02201b2e423188fb3f9daa6ce6a8723f69df26bd3ceeee81f77250526b91e093614f',
+            filePath: 'blob',
+          },
+        ],
+      });
+      const { ppomController } = buildPPOMController();
+
+      const result = await ppomController.usePPOM(async (ppom: any) => {
+        expect(ppom).toBeDefined();
+        return Promise.resolve(dummyResponse);
+      }, '0xa');
+      expect(result).toStrictEqual(dummyResponse);
+    });
+
     it('should not fetch files for network not supported for PPOM validations', async () => {
       const spy = buildFetchSpy(
         {
@@ -130,7 +155,7 @@ describe('PPOMController', () => {
 
       await ppomController.usePPOM(async (ppom: any) => {
         const result = await ppom.testJsonRPCRequest();
-        expect(result).toBe('DUMMY_VALUE');
+        expect(result.result).toBe('DUMMY_VALUE');
       });
     });
 
