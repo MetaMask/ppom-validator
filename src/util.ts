@@ -21,7 +21,7 @@ export const SUPPORTED_NETWORK_CHAINIDS = {
   OPBNB: '0xcc',
   ZKSYNC: '0x144',
   SCROLL: '0x82750',
-  BERACHAIN: '0x138d4',
+  BERACHAIN: '0x138d5',
   METACHAIN_ONE: '0x1b6e6',
 };
 
