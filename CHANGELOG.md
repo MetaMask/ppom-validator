@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.34.0]
-### Uncategorized
+### Changed
 - fix: update berachain  `chainid` ([#205](https://github.com/MetaMask/ppom-validator/pull/205))
 - feat: add support for multichain in PPOM Controller ([#204](https://github.com/MetaMask/ppom-validator/pull/204))
 
