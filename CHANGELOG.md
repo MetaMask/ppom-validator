@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.35.0]
+### Changed
+- **BREAKING:** Bump `@metamask/base-controller` from `^6.0.2` to `^7.0.1`
+- **BREAKING:** Bump `@metamask/controller-utils` from `^8.0.1` to `^11.3.0`
+- **BREAKING:** Bump `@metamask/utils` from `^8.3.0` to `^9.2.1`
+- Bump `@metamask/rpc-errors` from `^6.3.1` to `^6.4.0`
+
+### Fixed
+- **BREAKING:** Add `@metamask/network-controller` as dev dependency (`^21.0.1`) and peer dependency (`^21.0.0`)
+  - Remove `@metamask/network-controller` as dependency.
+  - This peer dependency relationship was already relied upon since `0.16.0`, when `PPOMController` started communicating with `NetworkController` via messenger, but was not reflected in the package manifest until now.
+
 ## [0.34.0]
 ### Changed
 - fix: update berachain  `chainid` ([#205](https://github.com/MetaMask/ppom-validator/pull/205))
@@ -188,7 +200,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.34.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.35.0...HEAD
+[0.35.0]: https://github.com/MetaMask/ppom-validator/compare/v0.34.0...v0.35.0
 [0.34.0]: https://github.com/MetaMask/ppom-validator/compare/v0.33.0...v0.34.0
 [0.33.0]: https://github.com/MetaMask/ppom-validator/compare/v0.32.0...v0.33.0
 [0.32.0]: https://github.com/MetaMask/ppom-validator/compare/v0.31.0...v0.32.0
