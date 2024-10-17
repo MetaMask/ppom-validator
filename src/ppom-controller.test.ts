@@ -529,17 +529,18 @@ describe('PPOMController', () => {
   describe('jsonRPCRequest', () => {
     it('should propagate to ppom in correct format if JSON RPC request on provider fails', async () => {
       buildFetchSpy();
-
+      const error = new Error('DUMMY_ERROR');
       const { ppomController } = buildPPOMController({
         provider: {
           request: () => {
-            throw new Error('DUMMY_ERROR');
+            throw error;
           },
         },
       });
 
       await ppomController.usePPOM(async (ppom: any) => {
-        await expect(ppom.testJsonRPCRequest()).rejects.toThrow('DUMMY_ERROR');
+        const result = await ppom.testJsonRPCRequest();
+        expect(result.error).toBe(error);
       });
     });
 
