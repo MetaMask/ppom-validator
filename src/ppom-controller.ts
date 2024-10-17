@@ -650,20 +650,12 @@ export class PPOMController extends BaseController<
   async #jsonRpcRequest(method: string, params: JsonRpcParams): Promise<Json> {
     // Resolve with error if number of requests from PPOM to provider exceeds the limit for the current transaction
     if (this.#providerRequests > this.#providerRequestLimit) {
-      const limitExceededError = PROVIDER_ERRORS.limitExceeded();
-      throw new JsonRpcError(
-        limitExceededError.code,
-        limitExceededError.message,
-      );
+      return PROVIDER_ERRORS.limitExceeded();
     }
     this.#providerRequests += 1;
     // Resolve with error if the provider method called by PPOM is not allowed for PPOM
     if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
-      const methodNotSupportedError = PROVIDER_ERRORS.methodNotSupported();
-      throw new JsonRpcError(
-        methodNotSupportedError.code,
-        methodNotSupportedError.message,
-      );
+      return PROVIDER_ERRORS.methodNotSupported();
     }
 
     this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
