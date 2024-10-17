@@ -11,7 +11,6 @@ import type {
   NetworkState,
   Provider,
 } from '@metamask/network-controller';
-import { JsonRpcError } from '@metamask/rpc-errors';
 import type { Json, JsonRpcParams } from '@metamask/utils';
 import { Mutex } from 'await-semaphore';
 
@@ -647,23 +646,18 @@ export class PPOMController extends BaseController<
    * Send a JSON RPC request to the provider.
    * This method is used by the PPOM to make requests to the provider.
    */
-  async #jsonRpcRequest(method: string, params: JsonRpcParams): Promise<Json> {
+  async #jsonRpcRequest(
+    method: string,
+    params: JsonRpcParams,
+  ): Promise<unknown> {
     // Resolve with error if number of requests from PPOM to provider exceeds the limit for the current transaction
     if (this.#providerRequests > this.#providerRequestLimit) {
-      const limitExceededError = PROVIDER_ERRORS.limitExceeded();
-      throw new JsonRpcError(
-        limitExceededError.code,
-        limitExceededError.message,
-      );
+      return PROVIDER_ERRORS.limitExceeded();
     }
     this.#providerRequests += 1;
     // Resolve with error if the provider method called by PPOM is not allowed for PPOM
     if (!ALLOWED_PROVIDER_CALLS.includes(method)) {
-      const methodNotSupportedError = PROVIDER_ERRORS.methodNotSupported();
-      throw new JsonRpcError(
-        methodNotSupportedError.code,
-        methodNotSupportedError.message,
-      );
+      return PROVIDER_ERRORS.methodNotSupported();
     }
 
     this.#providerRequestsCount[method] = this.#providerRequestsCount[method]
@@ -671,8 +665,16 @@ export class PPOMController extends BaseController<
       : 1;
 
     const payload = createPayload(method, params);
-    const result = await this.#provider.request(payload);
-    return { jsonrpc: '2.0', id: payload.id, result };
+    try {
+      const result = await this.#provider.request(payload);
+      return { jsonrpc: '2.0', id: payload.id, result };
+    } catch (error) {
+      return {
+        jsonrpc: '2.0',
+        id: payload.id,
+        error,
+      };
+    }
   }
 
   /*

@@ -1206,7 +1206,6 @@ __metadata:
     "@metamask/eslint-config-nodejs": ^12.1.0
     "@metamask/eslint-config-typescript": ^12.1.0
     "@metamask/network-controller": ^21.0.1
-    "@metamask/rpc-errors": ^6.4.0
     "@metamask/utils": ^9.2.1
     "@types/crypto-js": ^4.2.1
     "@types/elliptic": ^6.4.14
@@ -1242,7 +1241,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@metamask/rpc-errors@npm:^6.0.0, @metamask/rpc-errors@npm:^6.1.0, @metamask/rpc-errors@npm:^6.3.1, @metamask/rpc-errors@npm:^6.4.0":
+"@metamask/rpc-errors@npm:^6.0.0, @metamask/rpc-errors@npm:^6.1.0, @metamask/rpc-errors@npm:^6.3.1":
   version: 6.4.0
   resolution: "@metamask/rpc-errors@npm:6.4.0"
   dependencies:

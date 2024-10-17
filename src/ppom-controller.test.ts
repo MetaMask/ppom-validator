@@ -529,17 +529,18 @@ describe('PPOMController', () => {
   describe('jsonRPCRequest', () => {
     it('should propagate to ppom in correct format if JSON RPC request on provider fails', async () => {
       buildFetchSpy();
-
+      const error = new Error('DUMMY_ERROR');
       const { ppomController } = buildPPOMController({
         provider: {
           request: () => {
-            throw new Error('DUMMY_ERROR');
+            throw error;
           },
         },
       });
 
       await ppomController.usePPOM(async (ppom: any) => {
-        await expect(ppom.testJsonRPCRequest()).rejects.toThrow('DUMMY_ERROR');
+        const result = await ppom.testJsonRPCRequest();
+        expect(result.error).toBe(error);
       });
     });
 
@@ -553,12 +554,11 @@ describe('PPOMController', () => {
       });
 
       await ppomController.usePPOM(async (ppom: any) => {
-        await expect(ppom.testJsonRPCRequest('DUMMY_METHOD')).rejects.toThrow(
-          expect.objectContaining({
-            code: Utils.PROVIDER_ERRORS.methodNotSupported().code,
-            message: Utils.PROVIDER_ERRORS.methodNotSupported().message,
-          }),
-        );
+        const result = await ppom.testJsonRPCRequest('DUMMY_METHOD');
+        expect(result.error).toStrictEqual({
+          code: Utils.PROVIDER_ERRORS.methodNotSupported().error.code,
+          message: Utils.PROVIDER_ERRORS.methodNotSupported().error.message,
+        });
       });
       expect(requestMock).toHaveBeenCalledTimes(0);
     });
@@ -581,12 +581,10 @@ describe('PPOMController', () => {
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
         await ppom.testJsonRPCRequest();
-        await expect(ppom.testJsonRPCRequest()).rejects.toThrow(
-          expect.objectContaining({
-            code: Utils.PROVIDER_ERRORS.limitExceeded().code,
-            message: Utils.PROVIDER_ERRORS.limitExceeded().message,
-          }),
-        );
+        expect((await ppom.testJsonRPCRequest()).error).toStrictEqual({
+          code: Utils.PROVIDER_ERRORS.limitExceeded().error.code,
+          message: Utils.PROVIDER_ERRORS.limitExceeded().error.message,
+        });
       });
     });
 
