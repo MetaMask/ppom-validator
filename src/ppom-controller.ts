@@ -11,7 +11,6 @@ import type {
   NetworkState,
   Provider,
 } from '@metamask/network-controller';
-import { JsonRpcError } from '@metamask/rpc-errors';
 import type { Json, JsonRpcParams } from '@metamask/utils';
 import { Mutex } from 'await-semaphore';
 
