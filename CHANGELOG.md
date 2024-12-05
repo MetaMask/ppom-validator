@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.36.0]
-### Uncategorized
-- chore: bump `@metamask/network-controller` peer dependency to `^22.0.0` ([#232](https://github.com/MetaMask/ppom-validator/pull/232))
 
 ### Changed
 - **BREAKING:** Bump `@metamask/network-controller` peer dependency to `^22.0.0` ([#4841](https://github.com/MetaMask/ppom-validator/pull/232))
