@@ -1,4 +1,4 @@
-import { ControllerMessenger } from '@metamask/base-controller';
+import { Messenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
 import type {
   NetworkClientId,
@@ -180,10 +180,10 @@ export class PPOMClass {
 }
 
 export const buildPPOMController = (options?: any) => {
-  const controllerMessenger: ControllerMessenger<
+  const controllerMessenger: Messenger<
     PPOMControllerActions | AllowedActions,
     PPOMControllerEvents | AllowedEvents
-  > = new ControllerMessenger();
+  > = new Messenger();
   const messenger = controllerMessenger.getRestricted({
     name: 'PPOMController',
     allowedActions: ['NetworkController:getNetworkClientById'],
