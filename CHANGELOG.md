@@ -7,9 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [0.37.0]
-### Uncategorized
-- chore: add workflow_dispatch to security-code-scanner ([#240](https://github.com/MetaMask/ppom-validator/pull/240))
-
 ### Changed
 - **BREAKING:** Bump `@metamask/network-controller` peer dependency to `^24.0.0` ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
 - **BREAKING:** Add `@metamask/error-reporting-service` peer dependency ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
