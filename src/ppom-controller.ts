@@ -1,7 +1,7 @@
 import type {
   ControllerGetStateAction,
   ControllerStateChangeEvent,
-  RestrictedControllerMessenger,
+  RestrictedMessenger,
 } from '@metamask/base-controller';
 import { BaseController } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
@@ -148,7 +148,7 @@ export type AllowedEvents = NetworkControllerNetworkDidChangeEvent;
 
 export type AllowedActions = NetworkControllerGetNetworkClientByIdAction;
 
-export type PPOMControllerMessenger = RestrictedControllerMessenger<
+export type PPOMControllerMessenger = RestrictedMessenger<
   typeof controllerName,
   PPOMControllerActions | AllowedActions,
   PPOMControllerEvents | AllowedEvents,

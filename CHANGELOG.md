@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Changed
+- **BREAKING:** Bump `@metamask/network-controller` peer dependency to `^24.0.0` ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
+- **BREAKING:** Add `@metamask/error-reporting-service` peer dependency ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
+- Bump `@metamask/base-controller` from `^7.0.1` to `^8.3.0` ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
 
 ## [0.36.0]
 ### Changed
