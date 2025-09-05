@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.38.0]
 
-### Uncategorized
-
-- chore: Update `action-create-release-pr` to v3 ([#247](https://github.com/MetaMask/ppom-validator/pull/247))
-
 ### Added
 
 - Add two new controller state metadata properties: `includeInStateLogs` and `usedInUi` ([#246](https://github.com/MetaMask/core/pull/246))
