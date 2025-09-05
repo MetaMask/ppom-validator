@@ -1,211 +1,297 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
 ### Added
+
 - Add two new controller state metadata properties: `includeInStateLogs` and `usedInUi` ([#246](https://github.com/MetaMask/core/pull/246))
 
 ## [0.37.0]
+
 ### Changed
+
 - **BREAKING:** Bump `@metamask/network-controller` peer dependency to `^24.0.0` ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
 - **BREAKING:** Add `@metamask/error-reporting-service` peer dependency ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
 - Bump `@metamask/base-controller` from `^7.0.1` to `^8.3.0` ([#244](https://github.com/MetaMask/ppom-validator/pull/244))
 
 ## [0.36.0]
+
 ### Changed
+
 - **BREAKING:** Bump `@metamask/network-controller` peer dependency to `^22.0.0` ([#4841](https://github.com/MetaMask/ppom-validator/pull/232))
 
 ## [0.35.1]
+
 ### Fixed
+
 - Update `usePPOM` method to handle errors by returning them instead of throwing exceptions ([#226](https://github.com/MetaMask/ppom-validator/pull/226))
 
 ## [0.35.0]
+
 ### Changed
+
 - **BREAKING:** Bump `@metamask/base-controller` from `^6.0.2` to `^7.0.1`
 - **BREAKING:** Bump `@metamask/controller-utils` from `^8.0.1` to `^11.3.0`
 - **BREAKING:** Bump `@metamask/utils` from `^8.3.0` to `^9.2.1`
 - Bump `@metamask/rpc-errors` from `^6.3.1` to `^6.4.0`
 
 ### Fixed
+
 - **BREAKING:** Add `@metamask/network-controller` as dev dependency (`^21.0.1`) and peer dependency (`^21.0.0`)
   - Remove `@metamask/network-controller` as dependency.
   - This peer dependency relationship was already relied upon since `0.16.0`, when `PPOMController` started communicating with `NetworkController` via messenger, but was not reflected in the package manifest until now.
 
 ## [0.34.0]
+
 ### Changed
-- fix: update berachain  `chainid` ([#205](https://github.com/MetaMask/ppom-validator/pull/205))
+
+- fix: update berachain `chainid` ([#205](https://github.com/MetaMask/ppom-validator/pull/205))
 - feat: add support for multichain in PPOM Controller ([#204](https://github.com/MetaMask/ppom-validator/pull/204))
 
 ## [0.33.0]
+
 ### Added
+
 - Add and export types `PPOMControllerGetStateAction`, `PPOMControllerStateChangeEvent`, `PPOMControllerEvents` ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
 
 ### Changed
+
 - **BREAKING:** Bump `@metamask/base-controller` from `^3.0.0` to `^6.0.2` ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
 - **BREAKING:** Adapt to EIP-1193 provider changes by replacing the deprecated `sendAsync` method with the `request` method ([#190](https://github.com/MetaMask/ppom-validator/pull/190))
-- `PPOMControllerMessenger` must allow `PPOMController:getState` action and `PPOMController:stateChange` event  ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
+- `PPOMControllerMessenger` must allow `PPOMController:getState` action and `PPOMController:stateChange` event ([#193](https://github.com/MetaMask/ppom-validator/pull/193))
   - Widen `PPOMControllerActions` to include `PPOMControllerGetStateAction`.
 
 ### Fixed
+
 - Subscribe `PPOMControllerMessenger` to `NetworkController:networkDidChange` event and remove subscription to `NetworkController:stateChange` event ([#192](https://github.com/MetaMask/ppom-validator/pull/192))
 
 ## [0.32.0]
+
 ### Changed
+
 - Add support for blockaid validation in new networks ([#188](https://github.com/MetaMask/ppom-validator/pull/188))
 
 ## [0.31.0]
+
 ### Changed
+
 - fix: treat all 2XX or 3XX HTTP response codes as success ([#186](https://github.com/MetaMask/ppom-validator/pull/186))
 
 ## [0.30.0]
+
 ### Changed
+
 - feat: adding OPBNB network support for blockaid validations ([#184](https://github.com/MetaMask/ppom-validator/pull/184))
 
 ## [0.29.0]
+
 ### Changed
+
 - Fix access to PPOM instance and wrap it in mutex lock ([#178](https://github.com/MetaMask/ppom-validator/pull/178))
 
 ## [0.28.0]
+
 ### Changed
+
 - Fix writing files to storage ([#174](https://github.com/MetaMask/ppom-validator/pull/174))
 
 ## [0.27.0]
+
 ### Changed
+
 - Support for new networks ([#161](https://github.com/MetaMask/ppom-validator/pull/161))
 
 ## [0.26.0]
+
 ### Changed
+
 - Typing fixes in api interface ([#155](https://github.com/MetaMask/ppom-validator/pull/155))
 
 ## [0.25.0]
+
 ### Changed
+
 - Download files and initialise PPOM when first transaction on network is received ([#151](https://github.com/MetaMask/ppom-validator/pull/151))
 - Typing fixes for `provider`, `ppom` and other `any` usage ([#89](https://github.com/MetaMask/ppom-validator/pull/89))
 
 ## [0.24.0]
+
 ### Changed
+
 - fix: delete all files fails when blockaid preference is disabled ([#148](https://github.com/MetaMask/ppom-validator/pull/148))
 
 ## [0.23.0]
+
 ### Changed
+
 - Metadata should be synced for only active networks ([#146](https://github.com/MetaMask/ppom-validator/pull/146))
 - Delete files from storage as blockaid preference is disabled ([#145](https://github.com/MetaMask/ppom-validator/pull/145))
 - Remove dangling promises ([#136](https://github.com/MetaMask/ppom-validator/pull/136))
 
 ## [0.22.0]
+
 ### Changed
+
 - Add option to use crypto implementation pass to the constructor ([#134](https://github.com/MetaMask/ppom-validator/pull/134))
 
 ## [0.21.0]
+
 ### Changed
+
 - PPOMController fixes for mobile multichain ([#132](https://github.com/MetaMask/ppom-validator/pull/132))
 
 ## [0.20.0]
+
 ### Changed
+
 - Add support for multiple chains ([#130](https://github.com/MetaMask/ppom-validator/pull/130))
 
 ## [0.19.0]
+
 ### Changed
+
 - Reinitialise PPOM for new network on network change ([#127](https://github.com/MetaMask/ppom-validator/pull/127))
 
 ## [0.18.0]
+
 ### Changed
+
 - Revert "Bump @metamask/base-controller from 3.2.3 to 4.0.1 (#117)" ([#117](https://github.com/MetaMask/ppom-validator/pull/117))
 
 ## [0.17.0]
+
 ### Changed
+
 - Intialise PPOM only if user is on mainnet ([#121](https://github.com/MetaMask/ppom-validator/pull/121))
 
 ## [0.16.0]
+
 ### Changed
+
 - Fix use of messenger in PPOMController ([#110](https://github.com/MetaMask/ppom-validator/pull/110))
 
 ## [0.15.0]
+
 ### Changed
+
 - Cleanup and refactor method to get all files for a network ([#107](https://github.com/MetaMask/ppom-validator/pull/107))
 
 ## [0.14.0]
+
 ### Changed
+
 - Add code changes to handle memory corruption ([#105](https://github.com/MetaMask/ppom-validator/pull/105))
 
 ## [0.13.0]
+
 ### Changed
+
 - Refactoring and code cleanup in PPOMController ([#103](https://github.com/MetaMask/ppom-validator/pull/103))
 - Start fetching files for mainnet as blockaid preference is enabled ([#102](https://github.com/MetaMask/ppom-validator/pull/102))
 - PPOM instance to stay when user switch the network ([#101](https://github.com/MetaMask/ppom-validator/pull/101))
 
 ## [0.12.0]
+
 ### Changed
+
 - Adding to callback to be invoked once ppom intialisation completes ([#98](https://github.com/MetaMask/ppom-validator/pull/98))
 - PPOM instance should be kept in memory ([#96](https://github.com/MetaMask/ppom-validator/pull/96))
 - Optimise validate signature ([#95](https://github.com/MetaMask/ppom-validator/pull/95))
 
 ## [0.11.0]
+
 ### Changed
+
 - Remove floating promise from constructor ([#86](https://github.com/MetaMask/ppom-validator/pull/86))
 
 ## [0.10.0]
+
 ### Changed
+
 - Fix PPOM initialisation in mobile ([#83](https://github.com/MetaMask/ppom-validator/pull/83))
 - Instantiate PPOM per request ([#81](https://github.com/MetaMask/ppom-validator/pull/81))
 
 ## [0.9.0]
+
 ### Changed
+
 - Performance Improvement: async instantation of PPOM instance by passing data files ([#77](https://github.com/MetaMask/ppom-validator/pull/77))
 - Performance Improvement: async initialization on ppom padding wasm file after PPOMController is constructed ([#73](https://github.com/MetaMask/ppom-validator/pull/73))
 
 ## [0.8.0]
+
 ### Changed
+
 - Create copy of providerRequestsCount to avoid returning instance variable from PPOMController ([#72](https://github.com/MetaMask/ppom-validator/pull/72))
 
 ## [0.7.0]
+
 ### Changed
+
 - PPOM init should be called only once during initialisation ([#65](https://github.com/MetaMask/ppom-validator/pull/65))
 - Fix syncing file metadata to remove old files ([#66](https://github.com/MetaMask/ppom-validator/pull/66))
 - Record the number of times each RPC call is made ([#62](https://github.com/MetaMask/ppom-validator/pull/62))
 
 ## [0.6.0]
+
 ### Changed
+
 - RPC payload fix ([#61](https://github.com/MetaMask/ppom-validator/pull/61))
 - Using old data files for validation until new ones are fetched ([#51](https://github.com/MetaMask/ppom-validator/pull/51))
 - Fix prefixing of hex value on chain id ([#50](https://github.com/MetaMask/ppom-validator/pull/50))
 
 ## [0.5.0]
+
 ### Changed
+
 - Fix the check for ethereum mainnet and add hex prefix to chainId ([#48](https://github.com/MetaMask/ppom-validator/pull/48))
 
 ## [0.4.0]
+
 ### Changed
+
 - PPOM should function only if user is on ethereum mainnet ([#46](https://github.com/MetaMask/ppom-validator/pull/46))
 - Handle corruption of localstorage data files ([#44](https://github.com/MetaMask/ppom-validator/pull/44))
 
 ## [0.3.0]
+
 ### Changed
+
 - Fix issue with fetching files the first time extension is installed ([#39](https://github.com/MetaMask/ppom-validator/pull/39))
 - Fix url construction for fetching blockaid files from CDN ([#40](https://github.com/MetaMask/ppom-validator/pull/40))
 
 ## [0.2.0]
+
 ### Changed
+
 - Adding code to verify signature of data blobs fetched from CDN ([#35](https://github.com/MetaMask/ppom-validator/pull/35))
 - Rate limit requests to the provider ([#28](https://github.com/MetaMask/ppom-validator/pull/28))
 - Validate path of data files ([#27](https://github.com/MetaMask/ppom-validator/pull/27))
 
 ## [0.1.2]
+
 ### Changed
+
 - Change in way new ppom module is initialised ([#29](https://github.com/MetaMask/ppom-validator/pull/29))
 
 ## [0.1.1]
+
 ### Added
+
 - Improvements in CDN data fetching ([#15](https://github.com/MetaMask/ppom-validator/pull/15))
 - Mobile integration ([#14](https://github.com/MetaMask/ppom-validator/pull/14))
 - Caching data for multiple networks ([#10](https://github.com/MetaMask/ppom-validator/pull/10))
 - Adding periodic sync for ppom data ([#6](https://github.com/MetaMask/ppom-validator/pull/6))
 
 ## [0.0.1]
+
 ### Added
+
 - Add PPOM middleware ([#5](https://github.com/MetaMask/ppom-validator/pull/5))
 - Add PPOM controller ([#4](https://github.com/MetaMask/ppom-validator/pull/4))
 - Add PPOM wasm code ([#3](https://github.com/MetaMask/ppom-validator/pull/3))
@@ -213,6 +299,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initialize the repo from https://github.com/MetaMask/metamask-module-template ([#2](https://github.com/MetaMask/ppom-validator/pull/2))
 
 ### Changed
+
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
