@@ -112,8 +112,18 @@ export type PPOMState = {
 };
 
 const stateMetaData = {
-  versionInfo: { persist: true, anonymous: false },
-  storageMetadata: { persist: true, anonymous: false },
+  versionInfo: {
+    includeInStateLogs: true,
+    persist: true,
+    anonymous: false,
+    usedInUi: false,
+  },
+  storageMetadata: {
+    includeInStateLogs: false,
+    persist: true,
+    anonymous: false,
+    usedInUi: false,
+  },
 };
 
 const PPOM_VERSION_FILE_NAME = 'ppom_version.json';

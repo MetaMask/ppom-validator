@@ -1,3 +1,5 @@
+import { deriveStateFromMetadata } from '@metamask/base-controller';
+
 import * as Utils from './util';
 import {
   buildDummyResponse,
@@ -620,6 +622,65 @@ describe('PPOMController', () => {
       };
 
       expect(result.providerRequestsCount).toStrictEqual(providerRequestsCount);
+    });
+  });
+
+  describe('metadata', () => {
+    it('includes expected state in debug snapshots', () => {
+      const { ppomController: controller } = buildPPOMController();
+
+      expect(
+        deriveStateFromMetadata(
+          controller.state,
+          controller.metadata,
+          'anonymous',
+        ),
+      ).toMatchInlineSnapshot(`Object {}`);
+    });
+
+    it('includes expected state in state logs', () => {
+      const { ppomController: controller } = buildPPOMController();
+
+      expect(
+        deriveStateFromMetadata(
+          controller.state,
+          controller.metadata,
+          'includeInStateLogs',
+        ),
+      ).toMatchInlineSnapshot(`
+        Object {
+          "versionInfo": Array [],
+        }
+      `);
+    });
+
+    it('persists expected state', () => {
+      const { ppomController: controller } = buildPPOMController();
+
+      expect(
+        deriveStateFromMetadata(
+          controller.state,
+          controller.metadata,
+          'persist',
+        ),
+      ).toMatchInlineSnapshot(`
+        Object {
+          "storageMetadata": Array [],
+          "versionInfo": Array [],
+        }
+      `);
+    });
+
+    it('exposes expected state to UI', () => {
+      const { ppomController: controller } = buildPPOMController();
+
+      expect(
+        deriveStateFromMetadata(
+          controller.state,
+          controller.metadata,
+          'usedInUi',
+        ),
+      ).toMatchInlineSnapshot(`Object {}`);
     });
   });
 });
