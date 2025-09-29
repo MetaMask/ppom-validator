@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **BREAKING:** Migrate `PPOMController` to new `Messenger` from `@metamask/messenger` ([#243](https://github.com/MetaMask/core/pull/243))
+- **BREAKING:** Migrate `PPOMController` to new `Messenger` from `@metamask/messenger` ([#249](https://github.com/MetaMask/core/pull/249))
 
 ## [0.38.0]
 
