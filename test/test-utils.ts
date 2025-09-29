@@ -1,19 +1,26 @@
-import { Messenger } from '@metamask/base-controller';
 import * as ControllerUtils from '@metamask/controller-utils';
+import {
+  Messenger,
+  MOCK_ANY_NAMESPACE,
+  type MessengerActions,
+  type MessengerEvents,
+  type MockAnyNamespace,
+} from '@metamask/messenger';
 import type {
   NetworkClientId,
   NetworkState,
 } from '@metamask/network-controller';
 
-import type {
-  AllowedActions,
-  AllowedEvents,
-  PPOMControllerActions,
-  PPOMControllerEvents,
-} from '../src/ppom-controller';
+import type { PPOMControllerMessenger } from '../src/ppom-controller';
 import { PPOMController } from '../src/ppom-controller';
 import type { StorageKey } from '../src/ppom-storage';
 import { SUPPORTED_NETWORK_CHAINIDS } from '../src/util';
+
+type AllActions = MessengerActions<PPOMControllerMessenger>;
+
+type AllEvents = MessengerEvents<PPOMControllerMessenger>;
+
+type RootMessenger = Messenger<MockAnyNamespace, AllActions, AllEvents>;
 
 export const buildDummyResponse = (
   resultType = 'DUMMY_RESULT_TYPE',
@@ -180,17 +187,25 @@ export class PPOMClass {
 }
 
 export const buildPPOMController = (options?: any) => {
-  const controllerMessenger: Messenger<
-    PPOMControllerActions | AllowedActions,
-    PPOMControllerEvents | AllowedEvents
-  > = new Messenger();
-  const messenger = controllerMessenger.getRestricted({
-    name: 'PPOMController',
-    allowedActions: ['NetworkController:getNetworkClientById'],
-    allowedEvents: ['NetworkController:networkDidChange'],
+  const messenger: RootMessenger = new Messenger({
+    namespace: MOCK_ANY_NAMESPACE,
+  });
+  const ppomControllerMessenger = new Messenger<
+    'PPOMController',
+    AllActions,
+    AllEvents,
+    RootMessenger
+  >({
+    namespace: 'PPOMController',
+    parent: messenger,
+  });
+  messenger.delegate({
+    messenger: ppomControllerMessenger,
+    actions: ['NetworkController:getNetworkClientById'],
+    events: ['NetworkController:networkDidChange'],
   });
   const mockGetNetworkClientById = jest.fn();
-  controllerMessenger.registerActionHandler(
+  messenger.registerActionHandler(
     'NetworkController:getNetworkClientById',
     mockGetNetworkClientById.mockReturnValue({
       configuration: { chainId: '0x1' },
@@ -203,7 +218,7 @@ export const buildPPOMController = (options?: any) => {
     storageBackend: storageBackendReturningData,
     provider: () => undefined,
     chainId: SUPPORTED_NETWORK_CHAINIDS.MAINNET,
-    messenger,
+    messenger: ppomControllerMessenger,
     securityAlertsEnabled: true,
     onPreferencesChange: () => undefined,
     state: {},
@@ -219,14 +234,14 @@ export const buildPPOMController = (options?: any) => {
   }: {
     selectedNetworkClientId: NetworkClientId;
   }) => {
-    controllerMessenger.publish('NetworkController:networkDidChange', {
+    messenger.publish('NetworkController:networkDidChange', {
       selectedNetworkClientId,
     } as NetworkState);
   };
   return {
     changeNetwork,
     mockGetNetworkClientById,
-    controllerMessenger,
+    messenger,
     ppomController,
   };
 };

@@ -5,7 +5,7 @@
     "forceConsistentCasingInFileNames": true,
     "lib": ["ES2020", "DOM"],
     "module": "CommonJS",
-    "moduleResolution": "node",
+    "moduleResolution": "Node16",
     "noEmit": true,
     "noErrorTruncation": true,
     "noUncheckedIndexedAccess": true,
