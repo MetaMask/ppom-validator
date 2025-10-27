@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0]
+
 ### Changed
 
 - **BREAKING:** Migrate `PPOMController` to new `Messenger` from `@metamask/messenger` ([#249](https://github.com/MetaMask/ppom-validator/pull/249))
@@ -314,7 +316,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.38.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.39.0...HEAD
+[0.39.0]: https://github.com/MetaMask/ppom-validator/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/MetaMask/ppom-validator/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/MetaMask/ppom-validator/compare/v0.36.0...v0.37.0
 [0.36.0]: https://github.com/MetaMask/ppom-validator/compare/v0.35.1...v0.36.0
