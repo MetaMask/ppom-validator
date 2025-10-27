@@ -9,10 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.39.0]
 
-### Uncategorized
-
-- Add preview builds ([#250](https://github.com/MetaMask/ppom-validator/pull/250))
-
 ### Changed
 
 - **BREAKING:** Migrate `PPOMController` to new `Messenger` from `@metamask/messenger` ([#249](https://github.com/MetaMask/ppom-validator/pull/249))
