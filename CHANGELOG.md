@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING:** Migrate `PPOMController` to new `Messenger` from `@metamask/messenger` ([#249](https://github.com/MetaMask/ppom-validator/pull/249))
+- **BREAKING:** Metadata property `anonymous` renamed to `includeInDebugSnapshot` ([#249](https://github.com/MetaMask/ppom-validator/pull/249))
+- **BREAKING:** Bump `@metamask/network-controller` peer dependency from `^24.0.O` to `^25.0.0` ([#249](https://github.com/MetaMask/ppom-validator/pull/249))
+- **BREAKING:** Bump `@metamask/error-reporting-service` peer dependency from `^2.0.0` to `^3.0.0` ([#249](https://github.com/MetaMask/ppom-validator/pull/249))
+- Bump `@metamask/base-controller` from `^8.3.0` to `^9.0.0`([#249](https://github.com/MetaMask/ppom-validator/pull/249))
+- Set `module` and `moduleResolution` option to `Node16` ([#251](https://github.com/MetaMask/ppom-validator/pull/251))
+
 ## [0.38.0]
 
 ### Added

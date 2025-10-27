@@ -1,10 +1,11 @@
 import type {
   ControllerGetStateAction,
   ControllerStateChangeEvent,
-  RestrictedMessenger,
+  StateMetadata,
 } from '@metamask/base-controller';
 import { BaseController } from '@metamask/base-controller';
 import { safelyExecute, timeoutFetch } from '@metamask/controller-utils';
+import type { Messenger } from '@metamask/messenger';
 import type {
   NetworkControllerGetNetworkClientByIdAction,
   NetworkControllerNetworkDidChangeEvent,
@@ -111,17 +112,17 @@ export type PPOMState = {
   storageMetadata: FileMetadataList;
 };
 
-const stateMetaData = {
+const stateMetaData: StateMetadata<PPOMState> = {
   versionInfo: {
     includeInStateLogs: true,
     persist: true,
-    anonymous: false,
+    includeInDebugSnapshot: false,
     usedInUi: false,
   },
   storageMetadata: {
     includeInStateLogs: false,
     persist: true,
-    anonymous: false,
+    includeInDebugSnapshot: false,
     usedInUi: false,
   },
 };
@@ -158,12 +159,10 @@ export type AllowedEvents = NetworkControllerNetworkDidChangeEvent;
 
 export type AllowedActions = NetworkControllerGetNetworkClientByIdAction;
 
-export type PPOMControllerMessenger = RestrictedMessenger<
+export type PPOMControllerMessenger = Messenger<
   typeof controllerName,
   PPOMControllerActions | AllowedActions,
-  PPOMControllerEvents | AllowedEvents,
-  AllowedActions['type'],
-  AllowedEvents['type']
+  PPOMControllerEvents | AllowedEvents
 >;
 
 // eslint-disable-next-line  @typescript-eslint/naming-convention
@@ -405,7 +404,7 @@ export class PPOMController extends BaseController<
    * 2. reset PPOM
    */
   #onNetworkChange(networkControllerState: NetworkState): void {
-    const selectedNetworkClient = this.messagingSystem.call(
+    const selectedNetworkClient = this.messenger.call(
       'NetworkController:getNetworkClientById',
       networkControllerState.selectedNetworkClientId,
     );
@@ -444,7 +443,7 @@ export class PPOMController extends BaseController<
    * Constructor helper for registering this controller's messaging system actions.
    */
   #registerMessageHandlers(): void {
-    this.messagingSystem.registerActionHandler(
+    this.messenger.registerActionHandler(
       `${controllerName}:usePPOM` as const,
       this.usePPOM.bind(this),
     );
@@ -456,7 +455,7 @@ export class PPOMController extends BaseController<
    */
   #subscribeMessageEvents(): void {
     const onNetworkChange = this.#onNetworkChange.bind(this);
-    this.messagingSystem.subscribe(
+    this.messenger.subscribe(
       'NetworkController:networkDidChange',
       onNetworkChange,
     );
