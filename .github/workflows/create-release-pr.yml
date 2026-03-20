@@ -9,7 +9,14 @@ on:
         required: true
       release-type:
         description: 'A SemVer version diff, i.e. major, minor, or patch. Mutually exclusive with "release-version".'
+        type: choice
         required: false
+        default: none
+        options:
+          - none
+          - major
+          - minor
+          - patch
       release-version:
         description: 'A specific version to bump to. Mutually exclusive with "release-type".'
         required: false
@@ -21,6 +28,19 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      - name: Validate inputs
+        env:
+          RELEASE_TYPE: ${{ inputs.release-type }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
+        run: |
+          if [ "$RELEASE_TYPE" != "none" ] && [ -n "$RELEASE_VERSION" ]; then
+            echo "::error::release-type and release-version are mutually exclusive"
+            exit 1
+          fi
+          if [ "$RELEASE_TYPE" = "none" ] && [ -z "$RELEASE_VERSION" ]; then
+            echo "::error::Must specify either release-type or release-version"
+            exit 1
+          fi
       - uses: actions/checkout@v3
         with:
           # This is to guarantee that the most recent tag is fetched.
@@ -37,5 +57,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          release-type: ${{ github.event.inputs.release-type }}
+          release-type: ${{ inputs.release-type != 'none' && inputs.release-type || '' }}
           release-version: ${{ github.event.inputs.release-version }}
