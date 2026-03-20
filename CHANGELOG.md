@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+## [0.39.1]
+
 - Move `@metamask/network-controller` from peer to direct dependency and bump ^25.0.0 → ^30.0.0 ([#254](https://github.com/MetaMask/ppom-validator/pull/254))
 - Bump `@metamask/utils` from `^9.2.1` to `^11.0.0` ([#254](https://github.com/MetaMask/ppom-validator/pull/254))
 
@@ -321,7 +323,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.39.0...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.39.1...HEAD
+[0.39.1]: https://github.com/MetaMask/ppom-validator/compare/v0.39.0...v0.39.1
 [0.39.0]: https://github.com/MetaMask/ppom-validator/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/MetaMask/ppom-validator/compare/v0.37.0...v0.38.0
 [0.37.0]: https://github.com/MetaMask/ppom-validator/compare/v0.36.0...v0.37.0
