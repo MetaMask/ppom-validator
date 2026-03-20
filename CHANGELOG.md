@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
 ## [0.39.1]
+
+### Changed
 
 - Move `@metamask/network-controller` from peer to direct dependency and bump ^25.0.0 → ^30.0.0 ([#254](https://github.com/MetaMask/ppom-validator/pull/254))
 - Bump `@metamask/utils` from `^9.2.1` to `^11.0.0` ([#254](https://github.com/MetaMask/ppom-validator/pull/254))
