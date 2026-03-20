@@ -29,12 +29,15 @@ jobs:
       pull-requests: write
     steps:
       - name: Validate inputs
+        env:
+          RELEASE_TYPE: ${{ inputs.release-type }}
+          RELEASE_VERSION: ${{ inputs.release-version }}
         run: |
-          if [ "${{ inputs.release-type }}" != "none" ] && [ -n "${{ inputs.release-version }}" ]; then
+          if [ "$RELEASE_TYPE" != "none" ] && [ -n "$RELEASE_VERSION" ]; then
             echo "::error::release-type and release-version are mutually exclusive"
             exit 1
           fi
-          if [ "${{ inputs.release-type }}" = "none" ] && [ -z "${{ inputs.release-version }}" ]; then
+          if [ "$RELEASE_TYPE" = "none" ] && [ -z "$RELEASE_VERSION" ]; then
             echo "::error::Must specify either release-type or release-version"
             exit 1
           fi
