@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.2]
+
 ### Changed
 
 - Bump `@metamask/base-controller` from `^9.0.0` to `^9.0.1` ([#258](https://github.com/MetaMask/ppom-validator/pull/258))
@@ -331,7 +333,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restrict provider access to PPOM ([#7](https://github.com/MetaMask/ppom-validator/pull/7))
 - Integrate with ppom npm module ([#8](https://github.com/MetaMask/ppom-validator/pull/8))
 
-[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.39.1...HEAD
+[Unreleased]: https://github.com/MetaMask/ppom-validator/compare/v0.39.2...HEAD
+[0.39.2]: https://github.com/MetaMask/ppom-validator/compare/v0.39.1...v0.39.2
 [0.39.1]: https://github.com/MetaMask/ppom-validator/compare/v0.39.0...v0.39.1
 [0.39.0]: https://github.com/MetaMask/ppom-validator/compare/v0.38.0...v0.39.0
 [0.38.0]: https://github.com/MetaMask/ppom-validator/compare/v0.37.0...v0.38.0
