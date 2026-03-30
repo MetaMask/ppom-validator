@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Bump `@metamask/base-controller` from `^9.0.0` to `^9.0.1` ([#258](https://github.com/MetaMask/ppom-validator/pull/258))
+- Bump `@metamask/controller-utils` from `^11.3.0` to `^11.19.0` ([#258](https://github.com/MetaMask/ppom-validator/pull/258))
+- Bump `@metamask/messenger` from `^0.3.0` to `^1.0.0` ([#258](https://github.com/MetaMask/ppom-validator/pull/258))
+- Bump `@metamask/network-controller` from `^30.0.0` to `^30.0.1` ([#258](https://github.com/MetaMask/ppom-validator/pull/258))
+- Bump `@metamask/utils` from `^11.0.0` to `^11.9.0` ([#258](https://github.com/MetaMask/ppom-validator/pull/258))
+
 ## [0.39.1]
 
 ### Changed
