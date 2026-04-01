@@ -975,8 +975,8 @@ __metadata:
   linkType: hard
 
 "@metamask/controller-utils@npm:^11.19.0":
-  version: 11.19.0
-  resolution: "@metamask/controller-utils@npm:11.19.0"
+  version: 11.20.0
+  resolution: "@metamask/controller-utils@npm:11.20.0"
   dependencies:
     "@metamask/eth-query": ^4.0.0
     "@metamask/ethjs-unit": ^0.3.0
@@ -991,7 +991,7 @@ __metadata:
     lodash: ^4.17.21
   peerDependencies:
     "@babel/runtime": ^7.0.0
-  checksum: ed55339fbe422a582bc0edf30c784d6a661d91f7e25006bf8da2649bd688fa0fde087683ccfc3c76ca154e746ded811596eae963c783e0a4f02fc0d924de27ca
+  checksum: d89e46544fe40f2ee2c874d574dbd1dc5b365b2a6af39fd146f922f3d151f8cc047e6447f0b23d7ac864a4da836fe235d60c69da02b9eec9fb2acfddaa4b0c15
   languageName: node
   linkType: hard
 
