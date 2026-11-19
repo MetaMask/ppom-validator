@@ -9,11 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **BREAKING:** Bump `@metamask/base-controller` from `^9.0.1` to `^10.1.0` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
-- **BREAKING:** Bump `@metamask/controller-utils` from `^11.19.0` to `^13.0.0` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
-- **BREAKING:** Bump `@metamask/messenger` from `^1.0.0` to `^3.0.0` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
-- **BREAKING:** Bump `@metamask/network-controller` from `^30.0.1` to `^38.0.1` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
-- **BREAKING:** Bump `@metamask/utils` from `^11.9.0` to `^12.0.2` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
+- Bump `@metamask/base-controller` from `^9.0.1` to `^10.1.0` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
+- Bump `@metamask/controller-utils` from `^11.19.0` to `^13.0.0` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
+- Bump `@metamask/messenger` from `^1.0.0` to `^3.0.0` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
+- Bump `@metamask/network-controller` from `^30.0.1` to `^38.0.1` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
+- Bump `@metamask/utils` from `^11.9.0` to `^12.0.2` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
 - **BREAKING:** Drop support for Node.js 18 and 20, and require `^22.14.0 || ^24 || ^26` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
 - Build both ES module and CommonJS outputs with `@ts-bridge/cli`, and add an `exports` map (the `@metamask/*` dependencies are now ES module only) ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
 - Bump TypeScript from `~5.5.4` to `~5.9.3` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
