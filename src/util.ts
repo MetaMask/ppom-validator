@@ -1,11 +1,11 @@
+import { verify } from '@metamask/cryptography/ed25519';
+import { sha256 } from '@metamask/cryptography/sha';
 import type { JsonRpcParams } from '@metamask/utils';
-import CryptoJS, { SHA256 } from 'crypto-js';
-import elliptic from 'elliptic';
+import { bytesToHex, hexToBytes, remove0x } from '@metamask/utils';
 import IdIterator from 'json-rpc-random-id';
 
 import type { NativeCrypto } from './ppom-controller';
 
-const EdDSA = elliptic.eddsa;
 const URL_PREFIX = 'https://';
 
 export const SUPPORTED_NETWORK_CHAINIDS = {
@@ -67,46 +67,28 @@ export const PROVIDER_ERRORS = {
 const getHash = async (
   data: ArrayBuffer,
   nativeCrypto?: NativeCrypto,
-  useNative = true,
 ): Promise<string> => {
   if (nativeCrypto) {
     return nativeCrypto.createHash('sha256').update(data).digest('hex');
   }
 
-  if (
-    'crypto' in globalThis &&
-    typeof globalThis.crypto === 'object' &&
-    globalThis.crypto.subtle?.digest &&
-    useNative
-  ) {
-    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hash = hashArray
-      .map((item) => item.toString(16).padStart(2, '0'))
-      .join('');
-    return hash;
-  }
-
-  return SHA256(CryptoJS.lib.WordArray.create(data as any)).toString();
+  return remove0x(bytesToHex(await sha256(data)));
 };
 
-// useNative argument is added for testing purpose, without it test cases are breaking in Node-20 and above
-// Reason being that in node 20 crypto is always present in globalThis
-// and it is not possible to reset it due to security reasons
 export const validateSignature = async (
   data: ArrayBuffer,
   hashSignature: string,
   key: string,
   filePath: string,
   nativeCrypto?: NativeCrypto,
-  useNative?: boolean,
 ) => {
-  const hashString = await getHash(data, nativeCrypto, useNative);
-  // const hashString = hash.toString();
-  const ec = new EdDSA('ed25519');
-  const ecKey = ec.keyFromPublic(key);
-  // eslint-disable-next-line no-restricted-globals
-  const result = ecKey.verify(Buffer.from(hashString), hashSignature);
+  const hashString = await getHash(data, nativeCrypto);
+  // The signature is over the hex string of the hash, not the raw digest.
+  const result = await verify(
+    new Uint8Array(hexToBytes(key)),
+    new Uint8Array(hexToBytes(hashSignature)),
+    new TextEncoder().encode(hashString),
+  );
   if (!result) {
     throw Error(`Signature verification failed for file path: ${filePath}`);
   }

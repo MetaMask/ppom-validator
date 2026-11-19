@@ -1,13 +1,7 @@
-import fs from 'fs';
+import { generateKeyPair, sign } from '@metamask/cryptography/ed25519';
+import { bytesToHex, remove0x } from '@metamask/utils';
 
 import { addHexPrefix, constructURLHref, validateSignature } from './util';
-
-const TEST_PUBLIC_KEY =
-  '066ad3e8af5583385e312c156d238055215d5f25247c1e91055afa756cb98a88';
-const CORRECT_SIGNATURE =
-  '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c';
-const INCORRECT_SIGNATURE =
-  '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90d';
 
 Object.defineProperty(globalThis, 'crypto', {
   // eslint-disable-next-line
@@ -15,40 +9,95 @@ Object.defineProperty(globalThis, 'crypto', {
   writable: true,
 });
 
+const DATA = new TextEncoder().encode('ppom data file');
+
+/**
+ * Hash the data the same way the validator does, and sign the hex string.
+ *
+ * @param privateKey - The Ed25519 private key.
+ * @param data - The data to hash and sign.
+ * @returns The hex encoded signature.
+ */
+const signHash = async (
+  privateKey: Uint8Array<ArrayBuffer>,
+  data: Uint8Array<ArrayBuffer>,
+) => {
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', data);
+  const hash = remove0x(bytesToHex(new Uint8Array(digest)));
+  const signature = await sign(privateKey, new TextEncoder().encode(hash));
+  return remove0x(bytesToHex(signature));
+};
+
 describe('Util', () => {
   describe('validateSignature', () => {
-    it('should throw error for incorrect signature - using native implementation', async () => {
-      await expect(async () => {
-        const blobData = await fs.promises.readFile('./test/stale_tags.bin');
+    it('resolves for a valid signature', async () => {
+      const { privateKey, publicKey } = await generateKeyPair();
+      const signature = await signHash(privateKey, DATA);
+
+      expect(
         await validateSignature(
-          blobData,
-          INCORRECT_SIGNATURE,
-          TEST_PUBLIC_KEY,
+          DATA,
+          signature,
+          remove0x(bytesToHex(publicKey)),
+          'valid_data_file',
+        ),
+      ).toBeUndefined();
+    });
+
+    it('throws for a signature from a different key', async () => {
+      const { publicKey } = await generateKeyPair();
+      const { privateKey: otherPrivateKey } = await generateKeyPair();
+      const signature = await signHash(otherPrivateKey, DATA);
+
+      await expect(
+        validateSignature(
+          DATA,
+          signature,
+          remove0x(bytesToHex(publicKey)),
           'invalid_data_file',
-        );
-      }).rejects.toThrow(
+        ),
+      ).rejects.toThrow(
         'Signature verification failed for file path: invalid_data_file',
       );
     });
 
-    it('should throw error for incorrect signature - using library crypto-js', async () => {
-      await expect(async () => {
-        const blobData = await fs.promises.readFile('./test/stale_tags.bin');
-        await validateSignature(
-          blobData,
-          INCORRECT_SIGNATURE,
-          TEST_PUBLIC_KEY,
+    it('throws for a signature over different data', async () => {
+      const { privateKey, publicKey } = await generateKeyPair();
+      const signature = await signHash(
+        privateKey,
+        new TextEncoder().encode('other data'),
+      );
+
+      await expect(
+        validateSignature(
+          DATA,
+          signature,
+          remove0x(bytesToHex(publicKey)),
           'invalid_data_file',
-          undefined,
-          false,
-        );
-      }).rejects.toThrow(
+        ),
+      ).rejects.toThrow(
         'Signature verification failed for file path: invalid_data_file',
       );
     });
 
-    it('should use nativeCrypto if passed', async () => {
-      const blobData = await fs.promises.readFile('./test/stale_tags.bin');
+    it('throws for a signature with an invalid length', async () => {
+      const { publicKey } = await generateKeyPair();
+
+      await expect(
+        validateSignature(
+          DATA,
+          'abcd',
+          remove0x(bytesToHex(publicKey)),
+          'invalid_data_file',
+        ),
+      ).rejects.toThrow('Invalid signature length');
+    });
+
+    it('uses nativeCrypto to hash if passed', async () => {
+      const { privateKey, publicKey } = await generateKeyPair();
+      const signature = remove0x(
+        bytesToHex(await sign(privateKey, new TextEncoder().encode('abc'))),
+      );
       const nativeDigest = jest.fn().mockReturnValue('abc');
       const nativeCrypto = {
         createHash: () => ({
@@ -58,35 +107,15 @@ describe('Util', () => {
         }),
       };
 
-      await expect(async () => {
-        await validateSignature(
-          blobData,
-          CORRECT_SIGNATURE,
-          TEST_PUBLIC_KEY,
-          'valid_data_file',
-          nativeCrypto,
-        );
-      }).rejects.toThrow(
-        'Signature verification failed for file path: valid_data_file',
+      await validateSignature(
+        DATA,
+        signature,
+        remove0x(bytesToHex(publicKey)),
+        'valid_data_file',
+        nativeCrypto,
       );
 
       expect(nativeDigest).toHaveBeenCalledTimes(1);
-    });
-
-    it('throws error for mismatching signature - using library crypto-js without native preference', async () => {
-      await expect(async () => {
-        const blobData = await fs.promises.readFile('./test/stale_tags.bin');
-        await validateSignature(
-          blobData,
-          CORRECT_SIGNATURE,
-          TEST_PUBLIC_KEY,
-          'valid_data_file',
-          undefined,
-          false,
-        );
-      }).rejects.toThrow(
-        'Signature verification failed for file path: valid_data_file',
-      );
     });
   });
   describe('constructURLHref', () => {
