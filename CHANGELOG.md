@@ -17,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **BREAKING:** Drop support for Node.js 18 and 20, and require `^22.14.0 || ^24 || ^26` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
 - Build both ES module and CommonJS outputs with `@ts-bridge/cli`, and add an `exports` map (the `@metamask/*` dependencies are now ES module only) ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
 - Bump TypeScript from `~5.5.4` to `~5.9.3` ([#269](https://github.com/MetaMask/ppom-validator/pull/269))
-- **BREAKING:** Require `crypto.subtle` with Ed25519 support to verify file signatures
-- Use `@metamask/cryptography` for SHA-256 hashing and Ed25519 signature verification, replacing `elliptic` and `crypto-js`
+- **BREAKING:** Require `crypto.subtle` with Ed25519 support to verify file signatures ([#270](https://github.com/MetaMask/ppom-validator/pull/270))
+- Use `@metamask/cryptography` for SHA-256 hashing and Ed25519 signature verification, replacing `elliptic` and `crypto-js` ([#270](https://github.com/MetaMask/ppom-validator/pull/270))
 
 ## [0.39.2]
 
