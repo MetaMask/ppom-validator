@@ -7,7 +7,7 @@ const TEST_PUBLIC_KEY =
 const CORRECT_SIGNATURE =
   '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c';
 const INCORRECT_SIGNATURE =
-  '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90c123';
+  '66a93a1f6a6c45294333dcf8f32fd0db6961bf842e41e060226cb2ef79d56cddb46279fd2365fd0f9dc2969a4166d4d7bab2262c237ba31d9a67716f0a7db90d';
 
 Object.defineProperty(globalThis, 'crypto', {
   // eslint-disable-next-line
@@ -73,8 +73,8 @@ describe('Util', () => {
       expect(nativeDigest).toHaveBeenCalledTimes(1);
     });
 
-    it('should validate correct signature - failing', async () => {
-      expect(async () => {
+    it('throws error for mismatching signature - using library crypto-js without native preference', async () => {
+      await expect(async () => {
         const blobData = await fs.promises.readFile('./test/stale_tags.bin');
         await validateSignature(
           blobData,
@@ -84,7 +84,7 @@ describe('Util', () => {
           undefined,
           false,
         );
-      }).not.toThrow(
+      }).rejects.toThrow(
         'Signature verification failed for file path: valid_data_file',
       );
     });

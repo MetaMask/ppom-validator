@@ -65,11 +65,11 @@ gen_enforced_field(WorkspaceCwd, 'repository.url', 'https://github.com/MetaMask/
 % The license for the package must be specified.
 gen_enforced_field(WorkspaceCwd, 'license').
 
-% The entrypoint for the package must be `./dist/index.js`.
-gen_enforced_field(WorkspaceCwd, 'main', './dist/index.js').
+% The CommonJS entrypoint for the package must be `./dist/index.cjs`.
+gen_enforced_field(WorkspaceCwd, 'main', './dist/index.cjs').
 
-% The type definitions entrypoint the package must be `./dist/index.d.ts`.
-gen_enforced_field(WorkspaceCwd, 'types', './dist/index.d.ts').
+% The CommonJS type definitions entrypoint for the package must be `./dist/index.d.cts`.
+gen_enforced_field(WorkspaceCwd, 'types', './dist/index.d.cts').
 
 % The list of files included in the package must only include files generated
 % during the build step.
@@ -82,8 +82,9 @@ gen_enforced_dependency(WorkspaceCwd, DependencyIdent, null, DependencyType) :-
   workspace_has_dependency(WorkspaceCwd, DependencyIdent, DependencyRange, DependencyType),
   DependencyType == 'devDependencies'.
 
-% The package must specify a minimum Node version of 18.
-gen_enforced_field(WorkspaceCwd, 'engines.node', '^18.18 || >=20').
+% The package must specify the minimum Node versions supported by its
+% `@metamask/*` dependencies.
+gen_enforced_field(WorkspaceCwd, 'engines.node', '^22.14.0 || ^24 || ^26').
 
 % The package is public.
 gen_enforced_field(WorkspaceCwd, 'publishConfig.access', 'public').

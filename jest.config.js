@@ -96,6 +96,23 @@ module.exports = {
 
   // A preset that is used as a base for Jest's configuration
   preset: 'ts-jest',
+  // The @metamask/* dependencies are ESM-only, so Jest has to transform them.
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+      tsconfig: {
+        allowJs: true,
+        esModuleInterop: true,
+        module: 'CommonJS',
+        moduleResolution: 'Node10',
+        skipLibCheck: true,
+      },
+    },
+  },
+  transform: {
+    '^.+\\.[tj]sx?$': 'ts-jest',
+  },
+  transformIgnorePatterns: ['/node_modules/(?!(@metamask|lodash-es)/)'],
 
   // Run tests from one or more projects
   // projects: undefined,
